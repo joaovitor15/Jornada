@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next-intl/navigation';
 
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import ExpensesList from '@/components/dashboard/expenses-list';
-import { useRouter } from 'next/navigation';
 import { t } from '@/lib/locale';
 
 export default function DashboardPage() {

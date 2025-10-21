@@ -74,6 +74,11 @@ export default function AuthPage() {
     );
   }
 
+  if (user) {
+    router.replace('/dashboard');
+    return null;
+  }
+
   const handleAuthError = (err: AuthError) => {
     console.error(err);
     switch (err.code) {
