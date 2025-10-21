@@ -47,13 +47,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { expenseCategories } from '@/lib/types';
+import { t } from '@/lib/locale';
 
 const formSchema = z.object({
   description: z.string().min(2, {
-    message: 'Description must be at least 2 characters.',
+    message: t.descriptionMinChars,
   }),
-  amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
-  category: z.string().min(1, { message: 'Please select a category.' }),
+  amount: z.coerce.number().positive({ message: t.amountPositive }),
+  category: z.string().min(1, { message: t.pleaseSelectCategory }),
   date: z.date(),
 });
 
@@ -99,7 +100,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
 
       toast({
         title: 'Success',
-        description: 'Expense added successfully.',
+        description: t.addExpenseSuccess,
       });
       form.reset();
       onOpenChange(false);
@@ -108,7 +109,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to add expense. Please try again.',
+        description: t.addExpenseError,
       });
     }
   }
@@ -117,9 +118,9 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Expense</DialogTitle>
+          <DialogTitle>{t.addNewExpense}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new expense to your journey.
+            {t.addNewExpenseDescription}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -129,9 +130,9 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t.description}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Café" {...field} />
+                    <Input placeholder={t.descriptionPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,9 +143,9 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor</FormLabel>
+                  <FormLabel>{t.amount}</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
+                    <Input type="number" placeholder={t.amountPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -155,11 +156,11 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Categoria</FormLabel>
+                  <FormLabel>{t.category}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
+                        <SelectValue placeholder={t.selectCategory} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -179,7 +180,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Data da Despesa</FormLabel>
+                  <FormLabel>{t.expenseDate}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -194,7 +195,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
                           {field.value ? (
                             format(field.value, 'PPP')
                           ) : (
-                            <span>Escolha uma data</span>
+                            <span>{t.pickDate}</span>
                           )}
                         </Button>
                       </FormControl>
@@ -215,7 +216,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Adicionar Despesa
+                {t.addExpense}
               </Button>
             </DialogFooter>
           </form>

@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
+import { t } from '@/lib/locale';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -77,7 +78,7 @@ export default function ExpensesList() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not fetch expenses.",
+        description: t.fetchExpensesError,
       });
     });
 
@@ -89,14 +90,14 @@ export default function ExpensesList() {
       await deleteDoc(doc(db, "expenses", id));
       toast({
         title: "Success",
-        description: "Expense deleted.",
+        description: t.deleteExpenseSuccess,
       });
     } catch (error) {
       console.error("Error deleting document: ", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not delete expense.",
+        description: t.deleteExpenseError,
       });
     }
   };
@@ -114,8 +115,8 @@ export default function ExpensesList() {
       <Card className="mt-6">
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
-            <p>You haven't added any expenses yet.</p>
-            <p>Click "Add Expense" to start your journey!</p>
+            <p>{t.noExpensesYet}</p>
+            <p>{t.clickToAddExpense}</p>
           </div>
         </CardContent>
       </Card>
@@ -125,16 +126,16 @@ export default function ExpensesList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Despesas</CardTitle>
+        <CardTitle>{t.expenses}</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
+              <TableHead>{t.date}</TableHead>
+              <TableHead>{t.description}</TableHead>
+              <TableHead>{t.category}</TableHead>
+              <TableHead className="text-right">{t.amountHeader}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -161,15 +162,15 @@ export default function ExpensesList() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Você tem a certeza absoluta?</AlertDialogTitle>
+                        <AlertDialogTitle>{t.deleteConfirmationTitle}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. Isto irá apagar permanentemente esta despesa dos nossos servidores.
+                          {t.deleteConfirmationDescription}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleDelete(expense.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Apagar
+                          {t.delete}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

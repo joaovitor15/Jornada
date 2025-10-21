@@ -1,13 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-
+import { Link } from 'next-intl';
+import { useRouter } from 'next-intl/navigation';
 import { Button } from '@/components/ui/button';
 import { Wallet } from 'lucide-react';
+import { t } from '@/lib/locale';
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -25,7 +25,7 @@ export default function Header() {
           <Link href={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
             <Wallet className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              A Jornada
+              {t.appName}
             </span>
           </Link>
         </div>
@@ -33,11 +33,11 @@ export default function Header() {
           <nav className="flex items-center">
             {loading ? null : user ? (
               <Button variant="ghost" onClick={handleLogout}>
-                Sair
+                {t.logout}
               </Button>
             ) : (
               <Button asChild variant="ghost">
-                <Link href="/">Entrar</Link>
+                <Link href="/">{t.login}</Link>
               </Button>
             )}
           </nav>
