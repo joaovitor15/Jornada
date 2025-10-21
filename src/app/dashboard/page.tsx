@@ -29,7 +29,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold font-headline">Minhas Despesas</h1>
         <Button onClick={() => setIsFormOpen(true)} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Despesas
+          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Despesa
         </Button>
       </div>
 
