@@ -3,8 +3,7 @@
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { Link } from 'next-intl';
-import { useRouter } from 'next-intl/navigation';
+import { Link, useRouter } from 'next-intl/navigation';
 import { Button } from '@/components/ui/button';
 import { Wallet } from 'lucide-react';
 import { t } from '@/lib/locale';
