@@ -33,11 +33,11 @@ export default function Header() {
           <nav className="flex items-center">
             {loading ? null : user ? (
               <Button variant="ghost" onClick={handleLogout}>
-                Logout
+                Sair
               </Button>
             ) : (
               <Button asChild variant="ghost">
-                <Link href="/">Login</Link>
+                <Link href="/">Entrar</Link>
               </Button>
             )}
           </nav>

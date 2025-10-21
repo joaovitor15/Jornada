@@ -125,16 +125,16 @@ export default function ExpensesList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Expense History</CardTitle>
+        <CardTitle>Despesas</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -161,16 +161,15 @@ export default function ExpensesList() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Você tem a certeza absoluta?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this expense
-                          from our servers.
+                          Esta ação não pode ser desfeita. Isto irá apagar permanentemente esta despesa dos nossos servidores.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleDelete(expense.id!)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Delete
+                          Apagar
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

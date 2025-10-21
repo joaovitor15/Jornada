@@ -165,7 +165,7 @@ export default function AuthPage() {
     <CardContent className="space-y-4">
        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2" />}
-        Sign in with Google
+        Entrar com o Google
       </Button>
 
       <div className="relative">
@@ -179,7 +179,7 @@ export default function AuthPage() {
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor={isSignUp ? 'signup-email' : 'login-email'}>Email</Label>
+        <Label htmlFor={isSignUp ? 'signup-email' : 'login-email'}>E-mail</Label>
         <Input
           id={isSignUp ? 'signup-email' : 'login-email'}
           type="email"
@@ -191,7 +191,7 @@ export default function AuthPage() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={isSignUp ? 'signup-password' : 'login-password'}>Password</Label>
+        <Label htmlFor={isSignUp ? 'signup-password' : 'login-password'}>Senha</Label>
         <Input
           id={isSignUp ? 'signup-password' : 'login-password'}
           type="password"
@@ -208,15 +208,15 @@ export default function AuthPage() {
     <div className="w-full max-w-md">
       <Tabs defaultValue="login" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          <TabsTrigger value="login">Entrar</TabsTrigger>
+          <TabsTrigger value="signup">Registar</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
           <Card>
             <CardHeader>
-              <CardTitle>Welcome Back</CardTitle>
+              <CardTitle>Bem-vindo de Volta</CardTitle>
               <CardDescription>
-                Log in to your account to continue your journey.
+                Faça login na sua conta para continuar a sua jornada.
               </CardDescription>
             </CardHeader>
             <AuthForm />
@@ -231,16 +231,16 @@ export default function AuthPage() {
         <TabsContent value="signup">
           <Card>
             <CardHeader>
-              <CardTitle>Start Your Journey</CardTitle>
+              <CardTitle>Comece a Sua Jornada</CardTitle>
               <CardDescription>
-                Create an account to start tracking your expenses.
+                Crie uma conta para começar a sua jornada.
               </CardDescription>
             </CardHeader>
             <AuthForm isSignUp />
             <CardFooter>
               <Button onClick={handleSignUp} className="w-full" disabled={loading} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Sign Up
+                Registar
               </Button>
             </CardFooter>
           </Card>

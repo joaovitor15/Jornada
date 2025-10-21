@@ -131,7 +131,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Coffee with friends" {...field} />
+                    <Input placeholder="Café" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -142,7 +142,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Valor</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="0.00" {...field} />
                   </FormControl>
@@ -155,11 +155,11 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>Categoria</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder="Selecione uma categoria" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -179,7 +179,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date of Expense</FormLabel>
+                  <FormLabel>Data da Despesa</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -194,7 +194,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
                           {field.value ? (
                             format(field.value, 'PPP')
                           ) : (
-                            <span>Pick a date</span>
+                            <span>Escolha uma data</span>
                           )}
                         </Button>
                       </FormControl>
@@ -215,7 +215,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Add Expense
+                Adicionar Despesa
               </Button>
             </DialogFooter>
           </form>
