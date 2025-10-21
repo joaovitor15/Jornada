@@ -3,11 +3,7 @@
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  collection,
-  addDoc,
-  Timestamp,
-} from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -47,14 +43,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { expenseCategories } from '@/lib/types';
-import { t } from '@/lib/locale';
+import { text } from '@/lib/strings';
 
 const formSchema = z.object({
   description: z.string().min(2, {
-    message: t.descriptionMinChars,
+    message: text.descriptionMinChars,
   }),
-  amount: z.coerce.number().positive({ message: t.amountPositive }),
-  category: z.string().min(1, { message: t.pleaseSelectCategory }),
+  amount: z.coerce.number().positive({ message: text.amountPositive }),
+  category: z.string().min(1, { message: text.pleaseSelectCategory }),
   date: z.date(),
 });
 
@@ -63,10 +59,13 @@ type AddExpenseFormProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
-export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormProps) {
+export default function AddExpenseForm({
+  isOpen,
+  onOpenChange,
+}: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -83,8 +82,8 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
     if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to add an expense.',
+        title: text.error,
+        description: text.youMustBeLoggedIn,
       });
       return;
     }
@@ -99,8 +98,8 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
       });
 
       toast({
-        title: 'Success',
-        description: t.addExpenseSuccess,
+        title: text.success,
+        description: text.addExpenseSuccess,
       });
       form.reset();
       onOpenChange(false);
@@ -108,8 +107,8 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
       console.error('Error adding document: ', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: t.addExpenseError,
+        title: text.error,
+        description: text.addExpenseError,
       });
     }
   }
@@ -118,21 +117,22 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t.addNewExpense}</DialogTitle>
-          <DialogDescription>
-            {t.addNewExpenseDescription}
-          </DialogDescription>
+          <DialogTitle>{text.addNewExpense}</DialogTitle>
+          <DialogDescription>{text.addNewExpenseDescription}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.description}</FormLabel>
+                  <FormLabel>{text.description}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t.descriptionPlaceholder} {...field} />
+                    <Input placeholder={text.descriptionPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -143,9 +143,13 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.amount}</FormLabel>
+                  <FormLabel>{text.amount}</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder={t.amountPlaceholder} {...field} />
+                    <Input
+                      type="number"
+                      placeholder={text.amountPlaceholder}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -156,11 +160,14 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t.category}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>{text.category}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={t.selectCategory} />
+                        <SelectValue placeholder={text.selectCategory} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -180,7 +187,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>{t.expenseDate}</FormLabel>
+                  <FormLabel>{text.expenseDate}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -195,7 +202,7 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
                           {field.value ? (
                             format(field.value, 'PPP')
                           ) : (
-                            <span>{t.pickDate}</span>
+                            <span>{text.pickDate}</span>
                           )}
                         </Button>
                       </FormControl>
@@ -214,9 +221,18 @@ export default function AddExpenseForm({ isOpen, onOpenChange }: AddExpenseFormP
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {t.addExpense}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  backgroundColor: 'hsl(var(--accent))',
+                  color: 'hsl(var(--accent-foreground))',
+                }}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {text.addExpense}
               </Button>
             </DialogFooter>
           </form>
