@@ -48,16 +48,13 @@ export default function ExpensesList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('ExpensesList useEffect running. User:', user);
     if (!user) {
-      console.log('ExpensesList: No user, setting expenses to empty.');
       setExpenses([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    console.log('ExpensesList: User found, creating query for userId:', user.uid);
     const q = query(
       collection(db, 'expenses'),
       where('userId', '==', user.uid),
@@ -67,7 +64,6 @@ export default function ExpensesList() {
     const unsubscribe = onSnapshot(
       q,
       (querySnapshot) => {
-        console.log('ExpensesList: Snapshot received. Docs count:', querySnapshot.size);
         const expensesData: Expense[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -77,7 +73,6 @@ export default function ExpensesList() {
             date: data.date,
           } as Expense);
         });
-        console.log('ExpensesList: Parsed expensesData:', expensesData);
         setExpenses(expensesData);
         setLoading(false);
       },
@@ -93,8 +88,7 @@ export default function ExpensesList() {
     );
 
     return () => unsubscribe();
-    console.log('ExpensesList: Unsubscribing snapshot listener.');
-  }, [user, toast]);
+  }, [user]);
 
   const handleDelete = async (id: string) => {
     try {
