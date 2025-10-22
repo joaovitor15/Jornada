@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -44,7 +45,7 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { expenseCategories } from '@/lib/types';
+import { type ExpenseCategory } from '@/lib/types';
 import { text } from '@/lib/strings';
 
 const formSchema = z.object({
@@ -60,36 +61,41 @@ const formSchema = z.object({
   date: z.date(),
 });
 
-const defaultFormValues = {
-  description: '',
-  amount: 0,
-  category: '',
-  date: new Date(),
-};
-
 type AddExpenseFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  categories: readonly ExpenseCategory[];
 };
 
 export default function AddExpenseForm({
   isOpen,
   onOpenChange,
+  categories,
 }: AddExpenseFormProps) {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultFormValues,
+    defaultValues: {
+      description: '',
+      amount: 0,
+      category: '',
+      date: new Date(),
+    },
   });
-
-  const { isSubmitting } = form.formState;
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
       if (!open) {
-        form.reset(defaultFormValues);
+        form.reset({
+          description: '',
+          amount: 0,
+          category: '',
+          date: new Date(),
+        });
       }
       onOpenChange(open);
     }
@@ -105,8 +111,11 @@ export default function AddExpenseForm({
       return;
     }
 
+    setIsSubmitting(true);
+
     const expenseData = {
       userId: user.uid,
+      profile: activeProfile,
       description: values.description,
       amount: values.amount,
       category: values.category,
@@ -114,6 +123,7 @@ export default function AddExpenseForm({
     };
 
     try {
+      console.log('Adding expense:', expenseData);
       await addDoc(collection(db, 'expenses'), expenseData);
       toast({
         title: text.common.success,
@@ -127,6 +137,8 @@ export default function AddExpenseForm({
         title: text.common.error,
         description: text.addExpenseForm.addError,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -185,23 +197,28 @@ export default function AddExpenseForm({
                     );
                   } else if (field.value === 0 && !isFocused) {
                     setDisplayValue('');
+                  } else if (isFocused) {
+                    // Keep the raw value when focused
+                     if (field.value > 0) {
+                       setDisplayValue(String(field.value.toFixed(2)).replace('.', ','));
+                     } else {
+                       setDisplayValue('');
+                     }
                   }
                 }, [field.value, isFocused]);
+
 
                 const handleInputChange = (
                   e: React.ChangeEvent<HTMLInputElement>
                 ) => {
                   let value = e.target.value;
-                  // Allow only numbers and one comma
                   value = value.replace(/[^0-9,]/g, '');
 
-                  // Ensure only one comma
                   const commaCount = value.split(',').length - 1;
                   if (commaCount > 1) {
                     value = value.substring(0, value.lastIndexOf(','));
                   }
 
-                  // Limit to 2 decimal places
                   if (value.includes(',')) {
                     const parts = value.split(',');
                     if (parts[1] && parts[1].length > 2) {
@@ -212,18 +229,12 @@ export default function AddExpenseForm({
 
                   setDisplayValue(value);
 
-                  // Update react-hook-form value
                   const numericValue = parseFloat(value.replace(',', '.'));
-                  if (!isNaN(numericValue)) {
-                    field.onChange(numericValue);
-                  } else {
-                    field.onChange(0);
-                  }
+                  field.onChange(isNaN(numericValue) ? 0 : numericValue);
                 };
 
                 const handleFocus = () => {
                   setIsFocused(true);
-                  // When focusing, convert formatted value back to a plain number string
                   if (field.value > 0) {
                     setDisplayValue(String(field.value.toFixed(2)).replace('.', ','));
                   } else {
@@ -233,17 +244,16 @@ export default function AddExpenseForm({
 
                 const handleBlur = () => {
                   setIsFocused(false);
-                  field.onBlur(); // Important for RHF to track touched state
-                  // On blur, format the value
+                  field.onBlur();
                   if (field.value > 0) {
-                    setDisplayValue(
-                      field.value.toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
-                    );
+                     setDisplayValue(
+                       field.value.toLocaleString('pt-BR', {
+                         minimumFractionDigits: 2,
+                         maximumFractionDigits: 2,
+                       })
+                     );
                   } else {
-                    setDisplayValue('');
+                     setDisplayValue('');
                   }
                 };
 
@@ -287,7 +297,7 @@ export default function AddExpenseForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {expenseCategories.map((category) => (
+                      {categories.map((category) => (
                         <SelectItem key={category} value={category}>
                           {category}
                         </SelectItem>

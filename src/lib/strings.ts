@@ -3,6 +3,10 @@ export const text = {
     appName: 'A Jornada',
     appDescription: 'Sua jornada pessoal de controle de despesas',
     logout: 'Sair',
+    profiles: 'Perfis',
+    personal: 'Pessoal',
+    home: 'Casa',
+    business: 'Negócios',
   },
   auth: {
     login: 'Entrar',
@@ -13,7 +17,8 @@ export const text = {
     orContinueWith: 'Ou continue com',
     emailPlaceholder: 'm@exemplo.com',
     welcomeBack: 'Bem-vindo de Volta',
-    welcomeBackDescription: 'Faça login na sua conta para continuar sua jornada.',
+    welcomeBackDescription:
+      'Faça login na sua conta para continuar sua jornada.',
     startYourJourney: 'Comece Sua Jornada',
     startYourJourneyDescription: 'Crie uma conta para começar sua jornada.',
     signUpFailed: 'Falha no Cadastro',
@@ -32,7 +37,8 @@ export const text = {
   },
   addExpenseForm: {
     title: 'Adicionar Nova Despesa',
-    description: 'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
+    description:
+      'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
     descriptionPlaceholder: 'Ex: Café',
     amountPlaceholder: '0,00',
     selectCategory: 'Selecione uma categoria',
@@ -49,8 +55,8 @@ export const text = {
   },
   expensesList: {
     title: 'Despesas',
-    noExpenses: 'Você ainda não adicionou nenhuma despesa.',
-    clickToAdd: "Clique em 'Adicionar Despesa' para começar sua jornada!",
+    noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',
+    clickToAdd: "Clique em 'Adicionar Despesa' para começar.",
     deleteSuccess: 'Despesa deletada.',
     deleteError: 'Falha ao deletar despesa.',
     fetchError: 'Falha ao buscar despesas.',

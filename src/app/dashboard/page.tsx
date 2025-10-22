@@ -9,17 +9,44 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import ExpensesList from '@/components/dashboard/expenses-list';
 import { text } from '@/lib/strings';
+import { useProfile } from '@/hooks/use-profile';
+import {
+  personalCategories,
+  homeCategories,
+  businessCategories,
+} from '@/lib/types';
+import type { ExpenseCategory } from '@/lib/types';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
+  const { activeProfile } = useProfile();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [currentCategories, setCurrentCategories] = useState<
+    readonly ExpenseCategory[]
+  >(personalCategories);
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.replace('/');
     }
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    switch (activeProfile) {
+      case 'Personal':
+        setCurrentCategories(personalCategories);
+        break;
+      case 'Home':
+        setCurrentCategories(homeCategories);
+        break;
+      case 'Business':
+        setCurrentCategories(businessCategories);
+        break;
+      default:
+        setCurrentCategories(personalCategories);
+    }
+  }, [activeProfile]);
 
   if (authLoading || !user) {
     return (
@@ -46,7 +73,11 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <AddExpenseForm isOpen={isFormOpen} onOpenChange={setIsFormOpen} />
+      <AddExpenseForm
+        isOpen={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        categories={currentCategories}
+      />
       <ExpensesList />
     </div>
   );

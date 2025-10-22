@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/use-profile';
 import { Expense } from '@/lib/types';
 import { format } from 'date-fns';
 
@@ -43,6 +44,7 @@ import { text } from '@/lib/strings';
 
 export default function ExpensesList() {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -57,6 +59,7 @@ export default function ExpensesList() {
     const q = query(
       collection(db, 'expenses'),
       where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
       orderBy('date', 'desc')
     );
 
@@ -66,7 +69,6 @@ export default function ExpensesList() {
         const expensesData: Expense[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          // Ensure the document has a date field before pushing
           if (data.date) {
             expensesData.push({
               id: doc.id,
@@ -90,12 +92,14 @@ export default function ExpensesList() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, activeProfile, toast]);
 
   const handleDelete = async (id: string) => {
     const originalExpenses = [...expenses];
 
-    setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
+    setExpenses((prevExpenses) =>
+      prevExpenses.filter((expense) => expense.id !== id)
+    );
 
     try {
       await deleteDoc(doc(db, 'expenses', id));
@@ -186,7 +190,9 @@ export default function ExpensesList() {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
+                        <AlertDialogCancel>
+                          {text.common.cancel}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(expense.id!)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
