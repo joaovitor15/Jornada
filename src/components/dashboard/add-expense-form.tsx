@@ -122,7 +122,14 @@ export default function AddExpenseForm({
         }
       }}
     >
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onInteractOutside={(e) => {
+          if (isSubmitting) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{text.addNewExpense}</DialogTitle>
           <DialogDescription>{text.addNewExpenseDescription}</DialogDescription>
