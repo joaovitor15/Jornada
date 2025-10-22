@@ -90,15 +90,18 @@ export default function AddExpenseForm({
       return;
     }
 
+    const expenseData = {
+      userId: user.uid,
+      description: values.description,
+      amount: values.amount,
+      category: values.category,
+      date: Timestamp.fromDate(values.date),
+    };
+
+    console.log('Attempting to add document with data:', expenseData);
+
     try {
-      console.log('Trying to add doc:', values);
-      await addDoc(collection(db, 'expenses'), {
-        userId: user.uid,
-        description: values.description,
-        amount: values.amount,
-        category: values.category,
-        date: Timestamp.fromDate(values.date),
-      });
+      await addDoc(collection(db, 'expenses'), expenseData);
       console.log('Doc added successfully');
       toast({
         title: text.success,
@@ -108,13 +111,13 @@ export default function AddExpenseForm({
       onOpenChange(false);
       console.log('Form reset and dialog closed');
     } catch (error) {
-      console.error('Error adding document: ', error);
+      console.error('Error adding document to Firestore: ', error);
       toast({
         variant: 'destructive',
         title: text.error,
         description: text.addExpenseError,
       });
-      console.log('Caught error');
+      console.log('Caught error during Firestore write');
     }
   }
 
