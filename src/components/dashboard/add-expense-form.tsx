@@ -1,4 +1,4 @@
-'use client';
+''''use client';
 
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -51,8 +51,12 @@ const formSchema = z.object({
   description: z.string().min(2, {
     message: text.addExpenseForm.validation.descriptionMinChars,
   }),
-  amount: z.coerce.number().positive({ message: text.addExpenseForm.validation.amountPositive }),
-  category: z.string().min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
+  amount: z.coerce
+    .number()
+    .positive({ message: text.addExpenseForm.validation.amountPositive }),
+  category: z
+    .string()
+    .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
 
@@ -74,7 +78,6 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isAmountFocused, setIsAmountFocused] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -116,7 +119,7 @@ export default function AddExpenseForm({
         title: text.common.success,
         description: text.addExpenseForm.addSuccess,
       });
-      handleOpenChange(false); // Close and reset form
+      handleOpenChange(false);
     } catch (error) {
       console.error('Error adding document to Firestore: ', error);
       toast({
@@ -125,10 +128,6 @@ export default function AddExpenseForm({
         description: text.addExpenseForm.addError,
       });
     }
-  }
-  
-  const formatAmountForDisplay = (value: number) => {
-    return value.toFixed(2).replace('.', ',');
   }
 
   return (
@@ -143,10 +142,15 @@ export default function AddExpenseForm({
       >
         <DialogHeader>
           <DialogTitle>{text.addExpenseForm.title}</DialogTitle>
-          <DialogDescription>{text.addExpenseForm.description}</DialogDescription>
+          <DialogDescription>
+            {text.addExpenseForm.description}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
             <FormField
               control={form.control}
               name="description"
@@ -167,30 +171,102 @@ export default function AddExpenseForm({
             <FormField
               control={form.control}
               name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.amount}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={text.addExpenseForm.amountPlaceholder}
-                      disabled={isSubmitting}
-                      onFocus={() => setIsAmountFocused(true)}
-                      onBlur={() => setIsAmountFocused(false)}
-                      onChange={(e) => {
-                        const viewValue = e.target.value;
-                        const modelValue = parseFloat(viewValue.replace(',', '.'));
-                        if (!isNaN(modelValue)) {
-                          field.onChange(modelValue);
-                        } else {
-                          field.onChange(0);
-                        }
-                      }}
-                      value={isAmountFocused ? String(field.value).replace('.', ',') : formatAmountForDisplay(field.value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const [displayValue, setDisplayValue] = useState('');
+                const [isFocused, setIsFocused] = useState(false);
+
+                useEffect(() => {
+                  if (field.value > 0 && !isFocused) {
+                    setDisplayValue(
+                      field.value.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    );
+                  } else if (field.value === 0 && !isFocused) {
+                    setDisplayValue('');
+                  }
+                }, [field.value, isFocused]);
+
+                const handleInputChange = (
+                  e: React.ChangeEvent<HTMLInputElement>
+                ) => {
+                  let value = e.target.value;
+                  // Allow only numbers and one comma
+                  value = value.replace(/[^0-9,]/g, '');
+
+                  // Ensure only one comma
+                  const commaCount = value.split(',').length - 1;
+                  if (commaCount > 1) {
+                    value = value.substring(0, value.lastIndexOf(','));
+                  }
+
+                  // Limit to 2 decimal places
+                  if (value.includes(',')) {
+                    const parts = value.split(',');
+                    if (parts[1] && parts[1].length > 2) {
+                      parts[1] = parts[1].substring(0, 2);
+                      value = parts.join(',');
+                    }
+                  }
+
+                  setDisplayValue(value);
+
+                  // Update react-hook-form value
+                  const numericValue = parseFloat(value.replace(',', '.'));
+                  if (!isNaN(numericValue)) {
+                    field.onChange(numericValue);
+                  } else {
+                    field.onChange(0);
+                  }
+                };
+
+                const handleFocus = () => {
+                  setIsFocused(true);
+                  // When focusing, convert formatted value back to a plain number string
+                  if (field.value > 0) {
+                    setDisplayValue(String(field.value.toFixed(2)).replace('.', ','));
+                  } else {
+                    setDisplayValue('');
+                  }
+                };
+
+                const handleBlur = () => {
+                  setIsFocused(false);
+                  field.onBlur(); // Important for RHF to track touched state
+                  // On blur, format the value
+                  if (field.value > 0) {
+                    setDisplayValue(
+                      field.value.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    );
+                  } else {
+                    setDisplayValue('');
+                  }
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>{text.common.amount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder={text.addExpenseForm.amountPlaceholder}
+                        disabled={isSubmitting}
+                        value={displayValue}
+                        onChange={handleInputChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
             <FormField
               control={form.control}
@@ -205,7 +281,9 @@ export default function AddExpenseForm({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={text.addExpenseForm.selectCategory} />
+                        <SelectValue
+                          placeholder={text.addExpenseForm.selectCategory}
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -282,3 +360,4 @@ export default function AddExpenseForm({
     </Dialog>
   );
 }
+'''
