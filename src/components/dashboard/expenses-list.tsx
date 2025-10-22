@@ -155,7 +155,7 @@ export default function ExpensesList() {
             {expenses.map((expense) => (
               <TableRow key={expense.id}>
                 <TableCell>
-                  {format(expense.date.toDate(), 'MMM d, yyyy')}
+                  {format(expense.date.toDate(), 'dd/MM/yyyy')}
                 </TableCell>
                 <TableCell className="font-medium">
                   {expense.description}

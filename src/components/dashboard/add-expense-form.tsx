@@ -77,7 +77,18 @@ export default function AddExpenseForm({
   });
 
   const { isSubmitting } = form.formState;
+  const handleAmountBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+  const value = event.target.value;
+  const parsedValue = parseFloat(value.replace(',', '.')); // Lida com vírgula também
 
+  if (!isNaN(parsedValue)) {
+    form.setValue('amount', parseFloat(parsedValue.toFixed(2)), {
+      shouldValidate: true,
+    });
+    } else if (value.trim() === '') {
+      form.setValue('amount', 0); // Ou undefined
+    }
+  };
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -169,6 +180,13 @@ export default function AddExpenseForm({
                       step="0.01"
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       {...field}
+                      value={field.value === undefined || field.value === null || isNaN(field.value) ? '' : String(field.value)} // Ajustar
+                      onChange={(e) => { // Ajustar
+                        const value = e.target.value.replace(',', '.');
+                        const numericValue = value === '' ? undefined : parseFloat(value);
+                        field.onChange(numericValue);
+                      }}
+                        onBlur={handleAmountBlur} // Adicionar
                       disabled={isSubmitting}
                     />
                   </FormControl>
