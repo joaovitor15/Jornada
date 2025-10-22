@@ -48,7 +48,10 @@ export default function ExpensesList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     const q = query(
@@ -63,11 +66,14 @@ export default function ExpensesList() {
         const expensesData: Expense[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          expensesData.push({
-            id: doc.id,
-            ...data,
-            date: data.date,
-          } as Expense);
+          // Ensure the document has a date field before pushing
+          if (data.date) {
+            expensesData.push({
+              id: doc.id,
+              ...data,
+              date: data.date,
+            } as Expense);
+          }
         });
         setExpenses(expensesData);
         setLoading(false);
@@ -84,24 +90,19 @@ export default function ExpensesList() {
     );
 
     return () => unsubscribe();
-  }, [user, toast]);
+  }, [user]);
 
   const handleDelete = async (id: string) => {
-    // Guarda o estado atual caso a exclusão falhe e precisemos reverter
     const originalExpenses = [...expenses];
 
-    // Atualização Otimista: Remove imediatamente do estado local
     setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
 
     try {
       await deleteDoc(doc(db, 'expenses', id));
-      // O toast de sucesso pode continuar aqui se desejar,
-      // ou ser removido se a remoção visual for suficiente.
       toast({
         title: text.success,
         description: text.deleteExpenseSuccess,
       });
-      console.log('Expense deleted successfully from Firestore and UI (optimistically)');
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -109,9 +110,7 @@ export default function ExpensesList() {
         title: text.error,
         description: text.deleteExpenseError,
       });
-      // Reverte a atualização otimista se a exclusão no Firestore falhar
       setExpenses(originalExpenses);
-      console.log('Expense deletion failed, UI reverted');
     }
   };
 
@@ -165,9 +164,9 @@ export default function ExpensesList() {
                   <Badge variant="secondary">{expense.category}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {new Intl.NumberFormat('en-US', {
+                  {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
-                    currency: 'USD',
+                    currency: 'BRL',
                   }).format(expense.amount)}
                 </TableCell>
                 <TableCell>
