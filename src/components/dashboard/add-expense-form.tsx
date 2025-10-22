@@ -113,8 +113,8 @@ export default function AddExpenseForm({
         variant: 'destructive',
         title: text.error,
         description: text.addExpenseError,
-        console.log('Caught error');
       });
+      console.log('Caught error');
     }
   }
 
