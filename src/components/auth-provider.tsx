@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('AuthProvider: Auth state changed. User:', user);
       setUser(user);
       setLoading(false);
     });
