@@ -79,16 +79,19 @@ export default function AddExpenseForm({
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log('onSubmit started');
     if (!user) {
       toast({
         variant: 'destructive',
         title: text.error,
         description: text.youMustBeLoggedIn,
       });
+      console.log('User not logged in');
       return;
     }
 
     try {
+      console.log('Trying to add doc:', values);
       await addDoc(collection(db, 'expenses'), {
         userId: user.uid,
         description: values.description,
@@ -96,19 +99,21 @@ export default function AddExpenseForm({
         category: values.category,
         date: Timestamp.fromDate(values.date),
       });
-
+      console.log('Doc added successfully');
       toast({
         title: text.success,
         description: text.addExpenseSuccess,
       });
       form.reset();
       onOpenChange(false);
+      console.log('Form reset and dialog closed');
     } catch (error) {
       console.error('Error adding document: ', error);
       toast({
         variant: 'destructive',
         title: text.error,
         description: text.addExpenseError,
+        console.log('Caught error');
       });
     }
   }
