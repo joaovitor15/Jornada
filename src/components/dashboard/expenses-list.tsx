@@ -87,12 +87,21 @@ export default function ExpensesList() {
   }, [user, toast]);
 
   const handleDelete = async (id: string) => {
+    // Guarda o estado atual caso a exclusão falhe e precisemos reverter
+    const originalExpenses = [...expenses];
+
+    // Atualização Otimista: Remove imediatamente do estado local
+    setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
+
     try {
       await deleteDoc(doc(db, 'expenses', id));
+      // O toast de sucesso pode continuar aqui se desejar,
+      // ou ser removido se a remoção visual for suficiente.
       toast({
         title: text.success,
         description: text.deleteExpenseSuccess,
       });
+      console.log('Expense deleted successfully from Firestore and UI (optimistically)');
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -100,6 +109,9 @@ export default function ExpensesList() {
         title: text.error,
         description: text.deleteExpenseError,
       });
+      // Reverte a atualização otimista se a exclusão no Firestore falhar
+      setExpenses(originalExpenses);
+      console.log('Expense deletion failed, UI reverted');
     }
   };
 
