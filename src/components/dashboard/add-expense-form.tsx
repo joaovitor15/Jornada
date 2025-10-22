@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,7 +65,6 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,6 +76,8 @@ export default function AddExpenseForm({
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -88,7 +88,6 @@ export default function AddExpenseForm({
       return;
     }
 
-    setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'expenses'), {
         userId: user.uid,
@@ -111,13 +110,18 @@ export default function AddExpenseForm({
         title: text.error,
         description: text.addExpenseError,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!isSubmitting) {
+          onOpenChange(open);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{text.addNewExpense}</DialogTitle>
@@ -135,7 +139,11 @@ export default function AddExpenseForm({
                 <FormItem>
                   <FormLabel>{text.description}</FormLabel>
                   <FormControl>
-                    <Input placeholder={text.descriptionPlaceholder} {...field} />
+                    <Input
+                      placeholder={text.descriptionPlaceholder}
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,8 +158,10 @@ export default function AddExpenseForm({
                   <FormControl>
                     <Input
                       type="number"
+                      step="0.01"
                       placeholder={text.amountPlaceholder}
                       {...field}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -167,6 +177,7 @@ export default function AddExpenseForm({
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
+                    disabled={isSubmitting}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -200,6 +211,7 @@ export default function AddExpenseForm({
                             'w-full justify-start text-left font-normal',
                             !field.value && 'text-muted-foreground'
                           )}
+                          disabled={isSubmitting}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value ? (
@@ -216,6 +228,7 @@ export default function AddExpenseForm({
                         selected={field.value}
                         onSelect={field.onChange}
                         initialFocus
+                        disabled={isSubmitting}
                       />
                     </PopoverContent>
                   </Popover>
