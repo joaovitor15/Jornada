@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { expenseCategories } from '@/lib/types';
 import { text } from '@/lib/strings';
+import { useState } from 'react';
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -65,6 +67,7 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isAmountFocused, setIsAmountFocused] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,18 +80,7 @@ export default function AddExpenseForm({
   });
 
   const { isSubmitting } = form.formState;
-  const handleAmountBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-  const value = event.target.value;
-  const parsedValue = parseFloat(value.replace(',', '.')); // Lida com vírgula também
 
-  if (!isNaN(parsedValue)) {
-    form.setValue('amount', parseFloat(parsedValue.toFixed(2)), {
-      shouldValidate: true,
-    });
-    } else if (value.trim() === '') {
-      form.setValue('amount', 0); // Ou undefined
-    }
-  };
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -176,17 +168,20 @@ export default function AddExpenseForm({
                   <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
                     <Input
-                      type="number"
+                      type={isAmountFocused ? 'number' : 'text'}
                       step="0.01"
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       {...field}
-                      value={field.value === undefined || field.value === null || isNaN(field.value) ? '' : String(field.value)} // Ajustar
-                      onChange={(e) => { // Ajustar
-                        const value = e.target.value.replace(',', '.');
-                        const numericValue = value === '' ? undefined : parseFloat(value);
-                        field.onChange(numericValue);
+                      onFocus={() => setIsAmountFocused(true)}
+                      onBlur={() => {
+                        setIsAmountFocused(false);
+                        field.onChange(parseFloat(field.value).toFixed(2));
                       }}
-                        onBlur={handleAmountBlur} // Adicionar
+                      value={isAmountFocused ? field.value : parseFloat(field.value).toFixed(2)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(',', '.');
+                        field.onChange(value);
+                      }}
                       disabled={isSubmitting}
                     />
                   </FormControl>
@@ -241,7 +236,7 @@ export default function AddExpenseForm({
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value ? (
-                            format(field.value, 'PPP')
+                            format(field.value, 'dd/MM/yyyy', { locale: ptBR })
                           ) : (
                             <span>{text.addExpenseForm.pickDate}</span>
                           )}
