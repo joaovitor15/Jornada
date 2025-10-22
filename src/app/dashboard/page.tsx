@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import ExpensesList from '@/components/dashboard/expenses-list';
 import { text } from '@/lib/strings';
@@ -22,7 +22,11 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   if (loading || !user) {
-    return null;
+    return (
+       <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
