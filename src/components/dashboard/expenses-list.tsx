@@ -48,11 +48,7 @@ export default function ExpensesList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) {
-      setExpenses([]);
-      setLoading(false);
-      return;
-    }
+    if (!user) return;
 
     setLoading(true);
     const q = query(
@@ -88,7 +84,7 @@ export default function ExpensesList() {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, toast]);
 
   const handleDelete = async (id: string) => {
     try {
