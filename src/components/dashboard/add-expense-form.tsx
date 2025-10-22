@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -65,6 +66,7 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,8 +78,6 @@ export default function AddExpenseForm({
     },
   });
 
-  const { isSubmitting } = form.formState;
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -88,6 +88,7 @@ export default function AddExpenseForm({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'expenses'), {
         userId: user.uid,
@@ -110,6 +111,8 @@ export default function AddExpenseForm({
         title: text.error,
         description: text.addExpenseError,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
