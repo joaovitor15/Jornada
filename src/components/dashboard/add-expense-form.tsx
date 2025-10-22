@@ -1,4 +1,4 @@
-'use client';
+''''use client';
 
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -45,7 +46,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { expenseCategories } from '@/lib/types';
 import { text } from '@/lib/strings';
-import { useState } from 'react';
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -55,6 +55,13 @@ const formSchema = z.object({
   category: z.string().min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
+
+const defaultFormValues = {
+  description: '',
+  amount: 0,
+  category: '',
+  date: new Date(),
+};
 
 type AddExpenseFormProps = {
   isOpen: boolean;
@@ -67,19 +74,23 @@ export default function AddExpenseForm({
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isAmountFocused, setIsAmountFocused] = useState(false);
+  const [isAmountFocused, setIsAmountFocused] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: '',
-      amount: 0,
-      category: '',
-      date: new Date(),
-    },
+    defaultValues: defaultFormValues,
   });
 
   const { isSubmitting } = form.formState;
+
+  const handleOpenChange = (open: boolean) => {
+    if (!isSubmitting) {
+      if (!open) {
+        form.reset(defaultFormValues);
+      }
+      onOpenChange(open);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -105,8 +116,7 @@ export default function AddExpenseForm({
         title: text.common.success,
         description: text.addExpenseForm.addSuccess,
       });
-      form.reset();
-      onOpenChange(false);
+      handleOpenChange(false); // Close and reset form
     } catch (error) {
       console.error('Error adding document to Firestore: ', error);
       toast({
@@ -116,16 +126,13 @@ export default function AddExpenseForm({
       });
     }
   }
+  
+  const formatAmountForDisplay = (value: number) => {
+    return value.toFixed(2).replace('.', ',');
+  }
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!isSubmitting) {
-          onOpenChange(open);
-        }
-      }}
-    >
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         className="sm:max-w-[425px]"
         onInteractOutside={(e) => {
@@ -139,10 +146,7 @@ export default function AddExpenseForm({
           <DialogDescription>{text.addExpenseForm.description}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="description"
@@ -168,21 +172,20 @@ export default function AddExpenseForm({
                   <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
                     <Input
-                      type={isAmountFocused ? 'number' : 'text'}
-                      step="0.01"
                       placeholder={text.addExpenseForm.amountPlaceholder}
-                      {...field}
-                      onFocus={() => setIsAmountFocused(true)}
-                      onBlur={() => {
-                        setIsAmountFocused(false);
-                        field.onChange(parseFloat(field.value).toFixed(2));
-                      }}
-                      value={isAmountFocused ? field.value : parseFloat(field.value).toFixed(2)}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(',', '.');
-                        field.onChange(value);
-                      }}
                       disabled={isSubmitting}
+                      onFocus={() => setIsAmountFocused(true)}
+                      onBlur={() => setIsAmountFocused(false)}
+                      onChange={(e) => {
+                        const viewValue = e.target.value;
+                        const modelValue = parseFloat(viewValue.replace(',', '.'));
+                        if (!isNaN(modelValue)) {
+                          field.onChange(modelValue);
+                        } else {
+                          field.onChange(0);
+                        }
+                      }}
+                      value={isAmountFocused ? String(field.value).replace('.', ',') : formatAmountForDisplay(field.value)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -197,7 +200,7 @@ export default function AddExpenseForm({
                   <FormLabel>{text.common.category}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     disabled={isSubmitting}
                   >
                     <FormControl>
@@ -250,6 +253,7 @@ export default function AddExpenseForm({
                         onSelect={field.onChange}
                         initialFocus
                         disabled={isSubmitting}
+                        locale={ptBR}
                       />
                     </PopoverContent>
                   </Popover>
@@ -278,3 +282,4 @@ export default function AddExpenseForm({
     </Dialog>
   );
 }
+'''
