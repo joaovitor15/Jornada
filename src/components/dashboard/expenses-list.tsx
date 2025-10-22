@@ -83,8 +83,8 @@ export default function ExpensesList() {
         setLoading(false);
         toast({
           variant: 'destructive',
-          title: text.error,
-          description: text.fetchExpensesError,
+          title: text.common.error,
+          description: text.expensesList.fetchError,
         });
       }
     );
@@ -100,15 +100,15 @@ export default function ExpensesList() {
     try {
       await deleteDoc(doc(db, 'expenses', id));
       toast({
-        title: text.success,
-        description: text.deleteExpenseSuccess,
+        title: text.common.success,
+        description: text.expensesList.deleteSuccess,
       });
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
         variant: 'destructive',
-        title: text.error,
-        description: text.deleteExpenseError,
+        title: text.common.error,
+        description: text.expensesList.deleteError,
       });
       setExpenses(originalExpenses);
     }
@@ -127,8 +127,8 @@ export default function ExpensesList() {
       <Card className="mt-6">
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
-            <p>{text.noExpensesYet}</p>
-            <p>{text.clickToAddExpense}</p>
+            <p>{text.expensesList.noExpenses}</p>
+            <p>{text.expensesList.clickToAdd}</p>
           </div>
         </CardContent>
       </Card>
@@ -138,16 +138,16 @@ export default function ExpensesList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{text.expenses}</CardTitle>
+        <CardTitle>{text.expensesList.title}</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{text.date}</TableHead>
-              <TableHead>{text.description}</TableHead>
-              <TableHead>{text.category}</TableHead>
-              <TableHead className="text-right">{text.amountHeader}</TableHead>
+              <TableHead>{text.common.date}</TableHead>
+              <TableHead>{text.common.description}</TableHead>
+              <TableHead>{text.common.category}</TableHead>
+              <TableHead className="text-right">{text.common.amount}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -179,19 +179,19 @@ export default function ExpensesList() {
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>
-                          {text.deleteConfirmationTitle}
+                          {text.expensesList.deleteConfirmTitle}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                          {text.deleteConfirmationDescription}
+                          {text.expensesList.deleteConfirmDescription}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>{text.cancel}</AlertDialogCancel>
+                        <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(expense.id!)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          {text.delete}
+                          {text.common.delete}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

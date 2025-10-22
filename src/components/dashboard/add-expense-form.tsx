@@ -47,10 +47,10 @@ import { text } from '@/lib/strings';
 
 const formSchema = z.object({
   description: z.string().min(2, {
-    message: text.descriptionMinChars,
+    message: text.addExpenseForm.validation.descriptionMinChars,
   }),
-  amount: z.coerce.number().positive({ message: text.amountPositive }),
-  category: z.string().min(1, { message: text.pleaseSelectCategory }),
+  amount: z.coerce.number().positive({ message: text.addExpenseForm.validation.amountPositive }),
+  category: z.string().min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
 
@@ -79,14 +79,12 @@ export default function AddExpenseForm({
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('onSubmit started');
     if (!user) {
       toast({
         variant: 'destructive',
-        title: text.error,
-        description: text.youMustBeLoggedIn,
+        title: text.common.error,
+        description: text.addExpenseForm.notLoggedIn,
       });
-      console.log('User not logged in');
       return;
     }
 
@@ -98,26 +96,21 @@ export default function AddExpenseForm({
       date: Timestamp.fromDate(values.date),
     };
 
-    console.log('Attempting to add document with data:', expenseData);
-
     try {
       await addDoc(collection(db, 'expenses'), expenseData);
-      console.log('Doc added successfully');
       toast({
-        title: text.success,
-        description: text.addExpenseSuccess,
+        title: text.common.success,
+        description: text.addExpenseForm.addSuccess,
       });
       form.reset();
       onOpenChange(false);
-      console.log('Form reset and dialog closed');
     } catch (error) {
       console.error('Error adding document to Firestore: ', error);
       toast({
         variant: 'destructive',
-        title: text.error,
-        description: text.addExpenseError,
+        title: text.common.error,
+        description: text.addExpenseForm.addError,
       });
-      console.log('Caught error during Firestore write');
     }
   }
 
@@ -139,8 +132,8 @@ export default function AddExpenseForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.addNewExpense}</DialogTitle>
-          <DialogDescription>{text.addNewExpenseDescription}</DialogDescription>
+          <DialogTitle>{text.addExpenseForm.title}</DialogTitle>
+          <DialogDescription>{text.addExpenseForm.description}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -152,10 +145,10 @@ export default function AddExpenseForm({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{text.description}</FormLabel>
+                  <FormLabel>{text.common.description}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={text.descriptionPlaceholder}
+                      placeholder={text.addExpenseForm.descriptionPlaceholder}
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -169,12 +162,12 @@ export default function AddExpenseForm({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{text.amount}</FormLabel>
+                  <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder={text.amountPlaceholder}
+                      placeholder={text.addExpenseForm.amountPlaceholder}
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -188,7 +181,7 @@ export default function AddExpenseForm({
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{text.category}</FormLabel>
+                  <FormLabel>{text.common.category}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -196,7 +189,7 @@ export default function AddExpenseForm({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={text.selectCategory} />
+                        <SelectValue placeholder={text.addExpenseForm.selectCategory} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -216,7 +209,7 @@ export default function AddExpenseForm({
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>{text.expenseDate}</FormLabel>
+                  <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -232,7 +225,7 @@ export default function AddExpenseForm({
                           {field.value ? (
                             format(field.value, 'PPP')
                           ) : (
-                            <span>{text.pickDate}</span>
+                            <span>{text.addExpenseForm.pickDate}</span>
                           )}
                         </Button>
                       </FormControl>
@@ -263,7 +256,7 @@ export default function AddExpenseForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.addExpense}
+                {text.dashboard.addExpense}
               </Button>
             </DialogFooter>
           </form>

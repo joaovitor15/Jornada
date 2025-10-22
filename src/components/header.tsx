@@ -28,7 +28,7 @@ export default function Header() {
           >
             <Wallet className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              {text.appName}
+              {text.header.appName}
             </span>
           </Link>
         </div>
@@ -36,11 +36,11 @@ export default function Header() {
           <nav className="flex items-center">
             {loading ? null : user ? (
               <Button variant="ghost" onClick={handleLogout}>
-                {text.logout}
+                {text.header.logout}
               </Button>
             ) : (
               <Button asChild variant="ghost">
-                <Link href="/">{text.login}</Link>
+                <Link href="/">{text.auth.login}</Link>
               </Button>
             )}
           </nav>

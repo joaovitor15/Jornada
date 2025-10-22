@@ -6,8 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { text } from '@/lib/strings';
 
 export const metadata: Metadata = {
-  title: text.appName,
-  description: text.appDescription,
+  title: text.header.appName,
+  description: text.header.appDescription,
 };
 
 export default function RootLayout({

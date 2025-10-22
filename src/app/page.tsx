@@ -84,17 +84,17 @@ export default function AuthPage() {
     switch (err.code) {
       case 'auth/user-not-found':
       case 'auth/wrong-password':
-        return text.errorInvalidEmailPassword;
+        return text.auth.errors.invalidEmailPassword;
       case 'auth/email-already-in-use':
-        return text.errorEmailInUse;
+        return text.auth.errors.emailInUse;
       case 'auth/weak-password':
-        return text.errorWeakPassword;
+        return text.auth.errors.weakPassword;
       case 'auth/invalid-email':
-        return text.errorInvalidEmail;
+        return text.auth.errors.invalidEmail;
       case 'auth/popup-closed-by-user':
-        return text.errorPopupClosed;
+        return text.auth.errors.popupClosed;
       default:
-        return text.errorUnexpected;
+        return text.auth.errors.unexpected;
     }
   };
 
@@ -109,7 +109,7 @@ export default function AuthPage() {
       setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: text.signUpFailed,
+        title: text.auth.signUpFailed,
         description: errorMessage,
       });
     } finally {
@@ -128,7 +128,7 @@ export default function AuthPage() {
       setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: text.loginFailed,
+        title: text.auth.loginFailed,
         description: errorMessage,
       });
     } finally {
@@ -148,7 +148,7 @@ export default function AuthPage() {
       setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: text.googleSignInFailed,
+        title: text.auth.googleSignInFailed,
         description: errorMessage,
       });
     } finally {
@@ -169,7 +169,7 @@ export default function AuthPage() {
         ) : (
           <GoogleIcon className="mr-2" />
         )}
-        {text.googleSignIn}
+        {text.auth.googleSignIn}
       </Button>
 
       <div className="relative">
@@ -178,18 +178,18 @@ export default function AuthPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-card px-2 text-muted-foreground">
-            {text.orContinueWith}
+            {text.auth.orContinueWith}
           </span>
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor={isSignUp ? 'signup-email' : 'login-email'}>
-          {text.email}
+          {text.common.email}
         </Label>
         <Input
           id={isSignUp ? 'signup-email' : 'login-email'}
           type="email"
-          placeholder={text.emailPlaceholder}
+          placeholder={text.auth.emailPlaceholder}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -198,7 +198,7 @@ export default function AuthPage() {
       </div>
       <div className="space-y-2">
         <Label htmlFor={isSignUp ? 'signup-password' : 'login-password'}>
-          {text.password}
+          {text.common.password}
         </Label>
         <Input
           id={isSignUp ? 'signup-password' : 'login-password'}
@@ -216,14 +216,14 @@ export default function AuthPage() {
     <div className="w-full max-w-md">
       <Tabs defaultValue="login" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">{text.login}</TabsTrigger>
-          <TabsTrigger value="signup">{text.register}</TabsTrigger>
+          <TabsTrigger value="login">{text.auth.login}</TabsTrigger>
+          <TabsTrigger value="signup">{text.auth.register}</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
           <Card>
             <CardHeader>
-              <CardTitle>{text.welcomeBack}</CardTitle>
-              <CardDescription>{text.welcomeBackDescription}</CardDescription>
+              <CardTitle>{text.auth.welcomeBack}</CardTitle>
+              <CardDescription>{text.auth.welcomeBackDescription}</CardDescription>
             </CardHeader>
             <AuthForm />
             <CardFooter>
@@ -239,7 +239,7 @@ export default function AuthPage() {
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.login}
+                {text.auth.login}
               </Button>
             </CardFooter>
           </Card>
@@ -247,9 +247,9 @@ export default function AuthPage() {
         <TabsContent value="signup">
           <Card>
             <CardHeader>
-              <CardTitle>{text.startYourJourney}</CardTitle>
+              <CardTitle>{text.auth.startYourJourney}</CardTitle>
               <CardDescription>
-                {text.startYourJourneyDescription}
+                {text.auth.startYourJourneyDescription}
               </CardDescription>
             </CardHeader>
             <AuthForm isSignUp />
@@ -266,7 +266,7 @@ export default function AuthPage() {
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.register}
+                {text.auth.register}
               </Button>
             </CardFooter>
           </Card>
