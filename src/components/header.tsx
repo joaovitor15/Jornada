@@ -47,7 +47,7 @@ export default function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex items-center gap-4">
           <Link
-            href={user ? '/dashboard' : '/'}
+            href={user ? '/home' : '/'}
             className="flex items-center space-x-2"
           >
             <Wallet className="h-6 w-6 text-primary" />

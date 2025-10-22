@@ -31,8 +31,13 @@ export const text = {
       unexpected: 'Ocorreu um erro inesperado. Por favor, tente novamente.',
     },
   },
+  summary: {
+    totalBalance: 'Saldo Total',
+    goToDashboard: 'Ver Lançamentos',
+    newTransaction: 'Novo Lançamento',
+  },
   dashboard: {
-    title: 'Lançamento',
+    title: 'Lançamentos',
     addExpense: 'Adicionar Despesa',
   },
   addExpenseForm: {
@@ -54,9 +59,9 @@ export const text = {
     },
   },
   expensesList: {
-    title: 'Despesas',
+    title: 'Histórico de Despesas',
     noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',
-    clickToAdd: "Clique em 'Adicionar Despesa' para começar.",
+    clickToAdd: "Use o botão 'Novo Lançamento' para começar.",
     deleteSuccess: 'Despesa deletada.',
     deleteError: 'Falha ao deletar despesa.',
     fetchError: 'Falha ao buscar despesas.',
