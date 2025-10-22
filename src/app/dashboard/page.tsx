@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
+import ExpensesList from '@/components/dashboard/expenses-list';
 import { text } from '@/lib/strings';
 
 export default function DashboardPage() {
@@ -22,7 +23,7 @@ export default function DashboardPage() {
 
   if (authLoading || !user) {
     return (
-       <div className="flex h-screen w-screen items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
@@ -30,7 +31,8 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto">
-      <div className="flex items-center justify-center mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">{text.myExpenses}</h1>
         <Button
           onClick={() => setIsFormOpen(true)}
           style={{
@@ -45,6 +47,7 @@ export default function DashboardPage() {
       </div>
 
       <AddExpenseForm isOpen={isFormOpen} onOpenChange={setIsFormOpen} />
+      <ExpensesList />
     </div>
   );
 }
