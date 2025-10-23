@@ -66,7 +66,7 @@ const formSchema = z.object({
 
 const defaultFormValues = {
   description: '',
-  amount: undefined,
+  amount: 0,
   category: '',
   date: new Date(),
 };
