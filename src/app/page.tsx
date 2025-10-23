@@ -75,7 +75,7 @@ export default function AuthPage() {
   }
 
   if (user) {
-    router.replace('/home');
+    router.replace('/dashboard');
     return null;
   }
 
@@ -103,7 +103,7 @@ export default function AuthPage() {
     setError(null);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      router.push('/home');
+      router.push('/dashboard');
     } catch (err) {
       const errorMessage = handleAuthError(err as AuthError);
       setError(errorMessage);
@@ -122,7 +122,7 @@ export default function AuthPage() {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/home');
+      router.push('/dashboard');
     } catch (err) {
       const errorMessage = handleAuthError(err as AuthError);
       setError(errorMessage);
@@ -142,7 +142,7 @@ export default function AuthPage() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push('/home');
+      router.push('/dashboard');
     } catch (err) {
       const errorMessage = handleAuthError(err as AuthError);
       setError(errorMessage);
