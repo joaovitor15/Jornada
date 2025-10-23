@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { NumericFormat, type NumericFormatProps, type OnValueChange } from "react-number-format";
+import { NumericFormat, type OnValueChange } from "react-number-format";
 import { Input } from "@/components/ui/input";
 
 type CurrencyInputProps = Omit<
@@ -22,6 +22,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         decimalSeparator=","
         decimalScale={2}
         fixedDecimalScale
+        valueIsNumericString={true}
         onValueChange={(values, sourceInfo) => {
           if (onValueChange) {
             onValueChange(values, sourceInfo);
