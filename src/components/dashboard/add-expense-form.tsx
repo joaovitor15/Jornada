@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -123,7 +122,6 @@ export default function AddExpenseForm({
     };
 
     try {
-      console.log('Submitting expense data:', expenseData);
       await addDoc(collection(db, 'expenses'), expenseData);
       toast({
         title: text.common.success,
@@ -181,39 +179,22 @@ export default function AddExpenseForm({
             <FormField
               control={form.control}
               name="amount"
-              render={({ field }) => {
-                const [displayValue, setDisplayValue] = useState<
-                  string | number
-                >(field.value === 0 ? '' : field.value);
-
-                useEffect(() => {
-                  // Sync display value when form is reset or value changes externally
-                  const value = field.value === 0 ? '' : field.value;
-                  if (value !== displayValue) {
-                    setDisplayValue(value);
-                  }
-                }, [field.value]);
-
-                return (
-                  <FormItem>
-                    <FormLabel>{text.common.amount}</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        placeholder={text.addExpenseForm.amountPlaceholder}
-                        disabled={isSubmitting}
-                        value={displayValue}
-                        onValueChange={(values) => {
-                          // Update local state for visual feedback
-                          setDisplayValue(values.value);
-                          // Update form state with numeric value
-                          field.onChange(values.floatValue || 0);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.amount}</FormLabel>
+                  <FormControl>
+                    <CurrencyInput
+                      placeholder={text.addExpenseForm.amountPlaceholder}
+                      disabled={isSubmitting}
+                      value={field.value}
+                      onValueChange={(values) => {
+                        field.onChange(values.floatValue || 0);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             <FormField
               control={form.control}

@@ -4,19 +4,19 @@ import * as React from 'react';
 import {
   NumericFormat,
   type OnValueChange,
+  type NumberFormatValues,
 } from 'react-number-format';
 
 import { Input } from '@/components/ui/input';
 
-type CurrencyInputProps = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  'prefix'
-> & {
-  onValueChange?: OnValueChange;
-};
+interface CurrencyInputProps {
+  value?: number;
+  onValueChange?: (values: NumberFormatValues) => void;
+  [key: string]: any; // Allow other props
+}
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ onValueChange, ...props }, ref) => {
+  ({ value, onValueChange, ...props }, ref) => {
     return (
       <NumericFormat
         customInput={Input}
@@ -26,6 +26,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         decimalSeparator=","
         decimalScale={2}
         fixedDecimalScale
+        value={value === 0 ? '' : value}
         onValueChange={onValueChange}
         {...props}
       />
