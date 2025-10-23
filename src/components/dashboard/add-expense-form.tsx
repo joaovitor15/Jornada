@@ -10,7 +10,6 @@ import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -48,22 +47,24 @@ import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
 import { type ExpenseCategory } from '@/lib/types';
 
+// 1. Schema validates the string format, but does not transform it.
 const formSchema = z.object({
   description: z.string().min(2, {
     message: text.addExpenseForm.validation.descriptionMinChars,
   }),
-  amount: z.coerce
-    .number()
-    .positive({ message: text.addExpenseForm.validation.amountPositive }),
+  amount: z.string().refine((val) => /^\d+([,]\d{1,2})?$/.test(val), {
+    message: text.addExpenseForm.validation.amountInvalid,
+  }),
   category: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
 
+// 2. The form values match the schema's input types (amount is a string).
 const defaultFormValues = {
   description: '',
-  amount: 0,
+  amount: '',
   category: '',
   date: new Date(),
 };
@@ -99,6 +100,7 @@ export default function AddExpenseForm({
     }
   };
 
+  // 3. The transformation from string to number happens here, in onSubmit.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -109,11 +111,13 @@ export default function AddExpenseForm({
       return;
     }
 
+    const numericAmount = parseFloat(values.amount.replace(',', '.'));
+
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
       description: values.description,
-      amount: values.amount,
+      amount: numericAmount,
       category: values.category,
       date: Timestamp.fromDate(values.date),
     };
@@ -177,16 +181,18 @@ export default function AddExpenseForm({
                 <FormItem>
                   <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
+                    {/* 4. The input now works with strings, preventing UI bugs. */}
                     <Input
                       placeholder="0,00"
                       disabled={isSubmitting}
+                      {...field}
                       onChange={(e) => {
-                        const viewValue = e.target.value;
-                        const sanitized = viewValue.replace(/[^0-9,]/g, '');
-                        const modelValue = parseFloat(sanitized.replace(',', '.'));
-                        field.onChange(isNaN(modelValue) ? 0 : modelValue);
+                        const value = e.target.value;
+                        const sanitizedValue = value
+                          .replace(/[^0-9,]/g, '')
+                          .replace(/,(?=.*,)/g, '');
+                        field.onChange(sanitizedValue);
                       }}
-                      value={field.value ? String(field.value).replace('.', ',') : ''}
                     />
                   </FormControl>
                   <FormMessage />

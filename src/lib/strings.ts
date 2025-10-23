@@ -59,6 +59,7 @@ export const text = {
     validation: {
       descriptionMinChars: 'A descrição deve ter pelo menos 2 caracteres.',
       amountPositive: 'O valor deve ser um número positivo.',
+      amountInvalid: 'Por favor, insira um valor válido. Ex: 12,34',
       pleaseSelectCategory: 'Por favor, selecione uma categoria.',
     },
   },
