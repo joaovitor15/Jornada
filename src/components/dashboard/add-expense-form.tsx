@@ -185,9 +185,9 @@ export default function AddExpenseForm({
                     <CurrencyInput
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
-                      value={String(field.value)}
+                      value={field.value}
                       onValueChange={(values) => {
-                        field.onChange(values.value);
+                        field.onChange(values.floatValue);
                       }}
                     />
                   </FormControl>
