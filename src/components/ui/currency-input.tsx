@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { NumericFormat, type OnValueChange } from "react-number-format";
+import { NumericFormat, type OnValueChange, type NumericFormatProps } from "react-number-format";
 import { Input } from "@/components/ui/input";
 
 type CurrencyInputProps = Omit<
@@ -12,7 +12,17 @@ type CurrencyInputProps = Omit<
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ onChange, onValueChange, ...props }, ref) => {
+  ({ onChange, onValueChange, onFocus, ...props }, ref) => {
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const inputElement = e.target;
+    const length = inputElement.value.length;
+    setTimeout(() => {
+      inputElement.setSelectionRange(length, length);
+    }, 0);
+    if (onFocus) {
+    onFocus(e);
+    }
+  };
     return (
       <NumericFormat
         customInput={Input}
@@ -28,14 +38,11 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
             onValueChange(values, sourceInfo);
           }
           if (onChange) {
-            const event = {
-              target: {
-                value: values.value,
-                name: props.name,
-              },
-            } as React.ChangeEvent<HTMLInputElement>;
+            onChange(values.floatValue as any);
+          }
             onChange(event);
           }
+          onFocus={handleFocus}
         }}
         {...props}
       />
