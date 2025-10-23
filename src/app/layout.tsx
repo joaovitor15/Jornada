@@ -1,3 +1,4 @@
+'use client';
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/auth-provider';
@@ -5,6 +6,7 @@ import { ProfileProvider } from '@/components/profile-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { text } from '@/lib/strings';
 import AppLayout from '@/components/layout/AppLayout';
+import { AddExpenseModalProvider } from '@/contexts/AddExpenseModalContext';
 
 export const metadata: Metadata = {
   title: text.header.appName,
@@ -33,7 +35,9 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <ProfileProvider>
-            <AppLayout>{children}</AppLayout>
+            <AddExpenseModalProvider>
+              <AppLayout>{children}</AppLayout>
+            </AddExpenseModalProvider>
             <Toaster />
           </ProfileProvider>
         </AuthProvider>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { usePathname } from 'next/navigation';
+import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import { Button } from '@/components/ui/button';
 import { SheetClose } from '@/components/ui/sheet';
 import {
@@ -15,12 +16,12 @@ import {
 import { text } from '@/lib/strings';
 
 interface SidebarNavProps {
-  onAddExpenseClick: () => void;
   onSheetClose: () => void; // Function to close the sheet
 }
 
-export default function SidebarNav({ onAddExpenseClick, onSheetClose }: SidebarNavProps) {
+export default function SidebarNav({ onSheetClose }: SidebarNavProps) {
   const { user, signOut } = useAuth();
+  const { setIsFormOpen } = useAddExpenseModal();
   const pathname = usePathname();
   const userName = user?.email?.split('@')[0] || 'User';
 
@@ -30,7 +31,7 @@ export default function SidebarNav({ onAddExpenseClick, onSheetClose }: SidebarN
   };
 
   const handleAddExpense = () => {
-    onAddExpenseClick();
+    setIsFormOpen(true);
     onSheetClose(); // Close sheet when opening the form
   };
 

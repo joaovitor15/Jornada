@@ -1,8 +1,8 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
+import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import {
   personalCategories,
   homeCategories,
@@ -23,7 +23,7 @@ import { Menu } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { isFormOpen, setIsFormOpen } = useAddExpenseModal();
   const [isSheetOpen, setIsSheetOpen] = useState(false); // State for the navigation sheet
   const { activeProfile } = useProfile();
   const [currentCategories, setCurrentCategories] = useState<
@@ -72,16 +72,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }
         />
         <SheetContent side="left" className="p-0 w-[250px] sm:w-[300px]">
-          <SidebarNav
-            onAddExpenseClick={() => setIsFormOpen(true)}
-            onSheetClose={() => setIsSheetOpen(false)} // Pass down the function to close the sheet
-          />
+          <SidebarNav onSheetClose={() => setIsSheetOpen(false)} />
         </SheetContent>
       </Sheet>
 
       <main className="h-full flex-1 overflow-auto">{children}</main>
 
-      {/* The modal for adding an expense is still managed here */}
+      {/* The modal for adding an expense is now managed by context */}
       <AddExpenseForm
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
