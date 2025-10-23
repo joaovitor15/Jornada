@@ -82,7 +82,6 @@ export default function AddExpenseForm({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const [isAmountFocused, setIsAmountFocused] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -136,23 +135,6 @@ export default function AddExpenseForm({
     }
   }
 
-  const formatAmountForDisplay = (value: number) => {
-    if (value === 0) return '';
-    return value.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
-  const getAmountDisplayValue = (fieldValue: number) => {
-    if (isAmountFocused) {
-      // When focused, show a raw number with a comma, or empty if 0.
-      return fieldValue === 0 ? '' : String(fieldValue).replace('.', ',');
-    }
-    // When not focused, format it as currency.
-    return formatAmountForDisplay(fieldValue);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -196,23 +178,15 @@ export default function AddExpenseForm({
                   <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={text.addExpenseForm.amountPlaceholder}
+                      placeholder="0,00"
                       disabled={isSubmitting}
-                      onFocus={() => setIsAmountFocused(true)}
-                      onBlur={() => {
-                        setIsAmountFocused(false);
-                        field.onBlur(); // Important to trigger validation
-                      }}
                       onChange={(e) => {
                         const viewValue = e.target.value;
-                        // Sanitize the input to allow only numbers and a single comma
-                        const sanitized = viewValue
-                          .replace(/[^0-9,]/g, '')
-                          .replace(/,(?=.*,)/g, '');
+                        const sanitized = viewValue.replace(/[^0-9,]/g, '');
                         const modelValue = parseFloat(sanitized.replace(',', '.'));
                         field.onChange(isNaN(modelValue) ? 0 : modelValue);
                       }}
-                      value={getAmountDisplayValue(field.value)}
+                      value={field.value ? String(field.value).replace('.', ',') : ''}
                     />
                   </FormControl>
                   <FormMessage />
