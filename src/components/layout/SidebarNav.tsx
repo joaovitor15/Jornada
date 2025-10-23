@@ -1,5 +1,4 @@
 'use client';
-
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { usePathname } from 'next/navigation';
@@ -38,12 +37,12 @@ export default function SidebarNav({ onSheetClose }: SidebarNavProps) {
   const navLinks = [
     {
       href: '/dashboard',
-      label: 'Dashboard',
+      label: text.sidebar.dashboard,
       icon: LayoutDashboard,
     },
     {
       href: '/lancamentos',
-      label: 'Expenses',
+      label: text.sidebar.releases,
       icon: List,
     },
   ];
@@ -61,17 +60,6 @@ export default function SidebarNav({ onSheetClose }: SidebarNavProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4">
-        <Button
-          onClick={handleAddExpense}
-          className="w-full justify-start text-left mb-4"
-          variant="ghost"
-          size="lg"
-        >
-          <PlusCircle className="mr-2 h-5 w-5" />
-          {text.summary.newTransaction}
-        </Button>
-
         <nav className="flex flex-col gap-1">
           {navLinks.map((link) => (
             <SheetClose asChild key={link.href}>
@@ -88,13 +76,12 @@ export default function SidebarNav({ onSheetClose }: SidebarNavProps) {
             </SheetClose>
           ))}
         </nav>
-      </div>
-
+     
       {/* Footer */}
       <div className="mt-auto border-t p-4">
         <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
           <LogOut className="mr-2 h-5 w-5" />
-          Log out
+          {text.sidebar.logout}
         </Button>
       </div>
     </div>
