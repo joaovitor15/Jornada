@@ -21,7 +21,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         thousandSeparator="."
         decimalSeparator=","
         decimalScale={2}
-        fixedDecimalScale
+        fixedDecimalScale={true}
         valueIsNumericString={true}
         onValueChange={(values, sourceInfo) => {
           if (onValueChange) {
