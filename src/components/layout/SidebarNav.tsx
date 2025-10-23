@@ -75,13 +75,12 @@ export default function SidebarNav({ onAddExpenseClick, onSheetClose }: SidebarN
             </SheetClose>
           ))}
         </nav>
-      </div>
-
+     
       {/* Footer */}
       <div className="mt-auto border-t p-4">
         <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
           <LogOut className="mr-2 h-5 w-5" />
-          Sair
+          {text.sidebar.logout}
         </Button>
       </div>
     </div>
