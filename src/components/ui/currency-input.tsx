@@ -16,7 +16,18 @@ type CurrencyInputProps = Omit<
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ onChange, onValueChange, ...props }, ref) => {
+  ({ onChange, onValueChange, onFocus, ...props }, ref) => {
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      const inputElement = e.target;
+      const length = inputElement.value.length;
+      setTimeout(() => {
+        inputElement.setSelectionRange(length, length);
+      }, 0);
+      if (onFocus) {
+        onFocus(e);
+      }
+    };
+
     return (
       <NumericFormat
         customInput={Input}
@@ -25,11 +36,14 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         thousandSeparator="."
         decimalSeparator=","
         decimalScale={2}
+        fixedDecimalScale
+        valueIsNumericString
         onValueChange={(values, sourceInfo) => {
           if (onValueChange) {
             onValueChange(values, sourceInfo);
           }
           if (onChange) {
+            // Create a synthetic event to pass to the original onChange
             const event = {
               target: {
                 name: props.name,
@@ -39,6 +53,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
             onChange(event);
           }
         }}
+        onFocus={handleFocus}
         {...props}
       />
     );
