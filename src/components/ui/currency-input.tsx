@@ -40,7 +40,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
           if (onChange) {
             onChange(values.floatValue as any);
           }
-            onChange(event);
+            
           }
           onFocus={handleFocus}
         }}
