@@ -39,6 +39,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         fixedDecimalScale
         valueIsNumericString
         onValueChange={(values, sourceInfo) => {
+          console.log('NumericFormat values:', values);
           if (onValueChange) {
             onValueChange(values, sourceInfo);
           }
