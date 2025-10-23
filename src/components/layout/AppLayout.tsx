@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '@/hooks/use-profile';
 import {
@@ -18,9 +17,19 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarTrigger,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
+import { useProfile } from '@/hooks/use-profile';
+import { 
+  personalCategories,
+  homeCategories,
+  businessCategories,
+  type ExpenseCategory,
+} from '@/lib/types';
 import { text } from '@/lib/strings';
+import Link from 'next/link';
+import { Wallet } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
