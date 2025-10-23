@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/auth-provider';
 import { ProfileProvider } from '@/components/profile-provider';
-import Header from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 import { text } from '@/lib/strings';
+import AppLayout from '@/components/layout/AppLayout';
 
 export const metadata: Metadata = {
   title: text.header.appName,
@@ -33,12 +33,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <ProfileProvider>
-            <div className="flex min-h-screen w-full flex-col">
-              <Header />
-              <main className="flex flex-1 flex-col items-center p-4 sm:p-6 md:p-8">
-                {children}
-              </main>
-            </div>
+            <AppLayout>{children}</AppLayout>
             <Toaster />
           </ProfileProvider>
         </AuthProvider>
