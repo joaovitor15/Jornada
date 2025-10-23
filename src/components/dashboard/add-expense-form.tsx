@@ -52,7 +52,7 @@ const formSchema = z.object({
   description: z.string().min(2, {
     message: text.addExpenseForm.validation.descriptionMinChars,
   }),
-  amount: z
+  amount: z.coerce
     .number({
       required_error: text.addExpenseForm.validation.amountRequired,
       invalid_type_error: text.addExpenseForm.validation.amountRequired,
@@ -185,9 +185,9 @@ export default function AddExpenseForm({
                     <CurrencyInput
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
-                      value={field.value}
+                      value={String(field.value)}
                       onValueChange={(values) => {
-                        field.onChange(values.floatValue);
+                        field.onChange(values.value);
                       }}
                     />
                   </FormControl>
