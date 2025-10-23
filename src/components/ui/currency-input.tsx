@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { NumericFormat, type NumericFormatProps } from "react-number-format";
+import { NumericFormat, type NumericFormatProps, type OnValueChange } from "react-number-format";
 import { Input } from "@/components/ui/input";
 
 type CurrencyInputProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "prefix"
 > & {
-  onValueChange?: NumericFormatProps["onValueChange"];
+  onValueChange?: OnValueChange;
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
@@ -20,15 +20,12 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
         inputMode="decimal"
         thousandSeparator="."
         decimalSeparator=","
-        prefix="R$ "
         decimalScale={2}
         fixedDecimalScale
         onValueChange={(values, sourceInfo) => {
-          // This allows us to pass the numeric value to react-hook-form
           if (onValueChange) {
             onValueChange(values, sourceInfo);
           }
-          // This keeps the standard onChange event working if needed
           if (onChange) {
             const event = {
               target: {
