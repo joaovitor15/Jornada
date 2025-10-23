@@ -1,39 +1,75 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import React, { useState, useEffect } from 'react';
+import { useProfile } from '@/hooks/use-profile';
+import {
+  personalCategories,
+  homeCategories,
+  businessCategories,
+  type ExpenseCategory,
+} from '@/lib/types';
+
 import { MenuItems } from './menu-items';
 import {
   Sidebar,
   SidebarProvider,
   SidebarHeader,
+  SidebarHeaderLogo,
   SidebarContent,
   SidebarFooter,
   SidebarTrigger,
-  SidebarInput,
 } from '@/components/ui/sidebar';
+import AddExpenseForm from '@/components/dashboard/add-expense-form';
+import { text } from '@/lib/strings';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { activeProfile } = useProfile();
+  const [currentCategories, setCurrentCategories] = useState<
+    readonly ExpenseCategory[]
+  >(personalCategories);
 
-  if (loading || !user) {
-    return <>{children}</>;
-  }
+  useEffect(() => {
+    // Sets the available expense categories based on the active profile
+    switch (activeProfile) {
+      case 'Personal':
+        setCurrentCategories(personalCategories);
+        break;
+      case 'Home':
+        setCurrentCategories(homeCategories);
+        break;
+      case 'Business':
+        setCurrentCategories(businessCategories);
+        break;
+      default:
+        setCurrentCategories(personalCategories);
+    }
+  }, [activeProfile]);
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <SidebarInput placeholder="Search..." />
+          <SidebarHeaderLogo>{text.header.appName}</SidebarHeaderLogo>
           <SidebarTrigger />
         </SidebarHeader>
+
         <SidebarContent>
-          <MenuItems />
+          {/* Pass the function to open the modal to the menu items */}
+          <MenuItems onAddExpenseClick={() => setIsFormOpen(true)} />
         </SidebarContent>
-        <SidebarFooter>
-          {/* Add footer items here */}
-        </SidebarFooter>
+
+        <SidebarFooter>{/* Optional: Settings, Logout */}</SidebarFooter>
       </Sidebar>
+
       <main className="h-full flex-1 overflow-auto">{children}</main>
+
+      {/* Render the modal at the layout level */}
+      <AddExpenseForm
+        isOpen={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        categories={currentCategories}
+      />
     </SidebarProvider>
   );
 }
