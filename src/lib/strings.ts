@@ -8,8 +8,8 @@ export const text = {
     business: 'Negócios',
   },
   sidebar: {
-    dashboard: 'Dashboard',             
-    releases: 'Lançamentos',               
+    dashboard: 'Dashboard',
+    releases: 'Lançamentos',
     logout: 'Sair',
   },
   auth: {
@@ -49,7 +49,7 @@ export const text = {
     description:
       'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
     descriptionPlaceholder: 'Ex: Café',
-    amountPlaceholder: '0,00',
+    amountPlaceholder: 'R$ 0,00',
     selectCategory: 'Selecione uma categoria',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
@@ -58,8 +58,8 @@ export const text = {
     notLoggedIn: 'Você deve estar logado para adicionar uma despesa.',
     validation: {
       descriptionMinChars: 'A descrição deve ter pelo menos 2 caracteres.',
-      amountPositive: 'O valor deve ser um número positivo.',
-      amountInvalid: 'Por favor, insira um valor válido. Ex: 12,34',
+      amountPositive: 'O valor deve ser maior que zero.',
+      amountRequired: 'O valor é obrigatório.',
       pleaseSelectCategory: 'Por favor, selecione uma categoria.',
     },
   },

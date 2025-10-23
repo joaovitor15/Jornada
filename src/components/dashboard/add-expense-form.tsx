@@ -46,25 +46,27 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
 import { type ExpenseCategory } from '@/lib/types';
+import { CurrencyInput } from '../ui/currency-input';
 
-// 1. Schema validates the string format, but does not transform it.
 const formSchema = z.object({
   description: z.string().min(2, {
     message: text.addExpenseForm.validation.descriptionMinChars,
   }),
-  amount: z.string().refine((val) => /^\d+([,]\d{1,2})?$/.test(val), {
-    message: text.addExpenseForm.validation.amountInvalid,
-  }),
+  amount: z
+    .number({
+      required_error: text.addExpenseForm.validation.amountRequired,
+      invalid_type_error: text.addExpenseForm.validation.amountRequired,
+    })
+    .positive({ message: text.addExpenseForm.validation.amountPositive }),
   category: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
 
-// 2. The form values match the schema's input types (amount is a string).
 const defaultFormValues = {
   description: '',
-  amount: '',
+  amount: undefined,
   category: '',
   date: new Date(),
 };
@@ -93,14 +95,13 @@ export default function AddExpenseForm({
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
+      onOpenChange(open);
       if (!open) {
         form.reset(defaultFormValues);
       }
-      onOpenChange(open);
     }
   };
 
-  // 3. The transformation from string to number happens here, in onSubmit.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
@@ -111,13 +112,11 @@ export default function AddExpenseForm({
       return;
     }
 
-    const numericAmount = parseFloat(values.amount.replace(',', '.'));
-
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
       description: values.description,
-      amount: numericAmount,
+      amount: values.amount,
       category: values.category,
       date: Timestamp.fromDate(values.date),
     };
@@ -128,7 +127,7 @@ export default function AddExpenseForm({
         title: text.common.success,
         description: text.addExpenseForm.addSuccess,
       });
-      handleOpenChange(false); // Close and reset form
+      handleOpenChange(false);
     } catch (error) {
       console.error('Error adding document to Firestore: ', error);
       toast({
@@ -138,7 +137,6 @@ export default function AddExpenseForm({
       });
     }
   }
-
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -156,7 +154,10 @@ export default function AddExpenseForm({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
             <FormField
               control={form.control}
               name="description"
@@ -181,18 +182,10 @@ export default function AddExpenseForm({
                 <FormItem>
                   <FormLabel>{text.common.amount}</FormLabel>
                   <FormControl>
-                    {/* 4. The input now works with strings, preventing UI bugs. */}
-                    <Input
-                      placeholder="0,00"
+                    <CurrencyInput
+                      placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
                       {...field}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const sanitizedValue = value
-                          .replace(/[^0-9,]/g, '')
-                          .replace(/,(?=.*,)/g, '');
-                        field.onChange(sanitizedValue);
-                      }}
                     />
                   </FormControl>
                   <FormMessage />
