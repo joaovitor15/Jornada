@@ -20,13 +20,6 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
-import { useProfile } from '@/hooks/use-profile';
-import { 
-  personalCategories,
-  homeCategories,
-  businessCategories,
-  type ExpenseCategory,
-} from '@/lib/types';
 import { text } from '@/lib/strings';
 import Link from 'next/link';
 import { Wallet } from 'lucide-react';
