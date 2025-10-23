@@ -1,0 +1,101 @@
+'use client';
+
+import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { SheetClose } from '@/components/ui/sheet';
+import {
+  UserCircle,
+  PlusCircle,
+  LayoutDashboard,
+  List,
+  LogOut,
+} from 'lucide-react';
+import { text } from '@/lib/strings';
+
+interface SidebarNavProps {
+  onAddExpenseClick: () => void;
+  onSheetClose: () => void; // Function to close the sheet
+}
+
+export default function SidebarNav({ onAddExpenseClick, onSheetClose }: SidebarNavProps) {
+  const { user, signOut } = useAuth();
+  const pathname = usePathname();
+  const userName = user?.email?.split('@')[0] || 'User';
+
+  const handleLogout = () => {
+    signOut();
+    onSheetClose(); // Close sheet on logout
+  };
+
+  const handleAddExpense = () => {
+    onAddExpenseClick();
+    onSheetClose(); // Close sheet when opening the form
+  };
+
+  const navLinks = [
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      href: '/lancamentos',
+      label: 'Expenses',
+      icon: List,
+    },
+  ];
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="border-b p-4">
+        <div className="flex items-center gap-3">
+          <UserCircle className="h-10 w-10 text-muted-foreground" />
+          <div className="flex flex-col">
+            <span className="font-semibold capitalize">{userName}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 p-4">
+        <Button
+          onClick={handleAddExpense}
+          className="w-full justify-start text-left mb-4"
+          variant="ghost"
+          size="lg"
+        >
+          <PlusCircle className="mr-2 h-5 w-5" />
+          {text.summary.newTransaction}
+        </Button>
+
+        <nav className="flex flex-col gap-1">
+          {navLinks.map((link) => (
+            <SheetClose asChild key={link.href}>
+              <Link href={link.href}>
+                <Button
+                  variant={pathname === link.href ? 'secondary' : 'ghost'}
+                  className="w-full justify-start"
+                  size="lg"
+                >
+                  <link.icon className="mr-2 h-5 w-5" />
+                  {link.label}
+                </Button>
+              </Link>
+            </SheetClose>
+          ))}
+        </nav>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-auto border-t p-4">
+        <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
+          <LogOut className="mr-2 h-5 w-5" />
+          Log out
+        </Button>
+      </div>
+    </div>
+  );
+}

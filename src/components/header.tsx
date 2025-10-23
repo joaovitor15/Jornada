@@ -1,11 +1,8 @@
 'use client';
 
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,20 +29,21 @@ function ProfileIcon({ profile }: { profile: string }) {
   }
 }
 
-export default function Header() {
-  const { user, loading } = useAuth();
-  const { activeProfile, setActiveProfile } = useProfile();
-  const router = useRouter();
+interface HeaderProps {
+  menuTrigger?: React.ReactNode;
+}
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/');
-  };
+export default function Header({ menuTrigger }: HeaderProps) {
+  const { user } = useAuth();
+  const { activeProfile, setActiveProfile } = useProfile();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <div className="mr-4 flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* Render the menu trigger (hamburger button) if the user is logged in */}
+          {user && menuTrigger}
+
           <Link
             href={user ? '/dashboard' : '/'}
             className="flex items-center space-x-2"
@@ -55,7 +53,9 @@ export default function Header() {
               {text.header.appName}
             </span>
           </Link>
+        </div>
 
+        <div className="flex flex-1 items-center justify-end space-x-2">
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -63,7 +63,7 @@ export default function Header() {
                   <ProfileIcon profile={activeProfile} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{text.header.profiles}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
@@ -86,19 +86,6 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-        </div>
-        <div className="flex flex-1 items-center justify-end space-x-2">
-          <nav className="flex items-center">
-            {loading ? null : user ? (
-              <Button variant="ghost" onClick={handleLogout}>
-                {text.header.logout}
-              </Button>
-            ) : (
-              <Button asChild variant="ghost">
-                <Link href="/">{text.auth.login}</Link>
-              </Button>
-            )}
-          </nav>
         </div>
       </div>
     </header>

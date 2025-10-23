@@ -1,5 +1,7 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import {
   personalCategories,
@@ -8,24 +10,21 @@ import {
   type ExpenseCategory,
 } from '@/lib/types';
 
-import { MenuItems } from './menu-items';
-import {
-  Sidebar,
-  SidebarProvider,
-  SidebarHeader,
-  SidebarHeaderLogo,
-  SidebarContent,
-  SidebarFooter,
-  SidebarTrigger,
-  SidebarInset,
-} from '@/components/ui/sidebar';
+import Header from '@/components/header';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
-import { text } from '@/lib/strings';
-import Link from 'next/link';
-import { Wallet } from 'lucide-react';
+import SidebarNav from './SidebarNav';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet, 
+  SheetContent, 
+  SheetTrigger
+} from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false); // State for the navigation sheet
   const { activeProfile } = useProfile();
   const [currentCategories, setCurrentCategories] = useState<
     readonly ExpenseCategory[]
@@ -48,30 +47,46 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [activeProfile]);
 
+  // If no user, render the children in a basic layout (e.g., for login page)
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background font-sans antialiased">
+        <Header />
+        <main className="h-full flex-1 overflow-auto">{children}</main>
+      </div>
+    );
+  }
+
+  // Main layout for logged-in users
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarHeaderLogo>{text.header.appName}</SidebarHeaderLogo>
-          <SidebarTrigger />
-        </SidebarHeader>
-
-        <SidebarContent>
-          {/* Pass the function to open the modal to the menu items */}
-          <MenuItems onAddExpenseClick={() => setIsFormOpen(true)} />
-        </SidebarContent>
-
-        <SidebarFooter>{/* Optional: Settings, Logout */}</SidebarFooter>
-      </Sidebar>
+    <div className="min-h-screen bg-background font-sans antialiased">
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <Header
+          menuTrigger={
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+          }
+        />
+        <SheetContent side="left" className="p-0 w-[250px] sm:w-[300px]">
+          <SidebarNav
+            onAddExpenseClick={() => setIsFormOpen(true)}
+            onSheetClose={() => setIsSheetOpen(false)} // Pass down the function to close the sheet
+          />
+        </SheetContent>
+      </Sheet>
 
       <main className="h-full flex-1 overflow-auto">{children}</main>
 
-      {/* Render the modal at the layout level */}
+      {/* The modal for adding an expense is still managed here */}
       <AddExpenseForm
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
         categories={currentCategories}
       />
-    </SidebarProvider>
+    </div>
   );
 }
