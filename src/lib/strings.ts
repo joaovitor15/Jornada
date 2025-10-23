@@ -4,7 +4,7 @@ export const text = {
     appDescription: 'Sua jornada pessoal de controle de despesas',
     logout: 'Sair',
     profiles: 'Perfis',
-    personal: 'Pessoal',
+    personal: 'Joao',
     home: 'Casa',
     business: 'Negócios',
   },

@@ -40,7 +40,7 @@ export default function DashboardPage() {
       case 'Home':
         setCurrentCategories(homeCategories);
         break;
-      case 'Business
+      case 'Busines':
         setCurrentCategories(businessCategories);
         break;
       default:
