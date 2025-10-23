@@ -49,7 +49,7 @@ export const text = {
     description:
       'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
     descriptionPlaceholder: 'Ex: Café',
-    amountPlaceholder: ,
+    amountPlaceholder: '0,00',
     selectCategory: 'Selecione uma categoria',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
