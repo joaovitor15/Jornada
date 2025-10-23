@@ -40,7 +40,7 @@ export default function DashboardPage() {
       case 'Home':
         setCurrentCategories(homeCategories);
         break;
-      case 'Busines':
+      case 'Business':
         setCurrentCategories(businessCategories);
         break;
       default:
@@ -101,6 +101,7 @@ export default function DashboardPage() {
       <AddExpenseForm
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
+        categories={currentCategories}
       />
     </div>
   );

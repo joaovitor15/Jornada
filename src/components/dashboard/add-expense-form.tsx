@@ -10,7 +10,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -45,8 +45,8 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { type ExpenseCategory } from '@/lib/types';
 import { text } from '@/lib/strings';
+import { type ExpenseCategory } from '@/lib/types';
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -60,6 +60,13 @@ const formSchema = z.object({
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   date: z.date(),
 });
+
+const defaultFormValues = {
+  description: '',
+  amount: 0,
+  category: '',
+  date: new Date(),
+};
 
 type AddExpenseFormProps = {
   isOpen: boolean;
@@ -75,27 +82,19 @@ export default function AddExpenseForm({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAmountFocused, setIsAmountFocused] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: '',
-      amount: 0,
-      category: '',
-      date: new Date(),
-    },
+    defaultValues: defaultFormValues,
   });
+
+  const { isSubmitting } = form.formState;
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
       if (!open) {
-        form.reset({
-          description: '',
-          amount: 0,
-          category: '',
-          date: new Date(),
-        });
+        form.reset(defaultFormValues);
       }
       onOpenChange(open);
     }
@@ -111,8 +110,6 @@ export default function AddExpenseForm({
       return;
     }
 
-    setIsSubmitting(true);
-
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
@@ -123,13 +120,12 @@ export default function AddExpenseForm({
     };
 
     try {
-      console.log('Adding expense:', expenseData);
       await addDoc(collection(db, 'expenses'), expenseData);
       toast({
         title: text.common.success,
         description: text.addExpenseForm.addSuccess,
       });
-      handleOpenChange(false);
+      handleOpenChange(false); // Close and reset form
     } catch (error) {
       console.error('Error adding document to Firestore: ', error);
       toast({
@@ -137,10 +133,25 @@ export default function AddExpenseForm({
         title: text.common.error,
         description: text.addExpenseForm.addError,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   }
+
+  const formatAmountForDisplay = (value: number) => {
+    if (value === 0) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const getAmountDisplayValue = (fieldValue: number) => {
+    if (isAmountFocused) {
+      // When focused, show a raw number with a comma, or empty if 0.
+      return fieldValue === 0 ? '' : String(fieldValue).replace('.', ',');
+    }
+    // When not focused, format it as currency.
+    return formatAmountForDisplay(fieldValue);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -159,10 +170,7 @@ export default function AddExpenseForm({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="description"
@@ -183,100 +191,33 @@ export default function AddExpenseForm({
             <FormField
               control={form.control}
               name="amount"
-              render={({ field }) => {
-                const [displayValue, setDisplayValue] = useState('');
-                const [isFocused, setIsFocused] = useState(false);
-
-                useEffect(() => {
-                  if (field.value > 0 && !isFocused) {
-                    setDisplayValue(
-                      field.value.toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })
-                    );
-                  } else if (field.value === 0 && !isFocused) {
-                    setDisplayValue('');
-                  } else if (isFocused) {
-                    // Keep the raw value when focused
-                     if (field.value > 0) {
-                       setDisplayValue(String(field.value.toFixed(2)).replace('.', ','));
-                     } else {
-                       setDisplayValue('');
-                     }
-                  }
-                }, [field.value, isFocused]);
-
-
-                const handleInputChange = (
-                  e: React.ChangeEvent<HTMLInputElement>
-                ) => {
-                  let value = e.target.value;
-                  value = value.replace(/[^0-9,]/g, '');
-
-                  const commaCount = value.split(',').length - 1;
-                  if (commaCount > 1) {
-                    value = value.substring(0, value.lastIndexOf(','));
-                  }
-
-                  if (value.includes(',')) {
-                    const parts = value.split(',');
-                    if (parts[1] && parts[1].length > 2) {
-                      parts[1] = parts[1].substring(0, 2);
-                      value = parts.join(',');
-                    }
-                  }
-
-                  setDisplayValue(value);
-
-                  const numericValue = parseFloat(value.replace(',', '.'));
-                  field.onChange(isNaN(numericValue) ? 0 : numericValue);
-                };
-
-                const handleFocus = () => {
-                  setIsFocused(true);
-                  if (field.value > 0) {
-                    setDisplayValue(String(field.value.toFixed(2)).replace('.', ','));
-                  } else {
-                    setDisplayValue('');
-                  }
-                };
-
-                const handleBlur = () => {
-                  setIsFocused(false);
-                  field.onBlur();
-                  if (field.value > 0) {
-                     setDisplayValue(
-                       field.value.toLocaleString('pt-BR', {
-                         minimumFractionDigits: 2,
-                         maximumFractionDigits: 2,
-                       })
-                     );
-                  } else {
-                     setDisplayValue('');
-                  }
-                };
-
-                return (
-                  <FormItem>
-                    <FormLabel>{text.common.amount}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder={text.addExpenseForm.amountPlaceholder}
-                        disabled={isSubmitting}
-                        value={displayValue}
-                        onChange={handleInputChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        ref={field.ref}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.amount}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={text.addExpenseForm.amountPlaceholder}
+                      disabled={isSubmitting}
+                      onFocus={() => setIsAmountFocused(true)}
+                      onBlur={() => {
+                        setIsAmountFocused(false);
+                        field.onBlur(); // Important to trigger validation
+                      }}
+                      onChange={(e) => {
+                        const viewValue = e.target.value;
+                        // Sanitize the input to allow only numbers and a single comma
+                        const sanitized = viewValue
+                          .replace(/[^0-9,]/g, '')
+                          .replace(/,(?=.*,)/g, '');
+                        const modelValue = parseFloat(sanitized.replace(',', '.'));
+                        field.onChange(isNaN(modelValue) ? 0 : modelValue);
+                      }}
+                      value={getAmountDisplayValue(field.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
             <FormField
               control={form.control}
