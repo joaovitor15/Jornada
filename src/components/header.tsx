@@ -59,7 +59,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full">
                   <ProfileIcon profile={activeProfile} />
                 </Button>
               </DropdownMenuTrigger>
