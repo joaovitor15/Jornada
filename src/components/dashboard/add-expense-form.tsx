@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -130,15 +130,19 @@ export default function AddExpenseForm({
       : [];
 
   useEffect(() => {
-    if (selectedCategory) {
+    // Check if selectedCategory is valid and exists in categoryConfig
+    if (selectedCategory && categoryConfig[selectedCategory]) {
       const subcategoriesForSelected = categoryConfig[selectedCategory];
-      if (subcategoriesForSelected && subcategoriesForSelected.length === 1) {
+      if (subcategoriesForSelected.length === 1) {
         setValue('subcategory', subcategoriesForSelected[0]);
       } else {
         resetField('subcategory');
       }
+    } else {
+      resetField('subcategory');
     }
   }, [selectedCategory, categoryConfig, setValue, resetField]);
+
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -245,69 +249,70 @@ export default function AddExpenseForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="mainCategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.mainCategory}</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // The useEffect will handle subcategory logic
-                    }}
-                    value={field.value}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={text.addExpenseForm.selectCategory}
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {allCategories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="subcategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.subcategory}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isSubmitting || !selectedCategory}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={text.addExpenseForm.selectSubcategory}
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subcategories.map((subcategory) => (
-                        <SelectItem key={subcategory} value={subcategory}>
-                          {subcategory}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="mainCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.mainCategory}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectCategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="subcategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.subcategory}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting || !selectedCategory}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectSubcategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subcategories.map((subcategory) => (
+                          <SelectItem key={subcategory} value={subcategory}>
+                            {subcategory}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="paymentMethod"
