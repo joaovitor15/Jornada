@@ -77,7 +77,7 @@ const formSchema = z.object({
 
 const defaultFormValues = {
   description: '',
-  amount: 0,
+  amount: undefined,
   subcategory: '',
   paymentMethod: '' as PaymentMethod,
   date: new Date(),
@@ -223,9 +223,9 @@ export default function AddExpenseForm({
                     <CurrencyInput
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
-                      value={String(field.value)}
+                      value={String(field.value || '')}
                       onValueChange={(values) => {
-                        field.onChange(values.value);
+                        field.onChange(values.floatValue);
                       }}
                     />
                   </FormControl>
