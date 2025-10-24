@@ -53,7 +53,6 @@ import {
   homeCategories,
   businessCategories,
 } from '@/lib/categories';
-import { Combobox } from '../ui/combobox';
 
 const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
@@ -267,18 +266,26 @@ export default function AddExpenseForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{text.common.subcategory}</FormLabel>
-                    <Combobox
-                      options={subcategories.map((sub) => ({
-                        value: sub,
-                        label: sub,
-                      }))}
+                    <Select
+                      onValueChange={field.onChange}
                       value={field.value}
-                      onChange={field.onChange}
-                      placeholder={text.addExpenseForm.selectSubcategory}
-                      searchPlaceholder={text.addExpenseForm.selectSubcategory}
-                      emptyText={text.addExpenseForm.noSubcategoryFound}
                       disabled={isSubmitting || !selectedCategory}
-                    />
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectSubcategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subcategories.map((sub) => (
+                          <SelectItem key={sub} value={sub}>
+                            {sub}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -296,7 +303,7 @@ export default function AddExpenseForm({
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
                         disabled={isSubmitting}
-                        value={String(field.value || '')}
+                        value={field.value}
                         onValueChange={(values) => {
                           field.onChange(values.floatValue);
                         }}
