@@ -52,6 +52,7 @@ export const text = {
     amountPlaceholder: '0,00',
     selectCategory: 'Selecione uma categoria',
     selectSubcategory: 'Selecione uma subcategoria',
+    noSubcategoryFound: 'Nenhuma subcategoria encontrada.',
     selectPaymentMethod: 'Selecione uma forma de pagamento',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',

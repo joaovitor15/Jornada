@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,6 +53,7 @@ import {
   homeCategories,
   businessCategories,
 } from '@/lib/categories';
+import { Combobox } from '../ui/combobox';
 
 const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
@@ -130,7 +131,6 @@ export default function AddExpenseForm({
       : [];
 
   useEffect(() => {
-    // Check if selectedCategory is valid and exists in categoryConfig
     if (selectedCategory && categoryConfig[selectedCategory]) {
       const subcategoriesForSelected = categoryConfig[selectedCategory];
       if (subcategoriesForSelected && subcategoriesForSelected.length === 1) {
@@ -142,7 +142,6 @@ export default function AddExpenseForm({
       resetField('subcategory');
     }
   }, [selectedCategory, categoryConfig, setValue, resetField]);
-
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -229,6 +228,62 @@ export default function AddExpenseForm({
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="mainCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.mainCategory}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectCategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="subcategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.subcategory}</FormLabel>
+                    <Combobox
+                      options={subcategories.map((sub) => ({
+                        value: sub,
+                        label: sub,
+                      }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder={text.addExpenseForm.selectSubcategory}
+                      searchPlaceholder={text.addExpenseForm.selectSubcategory}
+                      emptyText={text.addExpenseForm.noSubcategoryFound}
+                      disabled={isSubmitting || !selectedCategory}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -241,7 +296,7 @@ export default function AddExpenseForm({
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
                         disabled={isSubmitting}
-                        value={field.value}
+                        value={String(field.value || '')}
                         onValueChange={(values) => {
                           field.onChange(values.floatValue);
                         }}
@@ -282,72 +337,7 @@ export default function AddExpenseForm({
                 )}
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="mainCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.common.mainCategory}</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                      }}
-                      value={field.value}
-                      disabled={isSubmitting}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.addExpenseForm.selectCategory}
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {allCategories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="subcategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.common.subcategory}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting || !selectedCategory}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.addExpenseForm.selectSubcategory}
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subcategories.map((subcategory) => (
-                          <SelectItem key={subcategory} value={subcategory}>
-                            {subcategory}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
+
             <FormField
               control={form.control}
               name="date"
