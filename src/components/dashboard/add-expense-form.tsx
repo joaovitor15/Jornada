@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,9 +57,7 @@ import {
 const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
 const formSchema = z.object({
-  description: z.string().min(2, {
-    message: text.addExpenseForm.validation.descriptionMinChars,
-  }),
+  description: z.string().optional(),
   amount: z.coerce
     .number({
       required_error: text.addExpenseForm.validation.amountRequired,
@@ -121,6 +119,7 @@ export default function AddExpenseForm({
 
   const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
+  const selectedSubcategory = watch('subcategory');
 
   const categoryConfig = getCategoryConfig(activeProfile);
   const allCategories = Object.keys(categoryConfig);
@@ -128,19 +127,35 @@ export default function AddExpenseForm({
     selectedCategory && categoryConfig[selectedCategory]
       ? categoryConfig[selectedCategory]
       : [];
+  
+  const allSubcategories = useMemo(() => {
+    return Object.values(categoryConfig).flat();
+  }, [categoryConfig]);
+
+  const subcategoryToMainCategoryMap = useMemo(() => {
+    const map: { [key: string]: string } = {};
+    for (const mainCategory in categoryConfig) {
+      for (const subcategory of categoryConfig[mainCategory]) {
+        map[subcategory] = mainCategory;
+      }
+    }
+    return map;
+  }, [categoryConfig]);
 
   useEffect(() => {
     if (selectedCategory && categoryConfig[selectedCategory]) {
-      const subcategoriesForSelected = categoryConfig[selectedCategory];
-      if (subcategoriesForSelected && subcategoriesForSelected.length === 1) {
-        setValue('subcategory', subcategoriesForSelected[0]);
-      } else {
-        resetField('subcategory');
-      }
-    } else {
       resetField('subcategory');
     }
-  }, [selectedCategory, categoryConfig, setValue, resetField]);
+  }, [selectedCategory, categoryConfig, resetField]);
+  
+  useEffect(() => {
+    if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
+      const correspondingMainCategory = subcategoryToMainCategoryMap[selectedSubcategory];
+      if (selectedCategory !== correspondingMainCategory) {
+        setValue('mainCategory', correspondingMainCategory, { shouldValidate: true });
+      }
+    }
+  }, [selectedSubcategory, subcategoryToMainCategoryMap, setValue, selectedCategory]);
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -164,7 +179,7 @@ export default function AddExpenseForm({
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
-      description: values.description,
+      description: values.description || '',
       amount: values.amount,
       mainCategory: values.mainCategory,
       subcategory: values.subcategory,
@@ -228,7 +243,7 @@ export default function AddExpenseForm({
               )}
             />
             <div className="grid grid-cols-2 gap-4">
-              <FormField
+               <FormField
                 control={form.control}
                 name="mainCategory"
                 render={({ field }) => (
@@ -269,7 +284,7 @@ export default function AddExpenseForm({
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
-                      disabled={isSubmitting || !selectedCategory}
+                      disabled={isSubmitting}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -279,11 +294,17 @@ export default function AddExpenseForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {subcategories.map((sub) => (
-                          <SelectItem key={sub} value={sub}>
-                            {sub}
-                          </SelectItem>
-                        ))}
+                        {selectedCategory
+                          ? subcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))
+                          : allSubcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
