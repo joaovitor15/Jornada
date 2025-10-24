@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -118,8 +119,26 @@ export default function AddExpenseForm({
     defaultValues: defaultFormValues,
   });
 
-  const { isSubmitting, watch } = form;
+  const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
+
+  const categoryConfig = getCategoryConfig(activeProfile);
+  const allCategories = Object.keys(categoryConfig);
+  const subcategories =
+    selectedCategory && categoryConfig[selectedCategory]
+      ? categoryConfig[selectedCategory]
+      : [];
+
+  useEffect(() => {
+    if (selectedCategory) {
+      const subcategoriesForSelected = categoryConfig[selectedCategory];
+      if (subcategoriesForSelected && subcategoriesForSelected.length === 1) {
+        setValue('subcategory', subcategoriesForSelected[0]);
+      } else {
+        resetField('subcategory');
+      }
+    }
+  }, [selectedCategory, categoryConfig, setValue, resetField]);
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -129,10 +148,6 @@ export default function AddExpenseForm({
       }
     }
   };
-
-  const categoryConfig = getCategoryConfig(activeProfile);
-  const allCategories = Object.keys(categoryConfig);
-  const subcategories = selectedCategory ? categoryConfig[selectedCategory] : [];
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -220,7 +235,7 @@ export default function AddExpenseForm({
                     <CurrencyInput
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
-                      value={String(field.value || '')}
+                      value={field.value}
                       onValueChange={(values) => {
                         field.onChange(values.floatValue);
                       }}
@@ -239,7 +254,7 @@ export default function AddExpenseForm({
                   <Select
                     onValueChange={(value) => {
                       field.onChange(value);
-                      form.resetField('subcategory');
+                      // The useEffect will handle subcategory logic
                     }}
                     value={field.value}
                     disabled={isSubmitting}
