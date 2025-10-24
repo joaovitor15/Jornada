@@ -133,7 +133,7 @@ export default function AddExpenseForm({
     // Check if selectedCategory is valid and exists in categoryConfig
     if (selectedCategory && categoryConfig[selectedCategory]) {
       const subcategoriesForSelected = categoryConfig[selectedCategory];
-      if (subcategoriesForSelected.length === 1) {
+      if (subcategoriesForSelected && subcategoriesForSelected.length === 1) {
         setValue('subcategory', subcategoriesForSelected[0]);
       } else {
         resetField('subcategory');
@@ -229,26 +229,60 @@ export default function AddExpenseForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.amount}</FormLabel>
-                  <FormControl>
-                    <CurrencyInput
-                      placeholder={text.addExpenseForm.amountPlaceholder}
-                      disabled={isSubmitting}
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.amount}</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        placeholder={text.addExpenseForm.amountPlaceholder}
+                        disabled={isSubmitting}
+                        value={field.value}
+                        onValueChange={(values) => {
+                          field.onChange(values.floatValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.paymentMethod}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
                       value={field.value}
-                      onValueChange={(values) => {
-                        field.onChange(values.floatValue);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectPaymentMethod}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -313,36 +347,7 @@ export default function AddExpenseForm({
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.paymentMethod}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={text.addExpenseForm.selectPaymentMethod}
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method} value={method}>
-                          {method}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
             <FormField
               control={form.control}
               name="date"
