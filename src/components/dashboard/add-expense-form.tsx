@@ -65,9 +65,12 @@ const formSchema = z.object({
       invalid_type_error: text.addExpenseForm.validation.amountRequired,
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
-  subcategory: z
+  mainCategory: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
+  subcategory: z
+    .string()
+    .min(1, { message: text.addExpenseForm.validation.pleaseSelectSubcategory }),
   paymentMethod: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectPaymentMethod }),
@@ -78,6 +81,7 @@ const formSchema = z.object({
 const defaultFormValues = {
   description: '',
   amount: undefined,
+  mainCategory: '',
   subcategory: '',
   paymentMethod: '' as PaymentMethod,
   date: new Date(),
@@ -114,7 +118,8 @@ export default function AddExpenseForm({
     defaultValues: defaultFormValues,
   });
 
-  const { isSubmitting } = form.formState;
+  const { isSubmitting, watch } = form;
+  const selectedCategory = watch('mainCategory');
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -126,14 +131,8 @@ export default function AddExpenseForm({
   };
 
   const categoryConfig = getCategoryConfig(activeProfile);
-  const subcategoryToCategoryMap: { [key: string]: string } = {};
-  Object.entries(categoryConfig).forEach(([category, subcategories]) => {
-    subcategories.forEach(subcategory => {
-      subcategoryToCategoryMap[subcategory] = category;
-    });
-  });
-
-  const allSubcategories = Object.keys(subcategoryToCategoryMap);
+  const allCategories = Object.keys(categoryConfig);
+  const subcategories = selectedCategory ? categoryConfig[selectedCategory] : [];
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -145,14 +144,12 @@ export default function AddExpenseForm({
       return;
     }
 
-    const mainCategory = subcategoryToCategoryMap[values.subcategory];
-
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
       description: values.description,
       amount: values.amount,
-      mainCategory: mainCategory,
+      mainCategory: values.mainCategory,
       subcategory: values.subcategory,
       paymentMethod: values.paymentMethod,
       date: Timestamp.fromDate(values.date),
@@ -235,12 +232,15 @@ export default function AddExpenseForm({
             />
             <FormField
               control={form.control}
-              name="subcategory"
+              name="mainCategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{text.common.subcategory}</FormLabel>
+                  <FormLabel>{text.common.mainCategory}</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.resetField('subcategory');
+                    }}
                     value={field.value}
                     disabled={isSubmitting}
                   >
@@ -252,7 +252,37 @@ export default function AddExpenseForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {allSubcategories.map((subcategory) => (
+                      {allCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="subcategory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.subcategory}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting || !selectedCategory}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={text.addExpenseForm.selectSubcategory}
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subcategories.map((subcategory) => (
                         <SelectItem key={subcategory} value={subcategory}>
                           {subcategory}
                         </SelectItem>
