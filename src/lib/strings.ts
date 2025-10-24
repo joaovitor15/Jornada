@@ -5,7 +5,7 @@ export const text = {
     profiles: 'Perfis',
     personal: 'Joao',
     home: 'Casa',
-    business: 'Negócios',
+    business: 'Farmacia',
   },
   sidebar: {
     dashboard: 'Dashboard',
