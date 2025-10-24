@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { SheetClose } from '@/components/ui/sheet';
 import {
   UserCircle,
-  PlusCircle,
   LayoutDashboard,
   List,
-  LogOut,
+  Power,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 
@@ -79,9 +78,14 @@ export default function SidebarNav({ onSheetClose }: SidebarNavProps) {
      
       {/* Footer */}
       <div className="mt-auto border-t p-4">
-        <Button onClick={handleLogout} variant="outline" className="w-full justify-start">
-          <LogOut className="mr-2 h-5 w-5" />
-          {text.sidebar.logout}
+        <Button 
+          onClick={handleLogout} 
+          variant="ghost" 
+          size="icon"
+          className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Sair"
+        >
+          <Power className="h-5 w-5" />
         </Button>
       </div>
     </div>
