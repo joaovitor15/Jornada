@@ -1,14 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/use-profile';
 import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
-import {
-  personalCategories,
-  homeCategories,
-  businessCategories,
-  type ExpenseCategory,
-} from '@/lib/types';
 
 import Header from '@/components/header';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
@@ -25,27 +18,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { isFormOpen, setIsFormOpen } = useAddExpenseModal();
   const [isSheetOpen, setIsSheetOpen] = useState(false); // State for the navigation sheet
-  const { activeProfile } = useProfile();
-  const [currentCategories, setCurrentCategories] = useState<
-    readonly ExpenseCategory[]
-  >(personalCategories);
-
-  useEffect(() => {
-    // Sets the available expense categories based on the active profile
-    switch (activeProfile) {
-      case 'Personal':
-        setCurrentCategories(personalCategories);
-        break;
-      case 'Home':
-        setCurrentCategories(homeCategories);
-        break;
-      case 'Business':
-        setCurrentCategories(businessCategories);
-        break;
-      default:
-        setCurrentCategories(personalCategories);
-    }
-  }, [activeProfile]);
 
   // If no user, render the children in a basic layout (e.g., for login page)
   if (!user) {
@@ -82,7 +54,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AddExpenseForm
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
-        categories={currentCategories}
       />
     </div>
   );

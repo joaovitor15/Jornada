@@ -80,6 +80,8 @@ export const text = {
     description: 'Descrição',
     amount: 'Valor',
     category: 'Categoria',
+    mainCategory: 'Categoria Principal',
+    subcategory: 'Subcategoria',
     date: 'Data',
     paymentMethod: 'Forma de Pagamento',
     actions: 'Ações',

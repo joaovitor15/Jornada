@@ -45,8 +45,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
-import { type ExpenseCategory, type PaymentMethod } from '@/lib/types';
+import { type PaymentMethod } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
+import { personalCategories } from '@/lib/categories';
 
 const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
@@ -60,7 +61,7 @@ const formSchema = z.object({
       invalid_type_error: text.addExpenseForm.validation.amountRequired,
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
-  category: z
+  subcategory: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
   paymentMethod: z
@@ -73,21 +74,28 @@ const formSchema = z.object({
 const defaultFormValues = {
   description: '',
   amount: 0,
-  category: '',
+  subcategory: '',
   paymentMethod: '' as PaymentMethod,
   date: new Date(),
 };
 
+const subcategoryToCategoryMap: { [key: string]: string } = {};
+Object.entries(personalCategories).forEach(([category, subcategories]) => {
+  subcategories.forEach(subcategory => {
+    subcategoryToCategoryMap[subcategory] = category;
+  });
+});
+
+const allSubcategories = Object.keys(subcategoryToCategoryMap);
+
 type AddExpenseFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  categories: readonly ExpenseCategory[];
 };
 
 export default function AddExpenseForm({
   isOpen,
   onOpenChange,
-  categories,
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -119,12 +127,15 @@ export default function AddExpenseForm({
       return;
     }
 
+    const mainCategory = subcategoryToCategoryMap[values.subcategory];
+
     const expenseData = {
       userId: user.uid,
       profile: activeProfile,
       description: values.description,
       amount: values.amount,
-      category: values.category,
+      mainCategory: mainCategory,
+      subcategory: values.subcategory,
       paymentMethod: values.paymentMethod,
       date: Timestamp.fromDate(values.date),
     };
@@ -206,10 +217,10 @@ export default function AddExpenseForm({
             />
             <FormField
               control={form.control}
-              name="category"
+              name="subcategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{text.common.category}</FormLabel>
+                  <FormLabel>{text.common.subcategory}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -223,9 +234,9 @@ export default function AddExpenseForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {allSubcategories.map((subcategory) => (
+                        <SelectItem key={subcategory} value={subcategory}>
+                          {subcategory}
                         </SelectItem>
                       ))}
                     </SelectContent>
