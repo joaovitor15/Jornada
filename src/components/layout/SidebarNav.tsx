@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
-  UserCircle,
   LayoutDashboard,
   List,
   Power,
@@ -18,9 +17,8 @@ import {
 } from '@/components/ui/tooltip';
 
 export default function SidebarNav() {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const pathname = usePathname();
-  const userName = user?.email?.split('@')[0] || 'User';
 
   const navLinks = [
     {
@@ -38,13 +36,6 @@ export default function SidebarNav() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex h-full flex-col items-center">
-        {/* Header */}
-        <div className="border-b p-4 w-full">
-          <div className="flex items-center justify-center">
-            <UserCircle className="h-10 w-10 text-muted-foreground" />
-          </div>
-        </div>
-
         {/* Content */}
         <nav className="flex flex-col items-center gap-2 py-4">
           {navLinks.map((link) => (
