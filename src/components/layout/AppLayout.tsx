@@ -36,8 +36,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Header
           menuTrigger={
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
+              <Button variant="outline" size="icon" className="rounded-full">
+                <Menu className="h-5 w-5 text-muted-foreground" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
