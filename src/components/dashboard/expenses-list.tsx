@@ -151,6 +151,7 @@ export default function ExpensesList() {
               <TableHead>{text.common.date}</TableHead>
               <TableHead>{text.common.description}</TableHead>
               <TableHead>{text.common.category}</TableHead>
+              <TableHead>{text.common.paymentMethod}</TableHead>
               <TableHead className="text-right">{text.common.amount}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -166,6 +167,9 @@ export default function ExpensesList() {
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{expense.category}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{expense.paymentMethod}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   {new Intl.NumberFormat('pt-BR', {

@@ -45,8 +45,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
-import { type ExpenseCategory } from '@/lib/types';
+import { type ExpenseCategory, type PaymentMethod } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
+
+const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -61,6 +63,10 @@ const formSchema = z.object({
   category: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
+  paymentMethod: z
+    .string()
+    .min(1, { message: text.addExpenseForm.validation.pleaseSelectPaymentMethod }),
+
   date: z.date(),
 });
 
@@ -68,6 +74,7 @@ const defaultFormValues = {
   description: '',
   amount: 0,
   category: '',
+  paymentMethod: '' as PaymentMethod,
   date: new Date(),
 };
 
@@ -118,6 +125,7 @@ export default function AddExpenseForm({
       description: values.description,
       amount: values.amount,
       category: values.category,
+      paymentMethod: values.paymentMethod,
       date: Timestamp.fromDate(values.date),
     };
 
@@ -186,9 +194,9 @@ export default function AddExpenseForm({
                     <CurrencyInput
                       placeholder={text.addExpenseForm.amountPlaceholder}
                       disabled={isSubmitting}
-                      value={field.value}
+                      value={String(field.value)}
                       onValueChange={(values) => {
-                        field.onChange(values.floatValue || 0);
+                        field.onChange(values.value);
                       }}
                     />
                   </FormControl>
@@ -218,6 +226,36 @@ export default function AddExpenseForm({
                       {categories.map((category) => (
                         <SelectItem key={category} value={category}>
                           {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.paymentMethod}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={text.addExpenseForm.selectPaymentMethod}
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {paymentMethods.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
                         </SelectItem>
                       ))}
                     </SelectContent>

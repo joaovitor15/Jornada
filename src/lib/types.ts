@@ -2,6 +2,8 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
 
+export type PaymentMethod = 'Pix' | 'Cash' | 'Debit' | 'Credit';
+
 export type Expense = {
   id?: string;
   userId: string;
@@ -10,6 +12,7 @@ export type Expense = {
   amount: number;
   category: string;
   date: Timestamp;
+  paymentMethod: PaymentMethod;
 };
 
 export const personalCategories = [
