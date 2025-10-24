@@ -38,7 +38,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
   const { activeProfile, setActiveProfile } = useProfile();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <div className="flex items-center gap-2">
           {/* Render the menu trigger (hamburger button) if the user is logged in */}

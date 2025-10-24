@@ -58,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
        
-        <main className="flex-1 p-4 sm:p-6 md:p-8 h-[calc(100vh-56px)] overflow-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 md:p-8 h-[calc(100vh-56px)] overflow-auto border-t">{children}</main>
       </div>
 
       <AddExpenseForm
