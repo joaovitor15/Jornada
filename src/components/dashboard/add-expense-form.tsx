@@ -45,9 +45,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
-import { type PaymentMethod } from '@/lib/types';
+import { type PaymentMethod, type Profile } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
-import { personalCategories } from '@/lib/categories';
+import {
+  personalCategories,
+  homeCategories,
+  businessCategories,
+} from '@/lib/categories';
 
 const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
 
@@ -79,18 +83,22 @@ const defaultFormValues = {
   date: new Date(),
 };
 
-const subcategoryToCategoryMap: { [key: string]: string } = {};
-Object.entries(personalCategories).forEach(([category, subcategories]) => {
-  subcategories.forEach(subcategory => {
-    subcategoryToCategoryMap[subcategory] = category;
-  });
-});
-
-const allSubcategories = Object.keys(subcategoryToCategoryMap);
-
 type AddExpenseFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+};
+
+const getCategoryConfig = (profile: Profile) => {
+  switch (profile) {
+    case 'Personal':
+      return personalCategories;
+    case 'Home':
+      return homeCategories;
+    case 'Business':
+      return businessCategories;
+    default:
+      return {};
+  }
 };
 
 export default function AddExpenseForm({
@@ -116,6 +124,16 @@ export default function AddExpenseForm({
       }
     }
   };
+
+  const categoryConfig = getCategoryConfig(activeProfile);
+  const subcategoryToCategoryMap: { [key: string]: string } = {};
+  Object.entries(categoryConfig).forEach(([category, subcategories]) => {
+    subcategories.forEach(subcategory => {
+      subcategoryToCategoryMap[subcategory] = category;
+    });
+  });
+
+  const allSubcategories = Object.keys(subcategoryToCategoryMap);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
