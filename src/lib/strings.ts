@@ -37,7 +37,8 @@ export const text = {
   summary: {
     totalBalance: 'Saldo Total',
     goToDashboard: 'Ver Lançamentos',
-    newTransaction: 'Novo Lançamento',
+    newTransaction: 'Nova Despesa',
+    newIncome: 'Nova Receita',
   },
   dashboard: {
     title: 'Lançamentos',
@@ -66,6 +67,9 @@ export const text = {
       pleaseSelectSubcategory: 'Por favor, selecione uma subcategoria.',
       pleaseSelectPaymentMethod: 'Por favor, selecione uma forma de pagamento.',
     },
+  },
+  addIncomeForm: {
+    title: 'Adicionar Nova Receita',
   },
   editExpenseForm: {
     title: 'Editar Despesa',

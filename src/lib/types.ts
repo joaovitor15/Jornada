@@ -15,3 +15,13 @@ export type Expense = {
   date: Timestamp;
   paymentMethod: PaymentMethod;
 };
+
+export type Income = {
+  id?: string;
+  userId: string;
+  profile: Profile;
+  description: string;
+  amount: number;
+  category: string;
+  date: Timestamp;
+};

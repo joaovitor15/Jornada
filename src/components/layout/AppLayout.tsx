@@ -13,11 +13,14 @@ import {
 } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
+import AddIncomeForm from '../dashboard/add-income-form';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { isFormOpen, setIsFormOpen } = useAddExpenseModal();
+  const { isFormOpen: isExpenseFormOpen, setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
+  const { isFormOpen: isIncomeFormOpen, setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
   const isMobile = useIsMobile();
 
   if (!user) {
@@ -61,8 +64,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <AddExpenseForm
-          isOpen={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          isOpen={isExpenseFormOpen}
+          onOpenChange={setIsExpenseFormOpen}
+        />
+
+        <AddIncomeForm
+          isOpen={isIncomeFormOpen}
+          onOpenChange={setIsIncomeFormOpen}
         />
       </div>
     </Sheet>
