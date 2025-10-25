@@ -52,9 +52,6 @@ export default function Header({ menuTrigger }: HeaderProps) {
               {text.header.appName}
             </span>
           </Link>
-        </div>
-
-        <div className="flex flex-1 items-center justify-end space-x-2">
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -62,7 +59,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
                   <ProfileIcon profile={activeProfile} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="start">
                 <DropdownMenuLabel>{text.header.profiles}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
@@ -85,6 +82,10 @@ export default function Header({ menuTrigger }: HeaderProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+        </div>
+
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          {/* Empty div to push the left content to the left */}
         </div>
       </div>
     </header>
