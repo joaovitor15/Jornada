@@ -10,7 +10,7 @@ export const text = {
   sidebar: {
     dashboard: 'Dashboard',
     releases: 'Lançamentos',
-    logout: 'Sair',
+    logout: 'Sai',
   },
   auth: {
     login: 'Entrar',
