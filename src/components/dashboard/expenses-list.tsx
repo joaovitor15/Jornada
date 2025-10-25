@@ -203,13 +203,13 @@ export default function ExpensesList() {
                         <Table>
                           <TableHeader className="bg-muted/50">
                             <TableRow>
-                              <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.mainCategory}</TableHead>
-                              <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.subcategory}</TableHead>
-                              <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.description}</TableHead>
-                              <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.date}</TableHead>
-                              <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.paymentMethod}</TableHead>
-                              <TableHead className="h-10 px-4 align-middle font-medium text-muted-foreground text-xs uppercase text-right">{text.common.amount}</TableHead>
-                              <TableHead className="h-10 px-4 align-middle font-medium text-muted-foreground text-xs uppercase w-[100px] text-center">Opções</TableHead>
+                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.mainCategory}</TableHead>
+                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.subcategory}</TableHead>
+                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.description}</TableHead>
+                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.date}</TableHead>
+                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.paymentMethod}</TableHead>
+                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">{text.common.amount}</TableHead>
+                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">Opções</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -218,28 +218,28 @@ export default function ExpensesList() {
                                 'hover:bg-muted/50',
                                 index % 2 === 0 ? 'bg-muted/25' : ''
                               )}>
-                                <TableCell className="py-3 px-4 align-middle">
+                                <TableCell className="py-2 px-2 align-middle">
                                   <Badge variant="secondary">{expense.mainCategory}</Badge>
                                 </TableCell>
-                                <TableCell className="py-3 px-4 align-middle">
+                                <TableCell className="py-2 px-2 align-middle">
                                   <Badge variant="secondary">{expense.subcategory}</Badge>
                                 </TableCell>
-                                <TableCell className="font-medium py-3 px-4 align-middle">
+                                <TableCell className="font-medium py-2 px-2 align-middle">
                                   {expense.description || '-'}
                                 </TableCell>
-                                <TableCell className="py-3 px-4 align-middle">
+                                <TableCell className="py-2 px-2 align-middle">
                                   {format(expense.date.toDate(), 'dd/MM/yyyy')}
                                 </TableCell>
-                                <TableCell className="py-3 px-4 align-middle">
+                                <TableCell className="py-2 px-2 align-middle">
                                   <Badge variant="outline">{expense.paymentMethod}</Badge>
                                 </TableCell>
-                                <TableCell className="text-right py-3 px-4 align-middle">
+                                <TableCell className="text-right py-2 px-2 align-middle">
                                   {new Intl.NumberFormat('pt-BR', {
                                     style: 'currency',
                                     currency: 'BRL',
                                   }).format(expense.amount)}
                                 </TableCell>
-                                <TableCell className="py-3 px-4 align-middle text-center">
+                                <TableCell className="py-2 px-2 align-middle text-center">
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button variant="ghost" className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10">
