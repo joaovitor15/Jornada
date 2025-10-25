@@ -148,10 +148,10 @@ export default function ExpensesList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{text.common.date}</TableHead>
-              <TableHead>{text.common.description}</TableHead>
               <TableHead>{text.common.mainCategory}</TableHead>
               <TableHead>{text.common.subcategory}</TableHead>
+              <TableHead>{text.common.description}</TableHead>
+              <TableHead>{text.common.date}</TableHead>
               <TableHead>{text.common.paymentMethod}</TableHead>
               <TableHead className="text-right">{text.common.amount}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -161,16 +161,16 @@ export default function ExpensesList() {
             {expenses.map((expense) => (
               <TableRow key={expense.id}>
                 <TableCell>
-                  {format(expense.date.toDate(), 'dd/MM/yyyy')}
+                  <Badge variant="secondary">{expense.mainCategory}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{expense.subcategory}</Badge>
                 </TableCell>
                 <TableCell className="font-medium">
                   {expense.description}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{expense.mainCategory}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{expense.subcategory}</Badge>
+                  {format(expense.date.toDate(), 'dd/MM/yyyy')}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{expense.paymentMethod}</Badge>
