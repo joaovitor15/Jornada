@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Wallet, Briefcase, Home, User, Circle } from 'lucide-react';
+import { Wallet, Briefcase, Home, User, Circle, Gear } from 'lucide-react';
 import { text } from '@/lib/strings';
 
 function ProfileIcon({ profile }: { profile: string }) {
@@ -85,7 +85,11 @@ export default function Header({ menuTrigger }: HeaderProps) {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2">
-          {/* Empty div to push the left content to the left */}
+          {user && (
+            <Button variant="outline" size="icon" className="h-8 w-8 rounded-full">
+              <Gear className="h-5 w-5 text-primary" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
