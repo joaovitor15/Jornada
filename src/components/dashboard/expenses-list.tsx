@@ -42,7 +42,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '../ui/button';
 import { Trash2, Loader2, MoreHorizontal, Pencil, Copy } from 'lucide-react';
 import {
@@ -245,19 +244,19 @@ export default function ExpensesList() {
                                 index % 2 === 0 ? 'bg-muted/25' : ''
                               )}>
                                 <TableCell className="py-2 px-2 align-middle">
-                                  <Badge variant="secondary">{expense.mainCategory}</Badge>
+                                  <span className="text-muted-foreground text-sm">{expense.mainCategory}</span>
                                 </TableCell>
                                 <TableCell className="py-2 px-2 align-middle">
-                                  <Badge variant="secondary">{expense.subcategory}</Badge>
+                                  <span className="text-muted-foreground text-sm">{expense.subcategory}</span>
                                 </TableCell>
                                 <TableCell className="font-medium py-2 px-2 align-middle">
                                   {expense.description || '-'}
                                 </TableCell>
-                                <TableCell className="py-2 px-2 align-middle">
+                                <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                                   {format(expense.date.toDate(), 'dd/MM/yyyy')}
                                 </TableCell>
                                 <TableCell className="py-2 px-2 align-middle">
-                                  <Badge variant="outline">{expense.paymentMethod}</Badge>
+                                  <span className="text-muted-foreground text-sm">{expense.paymentMethod}</span>
                                 </TableCell>
                                 <TableCell className="text-right py-2 px-2 align-middle">
                                   {new Intl.NumberFormat('pt-BR', {
