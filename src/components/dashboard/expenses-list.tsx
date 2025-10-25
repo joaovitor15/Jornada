@@ -192,7 +192,7 @@ export default function ExpensesList() {
                 Despesas
             </AccordionTrigger>
             <AccordionContent>
-                <Card className="rounded-lg border shadow-sm mt-4">
+                <Card className="rounded-lg border shadow-sm">
                     <CardContent className="p-0">
                       {expenses.length === 0 ? (
                         <div className="text-center text-muted-foreground py-10">
