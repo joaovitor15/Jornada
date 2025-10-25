@@ -257,12 +257,12 @@ export default function ExpensesList() {
                                   setExpenseToDelete(expense);
                                   setIsDeleteDialogOpen(true);
                                 }}
-                                className="group focus:bg-destructive"
+                                className="group focus:bg-destructive/10"
                               >
-                                <div className="flex items-center justify-center bg-destructive/10 group-focus:bg-destructive rounded-full h-6 w-6 mr-2">
-                                  <Trash2 className="h-3 w-3 text-destructive group-focus:text-destructive-foreground" />
+                                <div className="flex items-center justify-center bg-destructive/10 rounded-full h-6 w-6 mr-2 group-focus:bg-destructive group-hover:bg-destructive">
+                                  <Trash2 className="h-3 w-3 text-destructive group-focus:text-destructive-foreground group-hover:text-destructive-foreground" />
                                 </div>
-                                <span className="text-destructive group-focus:text-destructive-foreground">Excluir</span>
+                                <span className="text-destructive group-focus:text-destructive-foreground group-hover:text-destructive-foreground">Excluir</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
