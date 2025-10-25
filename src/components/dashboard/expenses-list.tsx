@@ -250,7 +250,7 @@ export default function ExpensesList() {
                                 <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
                                   <Pencil className="h-3 w-3 text-secondary-foreground" />
                                 </div>
-                                <span>Renomear</span>
+                                <span>{text.common.rename}</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={() => {
@@ -261,7 +261,7 @@ export default function ExpensesList() {
                                 <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
                                   <Trash2 className="h-3 w-3 text-secondary-foreground" />
                                 </div>
-                                <span>Excluir</span>
+                                <span>{text.common.delete}</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -326,7 +326,7 @@ export default function ExpensesList() {
               onClick={() => expenseToDelete && handleDelete(expenseToDelete.id!)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {text.common.delete}
+              Deletar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
