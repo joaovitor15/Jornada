@@ -57,7 +57,9 @@ export default function Header({ menuTrigger }: HeaderProps) {
               {text.header.appName}
             </span>
           </Link>
+        </div>
 
+        <div className="flex flex-1 items-center justify-end space-x-2">
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -65,7 +67,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
                   <ProfileIcon profile={activeProfile} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{text.header.profiles}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup
@@ -85,20 +87,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
                     <span>{text.header.business}</span>
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-
-        <div className="flex flex-1 items-center justify-end space-x-2">
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full">
-                  <Gear className="h-5 w-5 text-primary" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <Power className="mr-2 h-4 w-4 text-destructive" />
                   <span className="text-destructive">{text.sidebar.logout}</span>
