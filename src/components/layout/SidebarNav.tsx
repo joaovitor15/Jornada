@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {LayoutDashboard, List,} from 'lucide-react';
+import {
+  LayoutDashboard,
+  List,
+} from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
   Tooltip,
@@ -14,6 +16,7 @@ import {
 
 export default function SidebarNav() {
   const pathname = usePathname();
+
   const navLinks = [
     {
       href: '/dashboard',
@@ -52,6 +55,10 @@ export default function SidebarNav() {
             </Tooltip>
           ))}
         </nav>
+
+        {/* Footer */}
+        <div className="mt-auto border-t p-4 w-full flex justify-center" />
+      </div>
     </TooltipProvider>
   );
 }
