@@ -9,7 +9,6 @@ import {
   orderBy,
   doc,
   deleteDoc,
-  addDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -43,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
-import { Trash2, Loader2, MoreHorizontal, Pencil, Copy } from 'lucide-react';
+import { Trash2, Loader2, MoreHorizontal, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,31 +116,6 @@ export default function ExpensesList() {
 
     return () => unsubscribe();
   }, [user, activeProfile, toast]);
-
-  const handleDuplicate = async (expenseToDuplicate: Expense) => {
-    if (!user) return;
-  
-    // Create a new object without the id
-    const { id, ...expenseData } = expenseToDuplicate;
-  
-    try {
-      await addDoc(collection(db, 'expenses'), {
-        ...expenseData,
-        userId: user.uid, // ensure correct userId
-      });
-      toast({
-        title: text.common.success,
-        description: 'Despesa duplicada com sucesso.',
-      });
-    } catch (error) {
-      console.error('Error duplicating document: ', error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: 'Falha ao duplicar despesa.',
-      });
-    }
-  };
 
   const handleDelete = async (id: string) => {
     const originalExpenses = [...expenses];
@@ -277,12 +251,6 @@ export default function ExpensesList() {
                                           <Pencil className="h-3 w-3 text-secondary-foreground" />
                                         </div>
                                         <span>{text.common.rename}</span>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onSelect={() => handleDuplicate(expense)}>
-                                        <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
-                                          <Copy className="h-3 w-3 text-secondary-foreground" />
-                                        </div>
-                                        <span>{text.common.duplicate}</span>
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onSelect={() => {
