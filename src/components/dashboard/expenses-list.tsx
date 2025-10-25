@@ -37,9 +37,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '../ui/button';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, MoreHorizontal, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +55,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -60,6 +65,8 @@ export default function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const { toast } = useToast();
 
   const ITEMS_PER_PAGE = 10;
@@ -130,6 +137,7 @@ export default function ExpensesList() {
       });
       setExpenses(originalExpenses);
     }
+    setExpenseToDelete(null);
   };
 
   const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);
@@ -214,34 +222,29 @@ export default function ExpensesList() {
                           }).format(expense.amount)}
                         </TableCell>
                         <TableCell className="py-2 px-4">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10">
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {text.expensesList.deleteConfirmTitle}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {text.expensesList.deleteConfirmDescription}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {text.common.cancel}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(expense.id!)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {text.common.delete}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                <span>Renomear</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => {
+                                  setExpenseToDelete(expense);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Excluir</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -284,6 +287,28 @@ export default function ExpensesList() {
           </Card>
         </AccordionContent>
       </AccordionItem>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {text.expensesList.deleteConfirmTitle}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {text.expensesList.deleteConfirmDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel> {text.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => expenseToDelete && handleDelete(expenseToDelete.id!)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {text.common.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Accordion>
   );
 }
