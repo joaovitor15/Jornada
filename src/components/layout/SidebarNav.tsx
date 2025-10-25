@@ -3,11 +3,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  LayoutDashboard,
-  List,
-  Power,
-} from 'lucide-react';
+import {LayoutDashboard, List,} from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
   Tooltip,
@@ -17,9 +13,7 @@ import {
 } from '@/components/ui/tooltip';
 
 export default function SidebarNav() {
-  const { signOut } = useAuth();
   const pathname = usePathname();
-
   const navLinks = [
     {
       href: '/dashboard',
@@ -58,27 +52,6 @@ export default function SidebarNav() {
             </Tooltip>
           ))}
         </nav>
-
-        {/* Footer */}
-        <div className="mt-auto border-t p-4 w-full flex justify-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={signOut}
-                variant="ghost"
-                size="icon"
-                className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                aria-label={text.sidebar.logout}
-              >
-                <Power className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>{text.sidebar.logout}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
     </TooltipProvider>
   );
 }
