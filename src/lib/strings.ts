@@ -67,6 +67,13 @@ export const text = {
       pleaseSelectPaymentMethod: 'Por favor, selecione uma forma de pagamento.',
     },
   },
+  editExpenseForm: {
+    title: 'Editar Despesa',
+    description: 'Atualize os detalhes da sua despesa abaixo.',
+    save: 'Salvar Alterações',
+    updateSuccess: 'Despesa atualizada com sucesso.',
+    updateError: 'Falha ao atualizar despesa. Por favor, tente novamente.',
+  },
   expensesList: {
     title: 'Histórico de Despesas',
     noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',

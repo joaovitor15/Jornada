@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
+import AddExpenseForm from './add-expense-form';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -67,6 +68,8 @@ export default function ExpensesList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const { toast } = useToast();
 
   const ITEMS_PER_PAGE = 10;
@@ -139,6 +142,18 @@ export default function ExpensesList() {
     }
     setExpenseToDelete(null);
   };
+  
+  const handleEditOpen = (expense: Expense) => {
+    setExpenseToEdit(expense);
+    setIsEditFormOpen(true);
+  };
+
+  const handleEditFormClose = (isOpen: boolean) => {
+    setIsEditFormOpen(isOpen);
+    if (!isOpen) {
+      setExpenseToEdit(null);
+    }
+  };
 
   const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -171,6 +186,7 @@ export default function ExpensesList() {
   }
 
   return (
+    <>
     <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
       <AccordionItem value="item-1">
         <AccordionTrigger className="text-xl font-bold">
@@ -229,7 +245,7 @@ export default function ExpensesList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => handleEditOpen(expense)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 <span>Renomear</span>
                               </DropdownMenuItem>
@@ -287,6 +303,7 @@ export default function ExpensesList() {
           </Card>
         </AccordionContent>
       </AccordionItem>
+    </Accordion>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -309,6 +326,14 @@ export default function ExpensesList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Accordion>
+
+      {expenseToEdit && (
+        <AddExpenseForm
+          isOpen={isEditFormOpen}
+          onOpenChange={handleEditFormClose}
+          expenseToEdit={expenseToEdit}
+        />
+      )}
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -46,7 +46,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
-import { type PaymentMethod, type Profile } from '@/lib/types';
+import { type Expense, type PaymentMethod, type Profile } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
   personalCategories,
@@ -77,18 +77,10 @@ const formSchema = z.object({
   date: z.date(),
 });
 
-const defaultFormValues = {
-  description: '',
-  amount: undefined,
-  mainCategory: '',
-  subcategory: '',
-  paymentMethod: '' as PaymentMethod,
-  date: new Date(),
-};
-
 type AddExpenseFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  expenseToEdit?: Expense | null;
 };
 
 const getCategoryConfig = (profile: Profile) => {
@@ -107,15 +99,39 @@ const getCategoryConfig = (profile: Profile) => {
 export default function AddExpenseForm({
   isOpen,
   onOpenChange,
+  expenseToEdit,
 }: AddExpenseFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
+  const isEditMode = !!expenseToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultFormValues,
   });
+
+  useEffect(() => {
+    if (isEditMode && expenseToEdit) {
+      form.reset({
+        description: expenseToEdit.description || '',
+        amount: expenseToEdit.amount,
+        mainCategory: expenseToEdit.mainCategory,
+        subcategory: expenseToEdit.subcategory,
+        paymentMethod: expenseToEdit.paymentMethod,
+        date: expenseToEdit.date.toDate(),
+      });
+    } else {
+      form.reset({
+        description: '',
+        amount: undefined,
+        mainCategory: '',
+        subcategory: '',
+        paymentMethod: '' as PaymentMethod,
+        date: new Date(),
+      });
+    }
+  }, [isEditMode, expenseToEdit, form]);
+
 
   const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
@@ -144,9 +160,9 @@ export default function AddExpenseForm({
 
   useEffect(() => {
     if (selectedCategory && categoryConfig[selectedCategory]) {
-      resetField('subcategory');
+      if(!isEditMode) resetField('subcategory');
     }
-  }, [selectedCategory, categoryConfig, resetField]);
+  }, [selectedCategory, categoryConfig, resetField, isEditMode]);
   
   useEffect(() => {
     if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
@@ -160,9 +176,6 @@ export default function AddExpenseForm({
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
       onOpenChange(open);
-      if (!open) {
-        form.reset(defaultFormValues);
-      }
     }
   };
 
@@ -188,18 +201,27 @@ export default function AddExpenseForm({
     };
 
     try {
-      await addDoc(collection(db, 'expenses'), expenseData);
-      toast({
-        title: text.common.success,
-        description: text.addExpenseForm.addSuccess,
-      });
+      if (isEditMode && expenseToEdit?.id) {
+        const expenseRef = doc(db, 'expenses', expenseToEdit.id);
+        await updateDoc(expenseRef, expenseData);
+        toast({
+          title: text.common.success,
+          description: text.editExpenseForm.updateSuccess,
+        });
+      } else {
+        await addDoc(collection(db, 'expenses'), expenseData);
+        toast({
+          title: text.common.success,
+          description: text.addExpenseForm.addSuccess,
+        });
+      }
       handleOpenChange(false);
     } catch (error) {
-      console.error('Error adding document to Firestore: ', error);
+      console.error('Error writing document to Firestore: ', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: text.addExpenseForm.addError,
+        description: isEditMode ? text.editExpenseForm.updateError : text.addExpenseForm.addError,
       });
     }
   }
@@ -215,9 +237,9 @@ export default function AddExpenseForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.addExpenseForm.title}</DialogTitle>
+          <DialogTitle>{isEditMode ? text.editExpenseForm.title : text.addExpenseForm.title}</DialogTitle>
           <DialogDescription>
-            {text.addExpenseForm.description}
+            {isEditMode ? text.editExpenseForm.description : text.addExpenseForm.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -419,7 +441,7 @@ export default function AddExpenseForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.dashboard.addExpense}
+                {isEditMode ? text.editExpenseForm.save : text.dashboard.addExpense}
               </Button>
             </DialogFooter>
           </form>
