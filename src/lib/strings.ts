@@ -81,7 +81,7 @@ export const text = {
   expensesList: {
     title: 'Histórico de Despesas',
     noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',
-    clickToAdd: "Use o botão \'Novo Lançamento\' para começar.",
+    clickToAdd: "Use o botão 'Novo Lançamento' para começar.",
     deleteSuccess: 'Despesa deletada.',
     deleteError: 'Falha ao deletar despesa.',
     fetchError: 'Falha ao buscar despesas.',
@@ -106,5 +106,8 @@ export const text = {
     duplicate: 'Duplicar',
     error: 'Erro',
     success: 'Sucesso',
+    options: 'Opções',
+    previous: 'Anterior',
+    next: 'Próximo',
   },
 };

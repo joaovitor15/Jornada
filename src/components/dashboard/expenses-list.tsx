@@ -234,7 +234,7 @@ export default function ExpensesList() {
                               <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.date}</TableHead>
                               <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.paymentMethod}</TableHead>
                               <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">{text.common.amount}</TableHead>
-                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">Opções</TableHead>
+                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">{text.common.options}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -313,7 +313,7 @@ export default function ExpensesList() {
                             onClick={goToPreviousPage}
                             disabled={currentPage === 1}
                           >
-                            Anterior
+                            {text.common.previous}
                           </Button>
                           {pageNumbers.map((page) => (
                             <Button
@@ -332,7 +332,7 @@ export default function ExpensesList() {
                             onClick={goToNextPage}
                             disabled={currentPage === totalPages}
                           >
-                            Próximo
+                            {text.common.next}
                           </Button>
                         </div>
                       </CardFooter>
@@ -358,7 +358,7 @@ export default function ExpensesList() {
               onClick={() => expenseToDelete && handleDelete(expenseToDelete.id!)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Deletar
+              {text.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
