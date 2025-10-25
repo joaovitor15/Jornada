@@ -257,7 +257,7 @@ export default function ExpensesList() {
                                   setExpenseToDelete(expense);
                                   setIsDeleteDialogOpen(true);
                                 }}
-                                className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
+                                className="text-destructive focus:bg-destructive focus:text-destructive-foreground group"
                               >
                                 <div className="flex items-center justify-center bg-destructive/10 rounded-full h-6 w-6 mr-2 group-focus:bg-destructive">
                                   <Trash2 className="h-3 w-3 text-destructive group-focus:text-destructive-foreground" />
