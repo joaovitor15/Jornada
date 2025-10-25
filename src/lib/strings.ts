@@ -99,6 +99,7 @@ export const text = {
     cancel: 'Cancelar',
     delete: 'Excluir',
     rename: 'Renomear',
+    duplicate: 'Duplicar',
     error: 'Erro',
     success: 'Sucesso',
   },
