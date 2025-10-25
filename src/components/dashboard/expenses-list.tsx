@@ -59,6 +59,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import AddExpenseForm from './add-expense-form';
+import { cn } from '@/lib/utils';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -246,7 +247,9 @@ export default function ExpensesList() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onSelect={() => handleEditOpen(expense)}>
-                                <Pencil className="mr-2 h-4 w-4" />
+                                <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
+                                  <Pencil className="h-3 w-3 text-secondary-foreground" />
+                                </div>
                                 <span>Renomear</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -254,9 +257,11 @@ export default function ExpensesList() {
                                   setExpenseToDelete(expense);
                                   setIsDeleteDialogOpen(true);
                                 }}
-                                className="text-destructive"
+                                className="text-destructive focus:text-destructive-foreground focus:bg-destructive"
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <div className="flex items-center justify-center bg-destructive rounded-full h-6 w-6 mr-2">
+                                  <Trash2 className="h-3 w-3 text-destructive-foreground" />
+                                </div>
                                 <span>Excluir</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -283,7 +288,8 @@ export default function ExpensesList() {
                     <Button
                       key={page}
                       variant={currentPage === page ? 'default' : 'outline'}
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
                       onClick={() => goToPage(page)}
                     >
                       {page}
