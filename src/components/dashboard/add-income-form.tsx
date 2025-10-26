@@ -1,8 +1,18 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useEffect, useMemo } from 'react';
 import { z } from 'zod';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/use-profile';
+import { CalendarIcon, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,27 +21,148 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Form } from '@/components/ui/form';
-import { Button } from '../ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
-import { Loader2 } from 'lucide-react';
+import { type Income, type Profile } from '@/lib/types';
+import { CurrencyInput } from '../ui/currency-input';
+import {
+  personalIncomeCategories,
+  homeIncomeCategories,
+  businessIncomeCategories,
+} from '@/lib/categories';
 
-const formSchema = z.object({});
+const formSchema = z.object({
+  description: z.string().optional(),
+  amount: z.coerce
+    .number({
+      required_error: text.addIncomeForm.validation.amountRequired,
+      invalid_type_error: text.addIncomeForm.validation.amountRequired,
+    })
+    .positive({ message: text.addIncomeForm.validation.amountPositive }),
+  mainCategory: z
+    .string()
+    .min(1, { message: text.addIncomeForm.validation.pleaseSelectCategory }),
+  subcategory: z
+    .string()
+    .min(1, { message: text.addIncomeForm.validation.pleaseSelectSubcategory }),
+  date: z.date(),
+});
 
 type AddIncomeFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  incomeToEdit?: Income | null;
+};
+
+const getCategoryConfig = (profile: Profile) => {
+  switch (profile) {
+    case 'Personal':
+      return personalIncomeCategories;
+    case 'Home':
+      return homeIncomeCategories;
+    case 'Business':
+      return businessIncomeCategories;
+    default:
+      return {};
+  }
 };
 
 export default function AddIncomeForm({
   isOpen,
   onOpenChange,
+  incomeToEdit,
 }: AddIncomeFormProps) {
+  const { user } = useAuth();
+  const { activeProfile } = useProfile();
+  const { toast } = useToast();
+  const isEditMode = !!incomeToEdit;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
-  const { isSubmitting } = form;
+  useEffect(() => {
+    if (isEditMode && incomeToEdit) {
+      form.reset({
+        description: incomeToEdit.description || '',
+        amount: incomeToEdit.amount,
+        mainCategory: incomeToEdit.mainCategory,
+        subcategory: incomeToEdit.subcategory,
+        date: incomeToEdit.date.toDate(),
+      });
+    } else {
+      form.reset({
+        description: '',
+        amount: undefined,
+        mainCategory: '',
+        subcategory: '',
+        date: new Date(),
+      });
+    }
+  }, [isEditMode, incomeToEdit, form]);
+
+  const { isSubmitting, watch, setValue, resetField } = form;
+  const selectedCategory = watch('mainCategory');
+  const selectedSubcategory = watch('subcategory');
+
+  const categoryConfig = getCategoryConfig(activeProfile);
+  const allCategories = Object.keys(categoryConfig);
+  const subcategories =
+    selectedCategory && categoryConfig[selectedCategory]
+      ? categoryConfig[selectedCategory]
+      : [];
+
+  const allSubcategories = useMemo(() => {
+    return Object.values(categoryConfig).flat();
+  }, [categoryConfig]);
+
+  const subcategoryToMainCategoryMap = useMemo(() => {
+    const map: { [key: string]: string } = {};
+    for (const mainCategory in categoryConfig) {
+      for (const subcategory of categoryConfig[mainCategory]) {
+        map[subcategory] = mainCategory;
+      }
+    }
+    return map;
+  }, [categoryConfig]);
+
+  useEffect(() => {
+    if (selectedCategory && categoryConfig[selectedCategory]) {
+      if (!isEditMode) resetField('subcategory');
+    }
+  }, [selectedCategory, categoryConfig, resetField, isEditMode]);
+
+  useEffect(() => {
+    if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
+      const correspondingMainCategory = subcategoryToMainCategoryMap[selectedSubcategory];
+      if (selectedCategory !== correspondingMainCategory) {
+        setValue('mainCategory', correspondingMainCategory, { shouldValidate: true });
+      }
+    }
+  }, [selectedSubcategory, subcategoryToMainCategoryMap, setValue, selectedCategory]);
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -40,9 +171,49 @@ export default function AddIncomeForm({
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Lógica de envio será implementada aqui
-    console.log(values);
-    handleOpenChange(false);
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: text.addIncomeForm.notLoggedIn,
+      });
+      return;
+    }
+
+    const incomeData = {
+      userId: user.uid,
+      profile: activeProfile,
+      description: values.description || '',
+      amount: values.amount,
+      mainCategory: values.mainCategory,
+      subcategory: values.subcategory,
+      date: Timestamp.fromDate(values.date),
+    };
+
+    try {
+      if (isEditMode && incomeToEdit?.id) {
+        const incomeRef = doc(db, 'incomes', incomeToEdit.id);
+        await updateDoc(incomeRef, incomeData);
+        toast({
+          title: text.common.success,
+          description: text.editIncomeForm.updateSuccess,
+        });
+      } else {
+        await addDoc(collection(db, 'incomes'), incomeData);
+        toast({
+          title: text.common.success,
+          description: text.addIncomeForm.addSuccess,
+        });
+      }
+      handleOpenChange(false);
+    } catch (error) {
+      console.error('Error writing document to Firestore: ', error);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: isEditMode ? text.editIncomeForm.updateError : text.addIncomeForm.addError,
+      });
+    }
   }
 
   return (
@@ -56,9 +227,9 @@ export default function AddIncomeForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.addIncomeForm.title}</DialogTitle>
+          <DialogTitle>{isEditMode ? text.editIncomeForm.title : text.addIncomeForm.title}</DialogTitle>
           <DialogDescription>
-            {text.addIncomeForm.description}
+            {isEditMode ? text.editIncomeForm.description : text.addIncomeForm.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -66,8 +237,157 @@ export default function AddIncomeForm({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
-            {/* Campos do formulário de receita serão adicionados aqui */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.description}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={text.addIncomeForm.descriptionPlaceholder}
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="mainCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.mainCategory}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addIncomeForm.selectCategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="subcategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.subcategory}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addIncomeForm.selectSubcategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {selectedCategory
+                          ? subcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))
+                          : allSubcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.amount}</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        placeholder={text.addIncomeForm.amountPlaceholder}
+                        disabled={isSubmitting}
+                        value={field.value}
+                        onValueChange={(values) => {
+                          field.onChange(values.floatValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>{text.addIncomeForm.incomeDate}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                          disabled={isSubmitting}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? (
+                            format(field.value, 'dd/MM/yyyy', { locale: ptBR })
+                          ) : (
+                            <span>{text.addIncomeForm.pickDate}</span>
+                          )}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        disabled={isSubmitting}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            </div>
             <DialogFooter>
               <Button
                 type="submit"
@@ -80,7 +400,7 @@ export default function AddIncomeForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.addIncomeForm.addIncome}
+                {isEditMode ? text.editIncomeForm.save : text.dashboard.addIncome}
               </Button>
             </DialogFooter>
           </form>

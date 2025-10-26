@@ -49,9 +49,9 @@ import { text } from '@/lib/strings';
 import { type Expense, type PaymentMethod, type Profile } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
-  personalCategories,
-  homeCategories,
-  businessCategories,
+  personalExpenseCategories,
+  homeExpenseCategories,
+  businessExpenseCategories,
 } from '@/lib/categories';
 
 const paymentMethods: PaymentMethod[] = ['Pix', 'Dinheiro', 'Débito', 'Crédito'];
@@ -86,11 +86,11 @@ type AddExpenseFormProps = {
 const getCategoryConfig = (profile: Profile) => {
   switch (profile) {
     case 'Personal':
-      return personalCategories;
+      return personalExpenseCategories;
     case 'Home':
-      return homeCategories;
+      return homeExpenseCategories;
     case 'Business':
-      return businessCategories;
+      return businessExpenseCategories;
     default:
       return {};
   }

@@ -43,6 +43,7 @@ export const text = {
   dashboard: {
     title: 'Lançamentos',
     addExpense: 'Adicionar Despesa',
+    addIncome: 'Adicionar Receita',
   },
   addExpenseForm: {
     title: 'Adicionar Nova Despesa',
@@ -71,7 +72,22 @@ export const text = {
   addIncomeForm: {
     title: 'Adicionar Nova Receita',
     description: 'Preencha os detalhes para adicionar uma nova receita.',
+    descriptionPlaceholder: 'Ex: Salário (Opcional)',
+    amountPlaceholder: '0,00',
+    selectCategory: 'Selecione uma categoria',
+    selectSubcategory: 'Selecione uma subcategoria',
+    incomeDate: 'Data da Receita',
+    pickDate: 'Escolha uma data',
     addIncome: 'Adicionar Receita',
+    addSuccess: 'Receita adicionada com sucesso.',
+    addError: 'Falha ao adicionar receita. Por favor, tente novamente.',
+    notLoggedIn: 'Você deve estar logado para adicionar uma receita.',
+    validation: {
+      amountPositive: 'O valor deve ser maior que zero.',
+      amountRequired: 'O valor é obrigatório.',
+      pleaseSelectCategory: 'Por favor, selecione uma categoria.',
+      pleaseSelectSubcategory: 'Por favor, selecione uma subcategoria.',
+    },
   },
   editExpenseForm: {
     title: 'Editar Despesa',
@@ -80,10 +96,17 @@ export const text = {
     updateSuccess: 'Despesa atualizada com sucesso.',
     updateError: 'Falha ao atualizar despesa. Por favor, tente novamente.',
   },
+  editIncomeForm: {
+    title: 'Editar Receita',
+    description: 'Atualize os detalhes da sua receita abaixo.',
+    save: 'Salvar Alterações',
+    updateSuccess: 'Receita atualizada com sucesso.',
+    updateError: 'Falha ao atualizar receita. Por favor, tente novamente.',
+  },
   expensesList: {
     title: 'Histórico de Despesas',
     noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',
-    clickToAdd: "Use o botão 'Novo Lançamento' para começar.",
+    clickToAdd: "Use o botão 'Nova Despesa' para começar.",
     deleteSuccess: 'Despesa deletada.',
     deleteError: 'Falha ao deletar despesa.',
     fetchError: 'Falha ao buscar despesas.',
@@ -91,9 +114,20 @@ export const text = {
     deleteConfirmDescription:
       'Esta ação não pode ser desfeita. Isso excluirá permanentemente esta despesa de nossos servidores.',
   },
+  incomesList: {
+    title: 'Histórico de Receitas',
+    noIncomes: 'Você ainda não adicionou nenhuma receita neste perfil.',
+    clickToAdd: "Use o botão 'Nova Receita' para começar.",
+    deleteSuccess: 'Receita deletada.',
+    deleteError: 'Falha ao deletar receita.',
+    fetchError: 'Falha ao buscar receitas.',
+    deleteConfirmTitle: 'Você tem certeza absoluta?',
+    deleteConfirmDescription:
+      'Esta ação não pode ser desfeita. Isso excluirá permanentemente esta receita de nossos servidores.',
+  },
   lists: {
     expenses: 'Despesas',
-    income: 'Entradas',
+    income: 'Receitas',
     variableIncome: 'Renda Variável',
   },
   common: {
