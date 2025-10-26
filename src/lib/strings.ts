@@ -89,6 +89,11 @@ export const text = {
     deleteConfirmDescription:
       'Esta ação não pode ser desfeita. Isso excluirá permanentemente esta despesa de nossos servidores.',
   },
+  lists: {
+    expenses: 'Despesas',
+    income: 'Entradas',
+    variableIncome: 'Renda Variável',
+  },
   common: {
     description: 'Descrição',
     amount: 'Valor',

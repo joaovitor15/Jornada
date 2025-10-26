@@ -9,6 +9,7 @@ import {
   orderBy,
   doc,
   deleteDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -24,17 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-  } from '@/components/ui/accordion';
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,11 +115,6 @@ export default function ExpensesList() {
   }, [user, activeProfile, toast]);
 
   const handleDelete = async (id: string) => {
-    const originalExpenses = [...expenses];
-    setExpenses((prevExpenses) =>
-      prevExpenses.filter((expense) => expense.id !== id)
-    );
-
     try {
       await deleteDoc(doc(db, 'expenses', id));
       toast({
@@ -136,11 +128,10 @@ export default function ExpensesList() {
         title: text.common.error,
         description: text.expensesList.deleteError,
       });
-      setExpenses(originalExpenses);
     }
     setExpenseToDelete(null);
   };
-  
+
   const handleEditOpen = (expense: Expense) => {
     setExpenseToEdit(expense);
     setIsEditFormOpen(true);
@@ -185,132 +176,168 @@ export default function ExpensesList() {
 
   return (
     <>
-    <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+      <Accordion
+        type="single"
+        collapsible
+        defaultValue="item-1"
+        className="w-full"
+      >
         <AccordionItem value="item-1" className="border-b-0">
-            <AccordionTrigger className="bg-card border rounded-lg shadow-sm px-6 py-4 w-full text-lg font-semibold flex justify-between items-center hover:no-underline">
-                Despesas
-            </AccordionTrigger>
-            <AccordionContent>
-                <Card className="rounded-lg border shadow-sm">
-                    <CardContent className="p-0">
-                      {expenses.length === 0 ? (
-                        <div className="text-center text-muted-foreground py-10">
-                          <p>{text.expensesList.noExpenses}</p>
-                          <p>{text.expensesList.clickToAdd}</p>
-                        </div>
-                      ) : (
-                        <Table>
-                          <TableHeader className="bg-muted/50">
-                            <TableRow>
-                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.mainCategory}</TableHead>
-                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.subcategory}</TableHead>
-                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.description}</TableHead>
-                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.date}</TableHead>
-                              <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.paymentMethod}</TableHead>
-                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">{text.common.amount}</TableHead>
-                              <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">{text.common.options}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {currentExpenses.map((expense, index) => (
-                              <TableRow key={expense.id} className={cn(
-                                'hover:bg-muted/50',
-                                index % 2 === 0 ? 'bg-muted/25' : ''
-                              )}>
-                                <TableCell className="py-2 px-2 align-middle">
-                                  <span className="text-muted-foreground text-sm">{expense.mainCategory}</span>
-                                </TableCell>
-                                <TableCell className="py-2 px-2 align-middle">
-                                  <span className="text-muted-foreground text-sm">{expense.subcategory}</span>
-                                </TableCell>
-                                <TableCell className="font-medium py-2 px-2 align-middle">
-                                  {expense.description || '-'}
-                                </TableCell>
-                                <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
-                                  {format(expense.date.toDate(), 'dd/MM/yyyy')}
-                                </TableCell>
-                                <TableCell className="py-2 px-2 align-middle">
-                                  <span className="text-muted-foreground text-sm">{expense.paymentMethod}</span>
-                                </TableCell>
-                                <TableCell className="text-right py-2 px-2 align-middle">
-                                  {new Intl.NumberFormat('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  }).format(expense.amount)}
-                                </TableCell>
-                                <TableCell className="py-2 px-2 align-middle text-center">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onSelect={() => handleEditOpen(expense)}>
-                                        <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
-                                          <Pencil className="h-3 w-3 text-secondary-foreground" />
-                                        </div>
-                                        <span>{text.common.rename}</span>
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onSelect={() => {
-                                          setExpenseToDelete(expense);
-                                          setIsDeleteDialogOpen(true);
-                                        }}
-                                      >
-                                        <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
-                                          <Trash2 className="h-3 w-3 text-secondary-foreground" />
-                                        </div>
-                                        <span>{text.common.delete}</span>
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </CardContent>
-                    {totalPages > 1 && (
-                      <CardFooter className="flex justify-center py-4 border-t">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={goToPreviousPage}
-                            disabled={currentPage === 1}
-                          >
-                            {text.common.previous}
-                          </Button>
-                          {pageNumbers.map((page) => (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? 'default' : 'outline'}
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => goToPage(page)}
-                            >
-                              {page}
-                            </Button>
-                          ))}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={goToNextPage}
-                            disabled={currentPage === totalPages}
-                          >
-                            {text.common.next}
-                          </Button>
-                        </div>
-                      </CardFooter>
-                    )}
-                </Card>
-            </AccordionContent>
+          <AccordionTrigger className="bg-card border rounded-lg shadow-sm px-6 py-4 w-full text-lg font-semibold flex justify-between items-center hover:no-underline">
+            {text.lists.expenses}
+          </AccordionTrigger>
+          <AccordionContent>
+            <Card className="rounded-lg border shadow-sm">
+              <CardContent className="p-0">
+                {expenses.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-10">
+                    <p>{text.expensesList.noExpenses}</p>
+                    <p>{text.expensesList.clickToAdd}</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.mainCategory}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.subcategory}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.description}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.date}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.paymentMethod}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">
+                          {text.common.amount}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">
+                          {text.common.options}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentExpenses.map((expense, index) => (
+                        <TableRow
+                          key={expense.id}
+                          className={cn(
+                            'hover:bg-muted/50',
+                            index % 2 === 0 ? 'bg-muted/25' : ''
+                          )}
+                        >
+                          <TableCell className="py-2 px-2 align-middle">
+                            <span className="text-muted-foreground text-sm">
+                              {expense.mainCategory}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle">
+                            <span className="text-muted-foreground text-sm">
+                              {expense.subcategory}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-medium py-2 px-2 align-middle">
+                            {expense.description || '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
+                            {format(expense.date.toDate(), 'dd/MM/yyyy')}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle">
+                            <span className="text-muted-foreground text-sm">
+                              {expense.paymentMethod}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right py-2 px-2 align-middle">
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(expense.amount)}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onSelect={() => handleEditOpen(expense)}
+                                >
+                                  <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
+                                    <Pencil className="h-3 w-3 text-secondary-foreground" />
+                                  </div>
+                                  <span>{text.common.rename}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() => {
+                                    setExpenseToDelete(expense);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
+                                    <Trash2 className="h-3 w-3 text-secondary-foreground" />
+                                  </div>
+                                  <span>{text.common.delete}</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+              {totalPages > 1 && (
+                <CardFooter className="flex justify-center py-4 border-t">
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                    >
+                      {text.common.previous}
+                    </Button>
+                    {pageNumbers.map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => goToPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      {text.common.next}
+                    </Button>
+                  </div>
+                </CardFooter>
+              )}
+            </Card>
+          </AccordionContent>
         </AccordionItem>
-    </Accordion>
+      </Accordion>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -323,7 +350,9 @@ export default function ExpensesList() {
           <AlertDialogFooter>
             <AlertDialogCancel> {text.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => expenseToDelete && handleDelete(expenseToDelete.id!)}
+              onClick={() =>
+                expenseToDelete && handleDelete(expenseToDelete.id!)
+              }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {text.common.delete}

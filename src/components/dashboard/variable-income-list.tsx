@@ -27,7 +27,7 @@ export default function VariableIncomeList() {
     >
       <AccordionItem value="item-1" className="border-b-0">
         <AccordionTrigger className="bg-card border rounded-lg shadow-sm px-6 py-4 w-full text-lg font-semibold flex justify-between items-center hover:no-underline">
-          Renda Variável
+          {text.lists.variableIncome}
         </AccordionTrigger>
         <AccordionContent>
           <Card className="rounded-lg border shadow-sm">
@@ -41,7 +41,7 @@ export default function VariableIncomeList() {
                     <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.date}</TableHead>
                     <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">{text.common.paymentMethod}</TableHead>
                     <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">{text.common.amount}</TableHead>
-                    <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">Opções</TableHead>
+                    <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">{text.common.options}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
