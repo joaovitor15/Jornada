@@ -19,7 +19,7 @@ export const text = {
     googleSignInFailed: 'Falha no Login com Google',
     orContinueWith: 'Ou continue com',
     emailPlaceholder: 'm@exemplo.com',
-    welcomeBack: 'Bem-vindo de Volta',
+    welcomeBack: 'Bem-vindo de Volta!',
     welcomeBackDescription:
       'Faça login na sua conta para continuar sua jornada.',
     startYourJourney: 'Comece Sua Jornada',
