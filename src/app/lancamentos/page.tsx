@@ -5,13 +5,11 @@ import IncomeList from '@/components/dashboard/income-list';
 import VariableIncomeList from '@/components/dashboard/variable-income-list';
 import { Button } from '@/components/ui/button';
 import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
-import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
 import { text } from '@/lib/strings';
 import { PlusCircle } from 'lucide-react';
 
 export default function LancamentosPage() {
   const { setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
-  const { setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
 
   return (
     <div className="container mx-auto">
@@ -21,10 +19,6 @@ export default function LancamentosPage() {
           <Button onClick={() => setIsExpenseFormOpen(true)}>
             <PlusCircle className="mr-2 h-5 w-5" />
             {text.summary.newTransaction}
-          </Button>
-          <Button onClick={() => setIsIncomeFormOpen(true)} variant="outline">
-            <PlusCircle className="mr-2 h-5 w-5" />
-            {text.summary.newIncome}
           </Button>
         </div>
       </div>
