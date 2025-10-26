@@ -1,4 +1,4 @@
-export const personalCategories = {
+export const personalExpenseCategories = {
   "Ofertas": ["Igreja Batista Pioneira", "Grupo de Jovens", "Missões Pioneiras", "JMM", "Outros"],
   "Jogos": ["EA Sports", "Supercell", "Gift Cards", "Play Store"],
   "Compras": ["Amazon", "Mercado Livre", "Magazine Luiza", "Shopee"],
@@ -9,4 +9,12 @@ export const personalCategories = {
   "Investimentos": ["Mypofit IR", "Status Invest"],
   "Segurança": ["Nord-Security"],
   "Ajuste de Saldo (-)": ["Ajuste de Saldo (-)"],
+};
+
+export const personalIncomeCategories = {
+    "Pagamentos": ["Salário", "Férias", "Decimo 13º"],
+    "Agafarma": ["Produtos", "Informatica"],
+    "Mari Lucia": ["Salario", "Luci"],
+    "Casa": ["TV", "Eletrônico", "Roupa", "Compras", "Outros"],
+    "Outros Ganhos": ["Rendimentos", "Proventos", "Rendimento Mercado Pago", "Ajuste Saldo (+)"],
 };

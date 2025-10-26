@@ -1,3 +1,3 @@
-export * from './personal';
-export * from './home';
-export * from './business';
+export { personalExpenseCategories, personalIncomeCategories } from './personal';
+export { homeExpenseCategories, homeIncomeCategories } from './home';
+export { businessExpenseCategories, businessIncomeCategories } from './business';
