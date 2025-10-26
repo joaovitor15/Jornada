@@ -54,7 +54,7 @@ import {
   businessCategories,
 } from '@/lib/categories';
 
-const paymentMethods: PaymentMethod[] = ['Pix', 'Cash', 'Debit', 'Credit'];
+const paymentMethods: PaymentMethod[] = ['Pix', 'Dinheiro', 'Débito', 'Crédito'];
 
 const formSchema = z.object({
   description: z.string().optional(),

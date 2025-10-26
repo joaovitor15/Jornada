@@ -2,7 +2,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
 
-export type PaymentMethod = 'Pix' | 'Cash' | 'Debit' | 'Credit';
+export type PaymentMethod = 'Pix' | 'Dinheiro' | 'Débito' | 'Crédito';
 
 export type Expense = {
   id?: string;

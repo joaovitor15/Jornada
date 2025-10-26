@@ -1,10 +1,10 @@
 export const homeCategories = {
-    "Offer": ["Pioneer Baptist Church"],
-    "Food": ["Food"],
+    "Oferta": ["Igreja Batista Pioneira"],
+    "Alimentação": ["Comida"],
     "INSS": ["Mari"],
-    "Activities": ["Gym", "Haircut", "Clothes"],
+    "Atividades": ["Academia", "Corte de Cabelo", "Roupas"],
     "TV": ["SKY +"],
-    "Taxes": ["IPTU", "IPVA"],
-    "Transportation": ["Car", "Gasoline"],
-    "Other expenses": ["Bar", "Luiz"],
+    "Impostos": ["IPTU", "IPVA"],
+    "Transporte": ["Carro", "Gasolina"],
+    "Outras despesas": ["Bar", "Luiz"],
 };
