@@ -70,6 +70,8 @@ export const text = {
   },
   addIncomeForm: {
     title: 'Adicionar Nova Receita',
+    description: 'Preencha os detalhes para adicionar uma nova receita.',
+    addIncome: 'Adicionar Receita',
   },
   editExpenseForm: {
     title: 'Editar Despesa',

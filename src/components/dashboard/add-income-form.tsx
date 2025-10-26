@@ -58,7 +58,7 @@ export default function AddIncomeForm({
         <DialogHeader>
           <DialogTitle>{text.addIncomeForm.title}</DialogTitle>
           <DialogDescription>
-            {/* A ser definido */}
+            {text.addIncomeForm.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -80,7 +80,7 @@ export default function AddIncomeForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Adicionar Receita
+                {text.addIncomeForm.addIncome}
               </Button>
             </DialogFooter>
           </form>
