@@ -106,7 +106,7 @@ export const text = {
   expensesList: {
     title: 'Histórico de Despesas',
     noExpenses: 'Você ainda não adicionou nenhuma despesa neste perfil.',
-    clickToAdd: \"Use o botão 'Nova Despesa' para começar.\",
+    clickToAdd: "Use o botão 'Nova Despesa' para começar.",
     deleteSuccess: 'Despesa deletada.',
     deleteError: 'Falha ao deletar despesa.',
     fetchError: 'Falha ao buscar despesas.',
@@ -117,7 +117,7 @@ export const text = {
   incomesList: {
     title: 'Histórico de Receitas',
     noIncomes: 'Você ainda não adicionou nenhuma receita neste perfil.',
-    clickToAdd: \"Use o botão 'Nova Receita' para começar.\",
+    clickToAdd: "Use o botão 'Nova Receita' para começar.",
     deleteSuccess: 'Receita deletada.',
     deleteError: 'Falha ao deletar receita.',
     fetchError: 'Falha ao buscar receitas.',
