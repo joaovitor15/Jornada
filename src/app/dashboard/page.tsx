@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
-import DonutChart from '@/components/dashboard/DonutChart'; // Importe o DonutChart
+import CategoryChart from '@/components/dashboard/CategoryChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -70,44 +70,41 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="container mx-auto p-4 sm:p-6 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <div className="container mx-auto p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <FinancialChart />
           </div>
           <div>
-            <DonutChart />
+            <CategoryChart />
           </div>
         </div>
-
-        <div className="w-full flex flex-col items-center">
-          <div className="flex items-center gap-4 mt-8">
-            <div>
-              <p className="text-muted-foreground">{text.summary.totalBalance}</p>
-              {loadingBalance ? (
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              ) : (
-                <p className="text-4xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setIsIncomeFormOpen(true)}
-                size="icon"
-                className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
-              >
-                <ArrowUpRight className="h-6 w-6" />
-              </Button>
-              <Button
-                onClick={() => setIsExpenseFormOpen(true)}
-                size="icon"
-                className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
-              >
-                <ArrowDownLeft className="h-6 w-6" />
-              </Button>
-            </div>
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <div>
+            <p className="text-muted-foreground">{text.summary.totalBalance}</p>
+            {loadingBalance ? (
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            ) : (
+              <p className="text-4xl font-bold">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsIncomeFormOpen(true)}
+              size="icon"
+              className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
+            >
+              <ArrowUpRight className="h-6 w-6" />
+            </Button>
+            <Button
+              onClick={() => setIsExpenseFormOpen(true)}
+              size="icon"
+              className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
+            >
+              <ArrowDownLeft className="h-6 w-6" />
+            </Button>
           </div>
         </div>
       </div>
