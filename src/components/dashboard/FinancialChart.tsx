@@ -6,6 +6,7 @@ import {
   query,
   where,
   onSnapshot,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -85,46 +86,47 @@ export default function FinancialChart() {
       where('userId', '==', user.uid)
     );
 
+    const handleSnapshots = (incomesSnapshot: any, expensesSnapshot: any) => {
+      try {
+        setLoading(true);
+        const monthlyData = new Map<string, ChartData>();
+        
+        const incomes = incomesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'income' })) as Transaction[];
+        const expenses = expensesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'expense' })) as Transaction[];
+        const transactions = [...incomes, ...expenses];
+
+        const filteredTransactions = transactions.filter(t => t.profile === activeProfile);
+
+        filteredTransactions.forEach((transaction) => {
+          const date = (transaction.date as unknown as Timestamp).toDate();
+          const monthKey = format(date, 'yyyy-MM');
+          const monthName = format(date, 'MMM yyyy', { locale: ptBR });
+
+          if (!monthlyData.has(monthKey)) {
+            monthlyData.set(monthKey, { month: monthName, monthKey, income: 0, expense: 0 });
+          }
+
+          const entry = monthlyData.get(monthKey)!;
+          if (transaction.type === 'income') {
+            entry.income += transaction.amount;
+          } else {
+            entry.expense += transaction.amount;
+          }
+        });
+
+        const sortedData = Array.from(monthlyData.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+        setChartData(sortedData);
+      } catch (err) {
+        setError('Failed to process chart data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
       const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-        try {
-          const monthlyData = new Map<string, ChartData>();
-          const incomes = incomesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'income' })) as Transaction[];
-          const expenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' })) as Transaction[];
-          const transactions = [...incomes, ...expenses];
-
-          const filteredTransactions = transactions.filter(t => t.profile === activeProfile);
-
-          filteredTransactions.forEach((transaction) => {
-            const date = new Date(transaction.date);
-            const monthKey = format(date, 'yyyy-MM');
-            const monthName = format(date, 'MMM yyyy', { locale: ptBR });
-
-            if (!monthlyData.has(monthKey)) {
-              monthlyData.set(monthKey, { month: monthName, monthKey, income: 0, expense: 0 });
-            }
-
-            const entry = monthlyData.get(monthKey)!;
-            if (transaction.type === 'income') {
-              entry.income += transaction.amount;
-            } else {
-              entry.expense += transaction.amount;
-            }
-          });
-
-          const sortedData = Array.from(monthlyData.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-          setChartData(sortedData);
-        } catch (err) {
-          setError('Failed to process chart data.');
-        } finally {
-          setLoading(false);
-        }
-      }, (err) => {
-        console.error(err);
-        setError('Failed to fetch expenses.');
-        setLoading(false);
+        handleSnapshots(incomesSnapshot, expensesSnapshot);
       });
-
       return () => unsubscribeExpenses();
     }, (err) => {
       console.error(err);
@@ -132,7 +134,9 @@ export default function FinancialChart() {
       setLoading(false);
     });
 
-    return () => unsubscribeIncomes();
+    return () => {
+      unsubscribeIncomes();
+    };
   }, [user, activeProfile]);
 
   if (loading) {
