@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
+import DonutChart from '@/components/dashboard/DonutChart'; // Importe o DonutChart
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -70,8 +71,16 @@ export default function DashboardPage() {
   return (
     <>
       <div className="container mx-auto p-4 sm:p-6 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <div className="lg:col-span-2">
+            <FinancialChart />
+          </div>
+          <div>
+            <DonutChart />
+          </div>
+        </div>
+
         <div className="w-full flex flex-col items-center">
-          <FinancialChart />
           <div className="flex items-center gap-4 mt-8">
             <div>
               <p className="text-muted-foreground">{text.summary.totalBalance}</p>

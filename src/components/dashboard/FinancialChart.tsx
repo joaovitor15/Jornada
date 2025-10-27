@@ -16,13 +16,13 @@ import { format, getYear, setMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   ResponsiveContainer,
-  LineChart,
+  AreaChart,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  Line,
+  Area,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
 import {
@@ -165,7 +165,17 @@ export default function FinancialChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
+            <defs>
+              <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#4CAF50" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#FF7300" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
             <XAxis 
               dataKey="month" 
@@ -195,9 +205,9 @@ export default function FinancialChart() {
               iconSize={14}
               wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }}
             />
-            <Line type="monotone" dataKey="income" stroke="#4CAF50" name="Receita" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="expense" stroke="#FF7300" name="Despesa" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          </LineChart>
+            <Area type="monotone" dataKey="income" stroke="#4CAF50" fill="url(#colorIncome)" name="Receita" strokeWidth={2} />
+            <Area type="monotone" dataKey="expense" stroke="#FF7300" fill="url(#colorExpense)" name="Despesa" strokeWidth={2} />
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
