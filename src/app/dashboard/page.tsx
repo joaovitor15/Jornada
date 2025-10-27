@@ -70,7 +70,8 @@ export default function DashboardPage() {
   return (
     <>
       <div className="container mx-auto flex flex-col items-center text-center p-4 sm:p-6 md:p-8">
-        <div className="flex items-center gap-4 mb-8">
+        <FinancialChart />
+        <div className="flex items-center gap-4 mt-8">
           <div>
             <p className="text-muted-foreground">{text.summary.totalBalance}</p>
             {loadingBalance ? (
@@ -98,7 +99,6 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-        <FinancialChart />
       </div>
       <AddIncomeForm
         isOpen={isIncomeFormOpen}

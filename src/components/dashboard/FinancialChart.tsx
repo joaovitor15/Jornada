@@ -12,7 +12,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, getYear, setMonth, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   ResponsiveContainer,
@@ -90,7 +90,15 @@ export default function FinancialChart() {
       try {
         setLoading(true);
         const monthlyData = new Map<string, ChartData>();
-        
+        const currentYear = getYear(new Date());
+
+        for (let i = 0; i < 12; i++) {
+          const monthDate = setMonth(new Date(currentYear, 0, 1), i);
+          const monthKey = format(monthDate, 'yyyy-MM');
+          const monthName = format(monthDate, 'MMM yyyy', { locale: ptBR });
+          monthlyData.set(monthKey, { month: monthName, monthKey, income: 0, expense: 0 });
+        }
+
         const incomes = incomesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'income' })) as Transaction[];
         const expenses = expensesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'expense' })) as Transaction[];
         const transactions = [...incomes, ...expenses];
@@ -99,18 +107,17 @@ export default function FinancialChart() {
 
         filteredTransactions.forEach((transaction) => {
           const date = (transaction.date as unknown as Timestamp).toDate();
+          if (getYear(date) !== currentYear) return;
+          
           const monthKey = format(date, 'yyyy-MM');
-          const monthName = format(date, 'MMM yyyy', { locale: ptBR });
+          const entry = monthlyData.get(monthKey);
 
-          if (!monthlyData.has(monthKey)) {
-            monthlyData.set(monthKey, { month: monthName, monthKey, income: 0, expense: 0 });
-          }
-
-          const entry = monthlyData.get(monthKey)!;
-          if (transaction.type === 'income') {
-            entry.income += transaction.amount;
-          } else {
-            entry.expense += transaction.amount;
+          if (entry) {
+            if (transaction.type === 'income') {
+              entry.income += transaction.amount;
+            } else {
+              entry.expense += transaction.amount;
+            }
           }
         });
 
@@ -149,14 +156,6 @@ export default function FinancialChart() {
 
   if (error) {
     return <p className="text-red-500 text-center py-10">{error}</p>;
-  }
-
-  if (chartData.length < 2) {
-    return (
-      <p className="text-muted-foreground text-center py-10">
-        Não há dados suficientes para exibir o gráfico.
-      </p>
-    );
   }
 
   return (
