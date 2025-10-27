@@ -134,7 +134,6 @@ export default function AddExpenseForm({
     }
   }, [isOpen, isEditMode, expenseToEdit, form]);
 
-
   const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
   const selectedSubcategory = watch('subcategory');
@@ -154,10 +153,10 @@ export default function AddExpenseForm({
 
   useEffect(() => {
     if (selectedCategory && categoryConfig[selectedCategory]) {
-      if(!isEditMode) resetField('subcategory');
+      if (!isEditMode) resetField('subcategory');
     }
   }, [selectedCategory, categoryConfig, resetField, isEditMode]);
-  
+
   useEffect(() => {
     if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
       const correspondingMainCategory = subcategoryToMainCategoryMap[selectedSubcategory];
