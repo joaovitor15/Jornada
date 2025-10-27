@@ -159,21 +159,18 @@ export default function FinancialChart() {
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Resumo Financeiro</CardTitle>
+        <CardTitle>Resumo Financeiro Anual</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
             <XAxis 
               dataKey="month" 
               interval={0}
-              tick={{ fontSize: 10 }} 
-              angle={-30}
-              textAnchor="end"
-              height={50}
+              tick={{ fontSize: 12 }} 
               axisLine={false} 
               tickLine={false} 
             />
@@ -186,8 +183,8 @@ export default function FinancialChart() {
                   maximumFractionDigits: 0,
                 }).format(value)
               }
-              tick={{ fontSize: 10 }}
-              tickCount={5}
+              tick={{ fontSize: 12 }}
+              tickCount={8}
               axisLine={false}
               tickLine={false}
             />
@@ -195,11 +192,11 @@ export default function FinancialChart() {
             <Legend 
               verticalAlign="top" 
               align="right" 
-              iconSize={12}
-              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+              iconSize={14}
+              wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }}
             />
-            <Line type="monotone" dataKey="income" stroke="#4CAF50" name="Receita" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-            <Line type="monotone" dataKey="expense" stroke="#FF7300" name="Despesa" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="income" stroke="#4CAF50" name="Receita" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="expense" stroke="#FF7300" name="Despesa" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
