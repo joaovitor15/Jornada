@@ -12,7 +12,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
-import { format, getYear, setMonth, getMonth } from 'date-fns';
+import { format, getYear, setMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   ResponsiveContainer,
@@ -95,8 +95,8 @@ export default function FinancialChart() {
         for (let i = 0; i < 12; i++) {
           const monthDate = setMonth(new Date(currentYear, 0, 1), i);
           const monthKey = format(monthDate, 'yyyy-MM');
-          const monthName = format(monthDate, 'MMM yyyy', { locale: ptBR });
-          monthlyData.set(monthKey, { month: monthName, monthKey, income: 0, expense: 0 });
+          const monthName = format(monthDate, 'MMM', { locale: ptBR });
+          monthlyData.set(monthKey, { month: monthName.charAt(0).toUpperCase() + monthName.slice(1), monthKey, income: 0, expense: 0 });
         }
 
         const incomes = incomesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'income' })) as Transaction[];
@@ -165,25 +165,41 @@ export default function FinancialChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+            <XAxis 
+              dataKey="month" 
+              interval={0}
+              tick={{ fontSize: 10 }} 
+              angle={-30}
+              textAnchor="end"
+              height={50}
+              axisLine={false} 
+              tickLine={false} 
+            />
             <YAxis
               width={80}
               tickFormatter={(value) =>
                 new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
+                  maximumFractionDigits: 0,
                 }).format(value)
               }
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 10 }}
+              tickCount={5}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" align="right" />
-            <Line type="monotone" dataKey="income" stroke="#4CAF50" name="Receita" strokeWidth={2} />
-            <Line type="monotone" dataKey="expense" stroke="#FF7300" name="Despesa" strokeWidth={2} />
+            <Legend 
+              verticalAlign="top" 
+              align="right" 
+              iconSize={12}
+              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+            />
+            <Line type="monotone" dataKey="income" stroke="#4CAF50" name="Receita" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="expense" stroke="#FF7300" name="Despesa" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
