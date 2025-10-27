@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -214,6 +213,14 @@ export default function AddExpenseForm({
           title: text.common.success,
           description: text.addExpenseForm.addSuccess,
         });
+        form.reset({
+          description: '',
+          amount: undefined,
+          mainCategory: '',
+          subcategory: '',
+          paymentMethod: '' as PaymentMethod,
+          date: new Date(),
+        });
       }
       handleOpenChange(false);
     } catch (error) {
@@ -238,9 +245,6 @@ export default function AddExpenseForm({
       >
         <DialogHeader>
           <DialogTitle>{isEditMode ? text.editExpenseForm.title : text.addExpenseForm.title}</DialogTitle>
-          <DialogDescription>
-            {isEditMode ? text.editExpenseForm.description : text.addExpenseForm.description}
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
