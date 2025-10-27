@@ -110,26 +110,28 @@ export default function AddExpenseForm({
   });
 
   useEffect(() => {
-    if (isEditMode && expenseToEdit) {
-      form.reset({
-        description: expenseToEdit.description || '',
-        amount: expenseToEdit.amount,
-        mainCategory: expenseToEdit.mainCategory,
-        subcategory: expenseToEdit.subcategory,
-        paymentMethod: expenseToEdit.paymentMethod,
-        date: expenseToEdit.date.toDate(),
-      });
-    } else {
-      form.reset({
-        description: '',
-        amount: undefined,
-        mainCategory: '',
-        subcategory: '',
-        paymentMethod: '' as PaymentMethod,
-        date: new Date(),
-      });
+    if (isOpen) {
+      if (isEditMode && expenseToEdit) {
+        form.reset({
+          description: expenseToEdit.description || '',
+          amount: expenseToEdit.amount,
+          mainCategory: expenseToEdit.mainCategory,
+          subcategory: expenseToEdit.subcategory,
+          paymentMethod: expenseToEdit.paymentMethod,
+          date: expenseToEdit.date.toDate(),
+        });
+      } else {
+        form.reset({
+          description: '',
+          amount: undefined,
+          mainCategory: '',
+          subcategory: '',
+          paymentMethod: '' as PaymentMethod,
+          date: new Date(),
+        });
+      }
     }
-  }, [isEditMode, expenseToEdit, form]);
+  }, [isOpen, isEditMode, expenseToEdit, form]);
 
 
   const { isSubmitting, watch, setValue, resetField } = form;
@@ -212,14 +214,6 @@ export default function AddExpenseForm({
         toast({
           title: text.common.success,
           description: text.addExpenseForm.addSuccess,
-        });
-        form.reset({
-          description: '',
-          amount: undefined,
-          mainCategory: '',
-          subcategory: '',
-          paymentMethod: '' as PaymentMethod,
-          date: new Date(),
         });
       }
       handleOpenChange(false);
@@ -357,7 +351,7 @@ export default function AddExpenseForm({
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
+                  </Item>
                 )}
               />
               <FormField
@@ -378,7 +372,7 @@ export default function AddExpenseForm({
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {paymentMethods.map((method) => (
                           <SelectItem key={method} value={method}>
                             {method}
