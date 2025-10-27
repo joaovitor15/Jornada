@@ -32,7 +32,6 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -140,6 +139,14 @@ export default function AddExpenseForm({
 
   const categoryConfig = getCategoryConfig(activeProfile);
   const allCategories = Object.keys(categoryConfig);
+  const subcategories =
+    selectedCategory && categoryConfig[selectedCategory]
+      ? categoryConfig[selectedCategory]
+      : [];
+
+  const allSubcategories = useMemo(() => {
+    return Object.values(categoryConfig).flat();
+  }, [categoryConfig]);
 
   const subcategoryToMainCategoryMap = useMemo(() => {
     const map: { [key: string]: string } = {};
@@ -306,26 +313,17 @@ export default function AddExpenseForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent position="popper">
-                        {selectedCategory ? (
-                          <SelectGroup>
-                            {categoryConfig[selectedCategory].map((sub) => (
+                        {selectedCategory
+                          ? subcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))
+                          : allSubcategories.map((sub) => (
                               <SelectItem key={sub} value={sub}>
                                 {sub}
                               </SelectItem>
                             ))}
-                          </SelectGroup>
-                        ) : (
-                          Object.keys(categoryConfig).map((mainCategory) => (
-                            <SelectGroup key={mainCategory}>
-                              <FormLabel>{mainCategory}</FormLabel>
-                              {categoryConfig[mainCategory].map((sub) => (
-                                <SelectItem key={sub} value={sub}>
-                                  {sub}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))
-                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

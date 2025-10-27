@@ -8,7 +8,7 @@ export const personalExpenseCategories = {
   "Estudo": ["Alura", "Fundamentei Black", "Certificado Digital"],
   "Investimentos": ["Mypofit IR", "Status Invest"],
   "Segurança": ["Nord-Security"],
-  "Ajuste de Saldo (-)": ["Ajuste de Saldo (-)"],
+  "Ajuste de Saldo (-)" : ["Ajuste de Saldo (-)"],
 };
 
 export const personalIncomeCategories = {
