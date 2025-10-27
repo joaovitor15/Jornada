@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -105,24 +104,26 @@ export default function AddIncomeForm({
   });
 
   useEffect(() => {
-    if (isEditMode && incomeToEdit) {
-      form.reset({
-        description: incomeToEdit.description || '',
-        amount: incomeToEdit.amount,
-        mainCategory: incomeToEdit.mainCategory,
-        subcategory: incomeToEdit.subcategory,
-        date: incomeToEdit.date.toDate(),
-      });
-    } else {
-      form.reset({
-        description: '',
-        amount: undefined,
-        mainCategory: '',
-        subcategory: '',
-        date: new Date(),
-      });
+    if (isOpen) {
+      if (isEditMode && incomeToEdit) {
+        form.reset({
+          description: incomeToEdit.description || '',
+          amount: incomeToEdit.amount,
+          mainCategory: incomeToEdit.mainCategory,
+          subcategory: incomeToEdit.subcategory,
+          date: incomeToEdit.date.toDate(),
+        });
+      } else {
+        form.reset({
+          description: '',
+          amount: undefined,
+          mainCategory: '',
+          subcategory: '',
+          date: new Date(),
+        });
+      }
     }
-  }, [isEditMode, incomeToEdit, form]);
+  }, [isOpen, isEditMode, incomeToEdit, form]);
 
   const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
@@ -228,9 +229,6 @@ export default function AddIncomeForm({
       >
         <DialogHeader>
           <DialogTitle>{isEditMode ? text.editIncomeForm.title : text.addIncomeForm.title}</DialogTitle>
-          <DialogDescription>
-            {isEditMode ? text.editIncomeForm.description : text.addIncomeForm.description}
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -275,7 +273,7 @@ export default function AddIncomeForm({
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {allCategories.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -305,7 +303,7 @@ export default function AddIncomeForm({
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {selectedCategory
                           ? subcategories.map((sub) => (
                               <SelectItem key={sub} value={sub}>

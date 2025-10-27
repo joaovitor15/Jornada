@@ -354,44 +354,32 @@ export default function AddExpenseForm({
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
-                name="date"
+                name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={cn(
-                              'w-full justify-start text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                            disabled={isSubmitting}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, 'dd/MM/yyyy', { locale: ptBR })
-                            ) : (
-                              <span>{text.addExpenseForm.pickDate}</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          disabled={isSubmitting}
-                          locale={ptBR}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>{text.common.paymentMethod}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectPaymentMethod}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -400,30 +388,41 @@ export default function AddExpenseForm({
 
             <FormField
               control={form.control}
-              name="paymentMethod"
+              name="date"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.common.paymentMethod}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={text.addExpenseForm.selectPaymentMethod}
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent position="popper">
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method} value={method}>
-                          {method}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormItem className="flex flex-col">
+                  <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                          disabled={isSubmitting}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? (
+                            format(field.value, 'dd/MM/yyyy', { locale: ptBR })
+                          ) : (
+                            <span>{text.addExpenseForm.pickDate}</span>
+                          )}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        disabled={isSubmitting}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
