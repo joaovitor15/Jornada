@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
-import CategoryChart from '@/components/dashboard/CategoryChart';
+import DonutChart from '@/components/dashboard/DonutChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             <FinancialChart />
           </div>
           <div>
-            <CategoryChart />
+            <DonutChart />
           </div>
         </div>
         <div className="flex justify-center items-center gap-4 mt-8">
