@@ -77,8 +77,7 @@ export default function FinancialChart() {
 
     const transactionsQuery = query(
       collection(db, 'transactions'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(transactionsQuery, (snapshot) => {
@@ -86,7 +85,9 @@ export default function FinancialChart() {
         const monthlyData = new Map<string, ChartData>();
         const transactions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Transaction[];
 
-        transactions.forEach((transaction) => {
+        const filteredTransactions = transactions.filter(t => t.profile === activeProfile);
+
+        filteredTransactions.forEach((transaction) => {
           const date = new Date(transaction.date);
           const monthKey = format(date, 'yyyy-MM');
           const monthName = format(date, 'MMM yyyy', { locale: ptBR });
