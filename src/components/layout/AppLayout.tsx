@@ -11,7 +11,7 @@ import {
   SheetContent,
   SheetTrigger
 } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Menu, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
 import AddIncomeForm from '../dashboard/add-income-form';
@@ -61,6 +61,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         
           <main className="flex-1 p-4 sm:p-6 md:p-8 h-[calc(100vh-56px)] overflow-auto border-t">{children}</main>
+        </div>
+
+        <div className="fixed bottom-6 right-6 flex flex-col gap-2">
+          <Button
+            onClick={() => setIsIncomeFormOpen(true)}
+            size="icon"
+            className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
+          >
+            <ArrowUpRight className="h-6 w-6" />
+          </Button>
+          <Button
+            onClick={() => setIsExpenseFormOpen(true)}
+            size="icon"
+            className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
+          >
+            <ArrowDownLeft className="h-6 w-6" />
+          </Button>
         </div>
 
         <AddExpenseForm
