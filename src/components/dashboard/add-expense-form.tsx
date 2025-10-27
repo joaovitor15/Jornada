@@ -351,7 +351,7 @@ export default function AddExpenseForm({
                       />
                     </FormControl>
                     <FormMessage />
-                  </Item>
+                  </FormItem>
                 )}
               />
               <FormField
