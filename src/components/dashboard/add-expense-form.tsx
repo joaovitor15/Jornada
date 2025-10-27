@@ -289,7 +289,7 @@ export default function AddExpenseForm({
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {allCategories.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -319,7 +319,7 @@ export default function AddExpenseForm({
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         {selectedCategory
                           ? subcategories.map((sub) => (
                               <SelectItem key={sub} value={sub}>
