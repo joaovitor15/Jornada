@@ -70,7 +70,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="p-2">
+      <div className="p-1">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <FinancialChart />
