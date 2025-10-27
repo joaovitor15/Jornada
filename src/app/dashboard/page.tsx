@@ -69,34 +69,36 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="container mx-auto flex flex-col items-center text-center p-4 sm:p-6 md:p-8">
-        <FinancialChart />
-        <div className="flex items-center gap-4 mt-8">
-          <div>
-            <p className="text-muted-foreground">{text.summary.totalBalance}</p>
-            {loadingBalance ? (
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            ) : (
-              <p className="text-4xl font-bold">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsIncomeFormOpen(true)}
-              size="icon"
-              className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
-            >
-              <ArrowUpRight className="h-6 w-6" />
-            </Button>
-            <Button
-              onClick={() => setIsExpenseFormOpen(true)}
-              size="icon"
-              className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
-            >
-              <ArrowDownLeft className="h-6 w-6" />
-            </Button>
+      <div className="container mx-auto p-4 sm:p-6 md:p-8">
+        <div className="w-full flex flex-col items-center">
+          <FinancialChart />
+          <div className="flex items-center gap-4 mt-8">
+            <div>
+              <p className="text-muted-foreground">{text.summary.totalBalance}</p>
+              {loadingBalance ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <p className="text-4xl font-bold">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsIncomeFormOpen(true)}
+                size="icon"
+                className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
+              >
+                <ArrowUpRight className="h-6 w-6" />
+              </Button>
+              <Button
+                onClick={() => setIsExpenseFormOpen(true)}
+                size="icon"
+                className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
+              >
+                <ArrowDownLeft className="h-6 w-6" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
