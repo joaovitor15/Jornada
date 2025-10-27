@@ -2,7 +2,6 @@
 
 import ExpensesList from '@/components/dashboard/expenses-list';
 import IncomeList from '@/components/dashboard/income-list';
-import VariableIncomeList from '@/components/dashboard/variable-income-list';
 import { Button } from '@/components/ui/button';
 import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import { text } from '@/lib/strings';
@@ -25,7 +24,6 @@ export default function LancamentosPage() {
       <div className="space-y-6">
         <ExpensesList />
         <IncomeList />
-        <VariableIncomeList />
       </div>
     </div>
   );
