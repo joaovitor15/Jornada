@@ -175,11 +175,7 @@ export default function ExpensesList() {
 
   return (
     <>
-      <Accordion
-        type="single"
-        defaultValue="item-1"
-        className="w-full"
-      >
+      <Accordion type="single" collapsible className="w-full">
         <AccordionItem value="item-1" className="border-b-0">
           <AccordionTrigger className="bg-card border rounded-lg shadow-sm px-6 py-4 w-full text-lg font-semibold flex justify-between items-center hover:no-underline">
             {text.lists.expenses}
