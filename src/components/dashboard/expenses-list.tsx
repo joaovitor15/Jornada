@@ -9,7 +9,6 @@ import {
   orderBy,
   doc,
   deleteDoc,
-  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -178,7 +177,6 @@ export default function ExpensesList() {
     <>
       <Accordion
         type="single"
-        collapsible
         defaultValue="item-1"
         className="w-full"
       >

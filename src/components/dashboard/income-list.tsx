@@ -177,7 +177,6 @@ export default function IncomeList() {
     <>
       <Accordion
         type="single"
-        collapsible
         defaultValue="item-1"
         className="w-full"
       >
