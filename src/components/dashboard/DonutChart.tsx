@@ -77,6 +77,12 @@ export default function DonutChart() {
           .map((doc) => ({ ...(doc.data() as Transaction), id: doc.id }))
           .filter(t => t.profile === activeProfile);
 
+        if (expenses.length === 0) {
+          setCategoryData([]);
+          setLoading(false);
+          return;
+        }
+
         const categoryMap = new Map<string, number>();
         expenses.forEach((expense) => {
           const { category, amount } = expense;
