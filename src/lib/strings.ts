@@ -71,6 +71,18 @@ export const text = {
     income: 'Entradas',
     expenses: 'Saídas',
   },
+  addCardForm: {
+    title: 'Adicionar Novo Cartão',
+    description: 'Cadastre um novo cartão para usar nos seus lançamentos.',
+    cardName: 'Nome do Cartão',
+    cardNamePlaceholder: 'Ex: Nubank, Inter, etc.',
+    limit: 'Limite',
+    limitPlaceholder: '5000,00',
+    closingDay: 'Dia do Fechamento',
+    dueDay: 'Dia do Vencimento',
+    addCard: 'Adicionar Cartão',
+    addNewCard: '+ Adicionar novo cartão',
+  },
   addExpenseForm: {
     title: 'Adicionar Nova Despesa',
     description:
