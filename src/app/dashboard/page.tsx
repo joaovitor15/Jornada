@@ -13,8 +13,7 @@ import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
 import CategoryExpenseBreakdown from '@/components/dashboard/CategoryExpenseBreakdown';
-import CategoryExpenseBarChart from '@/components/dashboard/CategoryExpenseBarChart';
-import CreditCardExpenses from '@/components/dashboard/CreditCardExpenses';
+import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -90,13 +89,8 @@ export default function DashboardPage() {
             </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <div>
-                <CategoryExpenseBarChart />
-            </div>
-            <div>
-                <CreditCardExpenses />
-            </div>
+        <div className="mt-4">
+            <RecentTransactions />
         </div>
 
         <div className="flex justify-center items-center gap-4 mt-8">
