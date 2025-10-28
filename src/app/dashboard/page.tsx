@@ -168,7 +168,7 @@ export default function DashboardPage() {
                 <label className="text-sm font-medium">Tipo</label>
                 <Select
                     value={selectedTransactionType}
-                    onValuechange={(value) => setSelectedTransactionType(value as TransactionTypeFilter)}
+                    onValueChange={(value) => setSelectedTransactionType(value as TransactionTypeFilter)}
                 >
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Selecione" />
