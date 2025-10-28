@@ -35,24 +35,22 @@ import { Loader2 } from 'lucide-react';
 
 interface ChartData {
   month: string;
-  monthKey: string;
+  monthKey: string; // "yyyy-MM"
   income: number;
   expense: number;
 }
 
-type TransactionTypeFilter = 'all' | 'income' | 'expense';
-
 interface FinancialChartProps {
   year: number;
-  transactionType: TransactionTypeFilter;
+  onMonthSelect: (month: number) => void;
 }
 
-const CustomTooltip = ({ active, payload, label, transactionType }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background border border-border p-2 rounded-lg shadow-lg">
         <p className="label font-bold">{`${label}`}</p>
-        {(transactionType === 'all' || transactionType === 'income') && payload[0] && (
+        {payload[0] && (
           <p className="intro text-green-500">{`Receita: ${new Intl.NumberFormat(
             'pt-BR',
             {
@@ -61,25 +59,24 @@ const CustomTooltip = ({ active, payload, label, transactionType }: any) => {
             }
           ).format(payload[0].value)}`}</p>
         )}
-        {(transactionType === 'all' || transactionType === 'expense') && payload[transactionType === 'all' ? 1 : 0] && (
+        {payload[1] && (
           <p className="intro text-red-500">{`Despesa: ${new Intl.NumberFormat(
             'pt-BR',
             {
               style: 'currency',
               currency: 'BRL',
             }
-          ).format(payload[transactionType === 'all' ? 1 : 0].value)}`}</p>
+          ).format(payload[1].value)}`}</p>
         )}
       </div>
     );
   }
-
   return null;
 };
 
 export default function FinancialChart({
   year,
-  transactionType,
+  onMonthSelect,
 }: FinancialChartProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -87,10 +84,10 @@ export default function FinancialChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const animationKey = useMemo(() => `${year}-${transactionType}-${activeProfile}`, [year, transactionType, activeProfile]);
+  const animationKey = useMemo(() => `${year}-${activeProfile}`, [year, activeProfile]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !activeProfile) {
       setLoading(false);
       return;
     }
@@ -98,14 +95,11 @@ export default function FinancialChart({
     setLoading(true);
     setError(null);
 
-    const incomesQuery = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid)
-    );
-    const expensesQuery = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid)
-    );
+    const baseQuery = (collectionName: string) =>
+      query(collection(db, collectionName), where('userId', '==', user.uid), where('profile', '==', activeProfile));
+      
+    const incomesQuery = baseQuery('incomes');
+    const expensesQuery = baseQuery('expenses');
 
     const handleSnapshots = (incomesSnapshot: any, expensesSnapshot: any) => {
       try {
@@ -130,9 +124,7 @@ export default function FinancialChart({
 
         const processTransactions = (snapshot: any, type: 'income' | 'expense') => {
             snapshot.docs.forEach((doc: any) => {
-                const transaction = { ...doc.data(), id: doc.id, type } as Transaction;
-                if (transaction.profile !== activeProfile) return;
-
+                const transaction = { ...doc.data(), id: doc.id } as Transaction;
                 const date = (transaction.date as unknown as Timestamp).toDate();
                 if (getYear(date) !== year) return;
                 
@@ -148,12 +140,8 @@ export default function FinancialChart({
             });
         };
 
-        if (transactionType === 'all' || transactionType === 'income') {
-            processTransactions(incomesSnapshot, 'income');
-        }
-        if (transactionType === 'all' || transactionType === 'expense') {
-            processTransactions(expensesSnapshot, 'expense');
-        }
+        processTransactions(incomesSnapshot, 'income');
+        processTransactions(expensesSnapshot, 'expense');
 
         const sortedData = Array.from(monthlyData.values()).sort((a, b) =>
           a.monthKey.localeCompare(b.monthKey)
@@ -190,11 +178,19 @@ export default function FinancialChart({
     return () => {
       unsubscribeIncomes();
     };
-  }, [user, activeProfile, year, transactionType]);
+  }, [user, activeProfile, year]);
+
+  const handleChartClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload.length > 0) {
+      const monthKey = data.activePayload[0].payload.monthKey; // "yyyy-MM"
+      const monthIndex = parseInt(monthKey.split('-')[1], 10) - 1;
+      onMonthSelect(monthIndex);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex justify-center items-center h-full min-h-[280px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -207,7 +203,7 @@ export default function FinancialChart({
   const noData = chartData.every(d => d.income === 0 && d.expense === 0);
 
   if (noData) {
-    return <div className="flex justify-center items-center h-full text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
+    return <div className="flex justify-center items-center h-full min-h-[280px] text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
   }
 
   return (
@@ -215,6 +211,7 @@ export default function FinancialChart({
       <AreaChart
         data={chartData}
         margin={{ top: 20, right: 20, left: -10, bottom: 20 }}
+        onClick={handleChartClick}
       >
         <defs>
           <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
@@ -249,33 +246,29 @@ export default function FinancialChart({
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip transactionType={transactionType} />} />
+        <Tooltip content={<CustomTooltip />} />
         <Legend
           verticalAlign="top"
           align="right"
           iconSize={14}
           wrapperStyle={{ fontSize: '14px', top: '0px' }}
         />
-        {(transactionType === 'all' || transactionType === 'income') && (
-          <Area
-            type="monotone"
-            dataKey="income"
-            stroke="#4CAF50"
-            fill="url(#colorIncome)"
-            name="Receita"
-            strokeWidth={2}
-          />
-        )}
-        {(transactionType === 'all' || transactionType === 'expense') && (
-          <Area
-            type="monotone"
-            dataKey="expense"
-            stroke="#FF7300"
-            fill="url(#colorExpense)"
-            name="Despesa"
-            strokeWidth={2}
-          />
-        )}
+        <Area
+          type="monotone"
+          dataKey="income"
+          stroke="#4CAF50"
+          fill="url(#colorIncome)"
+          name="Receita"
+          strokeWidth={2}
+        />
+        <Area
+          type="monotone"
+          dataKey="expense"
+          stroke="#FF7300"
+          fill="url(#colorExpense)"
+          name="Despesa"
+          strokeWidth={2}
+        />
       </AreaChart>
     </ResponsiveContainer>
   );
