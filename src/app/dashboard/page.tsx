@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
@@ -71,14 +72,20 @@ export default function DashboardPage() {
   return (
     <>
       <div className="p-1">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2">
-            <FinancialChart />
-          </div>
-          <div>
-            <DonutChart />
-          </div>
-        </div>
+        <Card>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+            <div className="lg:col-span-2">
+              <FinancialChart />
+            </div>
+            <div className="flex flex-col justify-center items-center">
+              <CardHeader>
+                <CardTitle>Despesas por Categoria</CardTitle>
+              </CardHeader>
+              <DonutChart />
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex justify-center items-center gap-4 mt-8">
           <div>
             <p className="text-muted-foreground">{text.summary.totalBalance}</p>

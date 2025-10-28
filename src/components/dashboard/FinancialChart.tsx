@@ -25,12 +25,6 @@ import {
   Area,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 
 interface ChartData {
   month: string;
@@ -159,57 +153,50 @@ export default function FinancialChart() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Resumo Financeiro Anual</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
-          <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
-            <defs>
-              <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#4CAF50" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#FF7300" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-            <XAxis 
-              dataKey="month" 
-              interval={0}
-              tick={{ fontSize: 12 }} 
-              axisLine={false} 
-              tickLine={false} 
-            />
-            <YAxis
-              width={80}
-              tickFormatter={(value) =>
-                new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                  maximumFractionDigits: 0,
-                }).format(value)
-              }
-              tick={{ fontSize: 12 }}
-              tickCount={8}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              verticalAlign="top" 
-              align="right" 
-              iconSize={14}
-              wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }}
-            />
-            <Area type="monotone" dataKey="income" stroke="#4CAF50" fill="url(#colorIncome)" name="Receita" strokeWidth={2} />
-            <Area type="monotone" dataKey="expense" stroke="#FF7300" fill="url(#colorExpense)" name="Despesa" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <ResponsiveContainer width="100%" height={400}>
+      <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
+        <defs>
+          <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#4CAF50" stopOpacity={0}/>
+          </linearGradient>
+          <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#FF7300" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
+        <XAxis 
+          dataKey="month" 
+          interval={0}
+          tick={{ fontSize: 12 }} 
+          axisLine={false} 
+          tickLine={false} 
+        />
+        <YAxis
+          width={80}
+          tickFormatter={(value) =>
+            new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              maximumFractionDigits: 0,
+            }).format(value)
+          }
+          tick={{ fontSize: 12 }}
+          tickCount={8}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend 
+          verticalAlign="top" 
+          align="right" 
+          iconSize={14}
+          wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }}
+        />
+        <Area type="monotone" dataKey="income" stroke="#4CAF50" fill="url(#colorIncome)" name="Receita" strokeWidth={2} />
+        <Area type="monotone" dataKey="expense" stroke="#FF7300" fill="url(#colorExpense)" name="Despesa" strokeWidth={2} />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
