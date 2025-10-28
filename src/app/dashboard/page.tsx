@@ -15,7 +15,6 @@ import {
   Loader2,
   ArrowUpRight,
   ArrowDownLeft,
-  Calendar,
   Filter,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
@@ -100,7 +99,6 @@ export default function DashboardPage() {
           } else if (selectedTimePeriod === 'this-year') {
             startDate = startOfYear(now);
           } else {
-            // last-year
             const lastYear = subYears(now, 1);
             startDate = startOfYear(lastYear);
           }
@@ -150,59 +148,57 @@ export default function DashboardPage() {
   return (
     <>
       <div className="p-1">
-        <Card className="mb-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtros do Gráfico
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">
-                Período
-              </label>
-              <Select
-                value={selectedTimePeriod}
-                onValueChange={(value) => setSelectedTimePeriod(value as TimePeriod)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="last-12-months">
-                    Últimos 12 meses
-                  </SelectItem>
-                  <SelectItem value="this-year">Este ano</SelectItem>
-                  <SelectItem value="last-year">Ano passado</SelectItem>
-                </SelectContent>
-              </Select>
+        <div className="bg-card border rounded-lg shadow-sm p-4 mb-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-1 block flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Período
+                </label>
+                <Select
+                  value={selectedTimePeriod}
+                  onValueChange={(value) => setSelectedTimePeriod(value as TimePeriod)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last-12-months">
+                      Últimos 12 meses
+                    </SelectItem>
+                    <SelectItem value="this-year">Este ano</SelectItem>
+                    <SelectItem value="last-year">Ano passado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-1 block">
+                  Tipo de Transação
+                </label>
+                <Select
+                  value={selectedTransactionType}
+                  onValueChange={(value) =>
+                    setSelectedTransactionType(value as TransactionTypeFilter)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Receitas e Despesas</SelectItem>
+                    <SelectItem value="income">Apenas Receitas</SelectItem>
+                    <SelectItem value="expense">Apenas Despesas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">
-                Tipo de Transação
-              </label>
-              <Select
-                value={selectedTransactionType}
-                onValueChange={(value) =>
-                  setSelectedTransactionType(value as TransactionTypeFilter)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Receitas e Despesas</SelectItem>
-                  <SelectItem value="income">Apenas Receitas</SelectItem>
-                  <SelectItem value="expense">Apenas Despesas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
           <div className="lg:col-span-2">
             <Card className="h-full">
+              <CardHeader>
+                  <CardTitle>Resumo Financeiro Anual</CardTitle>
+              </CardHeader>
               <CardContent className="p-4 h-full">
                 <FinancialChart
                   timePeriod={selectedTimePeriod}
