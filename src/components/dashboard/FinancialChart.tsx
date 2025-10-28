@@ -15,14 +15,10 @@ import { Transaction } from '@/lib/types';
 import {
   format,
   getYear,
-  getMonth,
-  setMonth,
-  subMonths,
   startOfYear,
   endOfYear,
   eachMonthOfInterval,
-  isWithinInterval,
-  subYears,
+  setYear,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -44,11 +40,10 @@ interface ChartData {
   expense: number;
 }
 
-type TimePeriod = 'last-12-months' | 'this-year' | 'last-year';
 type TransactionTypeFilter = 'all' | 'income' | 'expense';
 
 interface FinancialChartProps {
-  timePeriod: TimePeriod;
+  year: number;
   transactionType: TransactionTypeFilter;
 }
 
@@ -83,7 +78,7 @@ const CustomTooltip = ({ active, payload, label, transactionType }: any) => {
 };
 
 export default function FinancialChart({
-  timePeriod,
+  year,
   transactionType,
 }: FinancialChartProps) {
   const { user } = useAuth();
@@ -92,7 +87,7 @@ export default function FinancialChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const animationKey = useMemo(() => `${timePeriod}-${transactionType}-${activeProfile}`, [timePeriod, transactionType, activeProfile]);
+  const animationKey = useMemo(() => `${year}-${transactionType}-${activeProfile}`, [year, transactionType, activeProfile]);
 
   useEffect(() => {
     if (!user) {
@@ -114,21 +109,9 @@ export default function FinancialChart({
 
     const handleSnapshots = (incomesSnapshot: any, expensesSnapshot: any) => {
       try {
-        const now = new Date();
-        let startDate: Date, endDate: Date;
-
-        if (timePeriod === 'last-12-months') {
-            startDate = subMonths(now, 11);
-            startDate.setDate(1);
-            endDate = now;
-        } else if (timePeriod === 'this-year') {
-            startDate = startOfYear(now);
-            endDate = now;
-        } else { // 'last-year'
-            const lastYearDate = subYears(now, 1);
-            startDate = startOfYear(lastYearDate);
-            endDate = endOfYear(lastYearDate);
-        }
+        const yearDate = setYear(new Date(), year);
+        const startDate = startOfYear(yearDate);
+        const endDate = endOfYear(yearDate);
         
         const interval = { start: startDate, end: endDate };
         const monthsInInterval = eachMonthOfInterval(interval);
@@ -151,7 +134,7 @@ export default function FinancialChart({
                 if (transaction.profile !== activeProfile) return;
 
                 const date = (transaction.date as unknown as Timestamp).toDate();
-                if (!isWithinInterval(date, interval)) return;
+                if (getYear(date) !== year) return;
                 
                 const monthKey = format(date, 'yyyy-MM');
                 const entry = monthlyData.get(monthKey);
@@ -207,7 +190,7 @@ export default function FinancialChart({
     return () => {
       unsubscribeIncomes();
     };
-  }, [user, activeProfile, timePeriod, transactionType]);
+  }, [user, activeProfile, year, transactionType]);
 
   if (loading) {
     return (
@@ -224,7 +207,7 @@ export default function FinancialChart({
   const noData = chartData.every(d => d.income === 0 && d.expense === 0);
 
   if (noData) {
-    return <div className="flex justify-center items-center h-full text-muted-foreground">Nenhum dado encontrado para os filtros selecionados.</div>;
+    return <div className="flex justify-center items-center h-full text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
   }
 
   return (

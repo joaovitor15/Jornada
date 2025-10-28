@@ -11,11 +11,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import {
-  Loader2,
-  ArrowUpRight,
-  ArrowDownLeft,
-} from 'lucide-react';
+import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,16 +27,27 @@ import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
-import {
-  subMonths,
-  startOfYear,
-  endOfYear,
-  isWithinInterval,
-  subYears,
-} from 'date-fns';
+import { getYear, getMonth } from 'date-fns';
 
-type TimePeriod = 'last-12-months' | 'this-year' | 'last-year';
 type TransactionTypeFilter = 'all' | 'income' | 'expense';
+
+const months = [
+  { value: 0, label: 'Janeiro' },
+  { value: 1, label: 'Fevereiro' },
+  { value: 2, label: 'Março' },
+  { value: 3, label: 'Abril' },
+  { value: 4, label: 'Maio' },
+  { value: 5, label: 'Junho' },
+  { value: 6, label: 'Julho' },
+  { value: 7, label: 'Agosto' },
+  { value: 8, label: 'Setembro' },
+  { value: 9, label: 'Outubro' },
+  { value: 10, label: 'Novembro' },
+  { value: 11, label: 'Dezembro' },
+];
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -51,8 +58,8 @@ export default function DashboardPage() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
-  const [selectedTimePeriod, setSelectedTimePeriod] =
-    useState<TimePeriod>('last-12-months');
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedTransactionType, setSelectedTransactionType] =
     useState<TransactionTypeFilter>('all');
 
@@ -91,31 +98,23 @@ export default function DashboardPage() {
             id: doc.id,
           }));
 
-          const now = new Date();
-          let startDate: Date;
-          if (selectedTimePeriod === 'last-12-months') {
-            startDate = subMonths(now, 12);
-          } else if (selectedTimePeriod === 'this-year') {
-            startDate = startOfYear(now);
-          } else {
-            const lastYear = subYears(now, 1);
-            startDate = startOfYear(lastYear);
-          }
-          const endDate =
-            selectedTimePeriod === 'last-year' ? endOfYear(subYears(now, 1)) : now;
-
-          const interval = { start: startDate, end: endDate };
-
-          const filteredIncomes = incomes.filter(
-            (t) =>
+          const filteredIncomes = incomes.filter((t) => {
+            const date = (t.date as unknown as Timestamp).toDate();
+            return (
               t.profile === activeProfile &&
-              isWithinInterval((t.date as unknown as Timestamp).toDate(), interval)
-          );
-          const filteredExpenses = expenses.filter(
-            (t) =>
+              getYear(date) === selectedYear &&
+              getMonth(date) === selectedMonth
+            );
+          });
+
+          const filteredExpenses = expenses.filter((t) => {
+            const date = (t.date as unknown as Timestamp).toDate();
+            return (
               t.profile === activeProfile &&
-              isWithinInterval((t.date as unknown as Timestamp).toDate(), interval)
-          );
+              getYear(date) === selectedYear &&
+              getMonth(date) === selectedMonth
+            );
+          });
 
           const totalIncome = filteredIncomes.reduce(
             (acc, curr) => acc + curr.amount,
@@ -134,7 +133,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeIncomes();
-  }, [user, activeProfile, selectedTimePeriod]);
+  }, [user, activeProfile, selectedYear, selectedMonth]);
 
   if (authLoading || !user) {
     return (
@@ -149,18 +148,34 @@ export default function DashboardPage() {
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
         <div className="mb-6 flex flex-wrap items-center justify-start gap-x-6 gap-y-4">
             <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Período</label>
+                <label className="text-sm font-medium">Mês</label>
                 <Select
-                    value={selectedTimePeriod}
-                    onValueChange={(value) => setSelectedTimePeriod(value as TimePeriod)}
+                    value={String(selectedMonth)}
+                    onValueChange={(value) => setSelectedMonth(Number(value))}
                 >
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="last-12-months">Últimos 12 meses</SelectItem>
-                        <SelectItem value="this-year">Este ano</SelectItem>
-                        <SelectItem value="last-year">Ano passado</SelectItem>
+                        {months.map(month => (
+                            <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Ano</label>
+                <Select
+                    value={String(selectedYear)}
+                    onValueChange={(value) => setSelectedYear(Number(value))}
+                >
+                    <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {years.map(year => (
+                            <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -190,7 +205,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="p-4">
                 <FinancialChart
-                  timePeriod={selectedTimePeriod}
+                  year={selectedYear}
                   transactionType={selectedTransactionType}
                 />
               </CardContent>
@@ -202,7 +217,7 @@ export default function DashboardPage() {
                 <CardTitle className="flex items-center justify-between">
                   {text.summary.totalBalance}
                   <span className="text-xs font-normal text-muted-foreground">
-                    ({selectedTimePeriod === 'last-12-months' ? 'Últimos 12 meses' : selectedTimePeriod === 'this-year' ? 'Este ano' : 'Ano passado'})
+                    ({months[selectedMonth].label} de {selectedYear})
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -226,7 +241,7 @@ export default function DashboardPage() {
                     <ArrowUpRight className="h-5 w-5" />
                   </Button>
                   <Button
-                    onClick={() => setIsExpenseFormOpen(true)}
+                    onClick={() => setIsIncomeFormOpen(true)}
                     size="icon"
                     className="rounded-full bg-red-500 text-white hover:bg-red-600 h-10 w-10"
                   >
