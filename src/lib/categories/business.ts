@@ -8,7 +8,7 @@ export const businessExpenseCategories = {
    "Maketing": ["Rádio", "ACI", "Outros"],
    "Escritorio": ["Lider", "Serplamed", "Certificado Digital"],
    "Impostos": ["FGTS", "Receitas (INSS + IRPF)", "Simples Nacional"],
-   "Fiscalização" : ["CRF/RS, Certidão Simplificada, ARL (Lixos)"]
+   "Fiscalização" : ["CRF/RS", "Certidão Simplificada", "ARL (Lixos)"]
 
     
 };
