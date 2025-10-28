@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
@@ -73,41 +73,46 @@ export default function DashboardPage() {
       <div className="p-1">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <div className="lg:col-span-2">
-                <Card className="h-[350px]">
+                <Card className="h-full">
                     <CardContent className="p-4 h-full">
                         <FinancialChart />
                     </CardContent>
                 </Card>
             </div>
-        </div>
-
-        <div className="flex justify-center items-center gap-4 mt-8">
-          <div>
-            <p className="text-muted-foreground">{text.summary.totalBalance}</p>
-            {loadingBalance ? (
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            ) : (
-              <p className="text-4xl font-bold">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsIncomeFormOpen(true)}
-              size="icon"
-              className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
-            >
-              <ArrowUpRight className="h-6 w-6" />
-            </Button>
-            <Button
-              onClick={() => setIsExpenseFormOpen(true)}
-              size="icon"
-              className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
-            >
-              <ArrowDownLeft className="h-6 w-6" />
-            </Button>
-          </div>
+            <div className="lg:col-span-1">
+                <Card className="h-full">
+                    <CardHeader>
+                        <CardTitle>{text.summary.totalBalance}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center gap-4">
+                        <div>
+                            {loadingBalance ? (
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            ) : (
+                            <p className="text-4xl font-bold">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBalance)}
+                            </p>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                            onClick={() => setIsIncomeFormOpen(true)}
+                            size="icon"
+                            className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
+                            >
+                            <ArrowUpRight className="h-6 w-6" />
+                            </Button>
+                            <Button
+                            onClick={() => setIsExpenseFormOpen(true)}
+                            size="icon"
+                            className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
+                            >
+                            <ArrowDownLeft className="h-6 w-6" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </div>
       <AddIncomeForm
