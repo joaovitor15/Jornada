@@ -67,9 +67,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user || !activeProfile) {
-      setLoadingBalance(false);
-      return;
+        setLoadingBalance(false);
+        return;
     }
+
+    setLoadingBalance(true);
 
     const baseQuery = (collectionName: string) =>
       query(collection(db, collectionName), where('userId', '==', user.uid), where('profile', '==', activeProfile));
@@ -78,40 +80,48 @@ export default function DashboardPage() {
     const expensesQuery = baseQuery('expenses');
 
     const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
-      const unsubscribeExpenses = onSnapshot(expensesSnapshot, (expensesSnapshot) => {
-          setLoadingBalance(true);
-          
-          const allTransactions = [
-            ...incomesSnapshot.docs.map(doc => ({ ...(doc.data() as Omit<Transaction, 'id'>), id: doc.id })),
-            ...expensesSnapshot.docs.map(doc => ({ ...(doc.data() as Omit<Transaction, 'id'>), id: doc.id }))
-          ];
+        const incomes = incomesSnapshot.docs.map(doc => ({ ...doc.data() as Omit<Transaction, 'id'>, id: doc.id }));
 
-          if (allTransactions.length > 0) {
-            const yearsWithData = new Set(allTransactions.map(t => getYear((t.date as unknown as Timestamp).toDate())));
-            const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
-            setAvailableYears(sortedYears);
-            if (!yearsWithData.has(selectedYear)) {
-                setSelectedYear(sortedYears[0] || currentYear);
+        const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
+            const expenses = expensesSnapshot.docs.map(doc => ({ ...doc.data() as Omit<Transaction, 'id'>, id: doc.id }));
+
+            const allTransactions = [...incomes, ...expenses];
+            if (allTransactions.length > 0) {
+                const yearsWithData = new Set(
+                    allTransactions
+                        .map(t => t.date ? getYear((t.date as unknown as Timestamp).toDate()) : null)
+                        .filter(Boolean) as number[]
+                );
+                const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
+                if (sortedYears.length > 0) {
+                    setAvailableYears(sortedYears);
+                    if (!yearsWithData.has(selectedYear)) {
+                        setSelectedYear(sortedYears[0]);
+                    }
+                }
+            } else {
+                setAvailableYears([currentYear]);
             }
-          }
 
-          const monthlyIncomes = allTransactions
-            .filter(t => 'income' in t && getYear((t.date as unknown as Timestamp).toDate()) === selectedYear && getMonth((t.date as unknown as Timestamp).toDate()) === selectedMonth)
-            .reduce((acc, curr) => acc + curr.amount, 0);
+            const filterByMonthAndYear = (t: Omit<Transaction, 'id'>) => {
+                if (!t.date) return false;
+                const date = (t.date as unknown as Timestamp).toDate();
+                return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+            };
 
-          const monthlyExpenses = allTransactions
-            .filter(t => 'expense' in t && getYear((t.date as unknown as Timestamp).toDate()) === selectedYear && getMonth((t.date as unknown as Timestamp).toDate()) === selectedMonth)
-            .reduce((acc, curr) => acc + curr.amount, 0);
+            const monthlyIncomes = incomes.filter(filterByMonthAndYear).reduce((acc, curr) => acc + curr.amount, 0);
+            const monthlyExpenses = expenses.filter(filterByMonthAndYear).reduce((acc, curr) => acc + curr.amount, 0);
+            
+            setTotalBalance(monthlyIncomes - monthlyExpenses);
+            setLoadingBalance(false);
+        });
 
-          setTotalBalance(monthlyIncomes - monthlyExpenses);
-          setLoadingBalance(false);
-        }
-      );
-      return () => unsubscribeExpenses();
+        return () => unsubscribeExpenses();
     });
 
     return () => unsubscribeIncomes();
-  }, [user, activeProfile, selectedYear, selectedMonth]);
+}, [user, activeProfile, selectedYear, selectedMonth, router]);
+
 
   if (authLoading || !user) {
     return (
