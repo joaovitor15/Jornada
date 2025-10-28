@@ -10,6 +10,8 @@ export const text = {
   sidebar: {
     dashboard: 'Dashboard',
     releases: 'Lançamentos',
+    reports: 'Relatórios',
+    cards: 'Cartões',
   },
   auth: {
     login: 'Entrar',

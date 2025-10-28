@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   List,
+  BarChart,
+  CreditCard
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -22,6 +24,16 @@ export default function SidebarNav() {
       href: '/dashboard',
       label: text.sidebar.dashboard,
       icon: LayoutDashboard,
+    },
+    {
+      href: '/relatorios',
+      label: text.sidebar.reports,
+      icon: BarChart,
+    },
+    {
+      href: '/cartoes',
+      label: text.sidebar.cards,
+      icon: CreditCard,
     },
     {
       href: '/lancamentos',
