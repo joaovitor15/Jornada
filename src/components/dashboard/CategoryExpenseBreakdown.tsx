@@ -79,30 +79,30 @@ export default function CategoryExpenseBreakdown() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
+    <div className="grid grid-cols-5 gap-4 items-center">
+        <div className="col-span-3">
             {categoryData.map((category, index) => (
-                <div key={index} className="mb-4">
-                    <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium">{category.name}</span>
-                        <span className="text-sm font-medium">{category.percentage.toFixed(2)}%</span>
+                <div key={index} className="mb-3">
+                    <div className="flex justify-between items-center text-xs mb-1">
+                        <span>{category.name}</span>
+                        <span>{category.percentage.toFixed(1)}%</span>
                     </div>
-                    <Progress value={category.percentage} className="w-full" />
-                    <div className="text-right text-sm text-muted-foreground">
+                    <Progress value={category.percentage} className="h-2" />
+                    <div className="text-right text-xs text-muted-foreground mt-1">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
                     </div>
                 </div>
             ))}
         </div>
-        <div className="flex justify-center items-center">
-            <ResponsiveContainer width="100%" height={200}>
+        <div className="col-span-2 flex justify-center items-center">
+            <ResponsiveContainer width="100%" height={120}>
                 <PieChart>
                     <Pie
                         data={donutData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
+                        innerRadius={40}
+                        outerRadius={50}
                         dataKey="value"
                         startAngle={90}
                         endAngle={450}
@@ -110,7 +110,7 @@ export default function CategoryExpenseBreakdown() {
                         <Cell fill="#FF8042" />
                     </Pie>
                     <foreignObject x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" width="100px" height="100px" style={{ transform: 'translate(-50px, -50px)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '24px', fontWeight: 'bold' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '20px', fontWeight: 'bold' }}>
                             {`${Math.round(expenseIncomeRatio)}%`}
                         </div>
                     </foreignObject>
