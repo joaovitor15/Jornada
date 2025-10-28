@@ -29,20 +29,10 @@ import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
 
-const months = [
-  { value: 0, label: 'Janeiro' },
-  { value: 1, label: 'Fevereiro' },
-  { value: 2, label: 'Março' },
-  { value: 3, label: 'Abril' },
-  { value: 4, label: 'Maio' },
-  { value: 5, label: 'Junho' },
-  { value: 6, label: 'Julho' },
-  { value: 7, label: 'Agosto' },
-  { value: 8, label: 'Setembro' },
-  { value: 9, label: 'Outubro' },
-  { value: 10, label: 'Novembro' },
-  { value: 11, label: 'Dezembro' },
-];
+const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
+  value: index,
+  label: label,
+}));
 
 const currentYear = new Date().getFullYear();
 
@@ -136,13 +126,13 @@ export default function DashboardPage() {
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
         <div className="mb-6 flex flex-wrap items-center justify-start gap-x-6 gap-y-4">
             <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Mês</label>
+                <label className="text-sm font-medium">{text.dashboard.monthLabel}</label>
                 <Select
                     value={String(selectedMonth)}
                     onValueChange={(value) => setSelectedMonth(Number(value))}
                 >
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={text.dashboard.selectPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                         {months.map(month => (
@@ -152,13 +142,13 @@ export default function DashboardPage() {
                 </Select>
             </div>
             <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Ano</label>
+                <label className="text-sm font-medium">{text.dashboard.yearLabel}</label>
                 <Select
                     value={String(selectedYear)}
                     onValueChange={(value) => setSelectedYear(Number(value))}
                 >
                     <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={text.dashboard.selectPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                         {availableYears.map(year => (
@@ -173,7 +163,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                  <CardTitle>Resumo Financeiro Anual</CardTitle>
+                  <CardTitle>{text.dashboard.annualSummaryTitle}</CardTitle>
               </CardHeader>
               <CardContent className="p-4">
                 <FinancialChart

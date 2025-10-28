@@ -18,11 +18,11 @@ import { text } from '@/lib/strings';
 
 function ProfileIcon({ profile }: { profile: string }) {
   switch (profile) {
-    case 'Personal':
+    case text.header.profileTypes.personal:
       return <User className="h-5 w-5 text-primary" />;
-    case 'Home':
+    case text.header.profileTypes.home:
       return <Home className="h-5 w-5 text-primary" />;
-    case 'Business':
+    case text.header.profileTypes.business:
       return <Briefcase className="h-5 w-5 text-primary" />;
     default:
       return <Circle className="h-5 w-5 text-primary" />;
@@ -66,15 +66,15 @@ export default function Header({ menuTrigger }: HeaderProps) {
                   value={activeProfile}
                   onValueChange={setActiveProfile}
                 >
-                  <DropdownMenuRadioItem value="Personal">
+                  <DropdownMenuRadioItem value={text.header.profileTypes.personal}>
                     <User className="mr-2 h-4 w-4" />
                     <span>{text.header.personal}</span>
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="Home">
+                  <DropdownMenuRadioItem value={text.header.profileTypes.home}>
                     <Home className="mr-2 h-4 w-4" />
                     <span>{text.header.home}</span>
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="Business">
+                  <DropdownMenuRadioItem value={text.header.profileTypes.business}>
                     <Briefcase className="mr-2 h-4 w-4" />
                     <span>{text.header.business}</span>
                   </DropdownMenuRadioItem>
