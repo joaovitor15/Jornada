@@ -237,8 +237,8 @@ export default function FinancialChart({
             new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
+              minimumFractionDigits: 0,
               maximumFractionDigits: 0,
-              notation: 'compact',
             }).format(value)
           }
           tick={{ fontSize: 12 }}
