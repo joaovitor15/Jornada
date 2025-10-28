@@ -15,7 +15,6 @@ import {
   Loader2,
   ArrowUpRight,
   ArrowDownLeft,
-  Filter,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ import {
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
+import DonutChart from '@/components/dashboard/DonutChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 import {
@@ -147,53 +147,43 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="p-1">
-        <div className="bg-card border rounded-lg shadow-sm p-4 mb-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Período
-                </label>
+      <div className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex flex-wrap items-center justify-start gap-x-6 gap-y-4">
+            <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Período</label>
                 <Select
-                  value={selectedTimePeriod}
-                  onValueChange={(value) => setSelectedTimePeriod(value as TimePeriod)}
+                    value={selectedTimePeriod}
+                    onValueChange={(value) => setSelectedTimePeriod(value as TimePeriod)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="last-12-months">
-                      Últimos 12 meses
-                    </SelectItem>
-                    <SelectItem value="this-year">Este ano</SelectItem>
-                    <SelectItem value="last-year">Ano passado</SelectItem>
-                  </SelectContent>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="last-12-months">Últimos 12 meses</SelectItem>
+                        <SelectItem value="this-year">Este ano</SelectItem>
+                        <SelectItem value="last-year">Ano passado</SelectItem>
+                    </SelectContent>
                 </Select>
-              </div>
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block">
-                  Tipo de Transação
-                </label>
+            </div>
+            <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Tipo</label>
                 <Select
-                  value={selectedTransactionType}
-                  onValueChange={(value) =>
-                    setSelectedTransactionType(value as TransactionTypeFilter)
-                  }
+                    value={selectedTransactionType}
+                    onValueChange={(value) => setSelectedTransactionType(value as TransactionTypeFilter)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Receitas e Despesas</SelectItem>
-                    <SelectItem value="income">Apenas Receitas</SelectItem>
-                    <SelectItem value="expense">Apenas Despesas</SelectItem>
-                  </SelectContent>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="income">Receitas</SelectItem>
+                        <SelectItem value="expense">Despesas</SelectItem>
+                    </SelectContent>
                 </Select>
-              </div>
             </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="h-full">
               <CardHeader>
@@ -207,8 +197,8 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-1">
-            <Card className="h-full">
+          <div className="lg:col-span-1 grid grid-rows-1 sm:grid-rows-2 gap-6">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   {text.summary.totalBalance}
@@ -217,37 +207,36 @@ export default function DashboardPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center gap-4">
-                <div>
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-6">
                   {loadingBalance ? (
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   ) : (
-                    <p className="text-4xl font-bold">
+                    <p className="text-3xl font-bold">
                       {new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
                       }).format(totalBalance)}
                     </p>
                   )}
-                </div>
                 <div className="flex gap-2">
                   <Button
                     onClick={() => setIsIncomeFormOpen(true)}
                     size="icon"
-                    className="rounded-full bg-green-500 text-white hover:bg-green-600 h-12 w-12"
+                    className="rounded-full bg-green-500 text-white hover:bg-green-600 h-10 w-10"
                   >
-                    <ArrowUpRight className="h-6 w-6" />
+                    <ArrowUpRight className="h-5 w-5" />
                   </Button>
                   <Button
                     onClick={() => setIsExpenseFormOpen(true)}
                     size="icon"
-                    className="rounded-full bg-red-500 text-white hover:bg-red-600 h-12 w-12"
+                    className="rounded-full bg-red-500 text-white hover:bg-red-600 h-10 w-10"
                   >
-                    <ArrowDownLeft className="h-6 w-6" />
+                    <ArrowDownLeft className="h-5 w-5" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
+            <DonutChart />
           </div>
         </div>
       </div>
