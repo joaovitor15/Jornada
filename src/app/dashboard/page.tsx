@@ -8,12 +8,10 @@ import { db } from '@/lib/firebase';
 import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
-import CategoryExpenseBreakdown from '@/components/dashboard/CategoryExpenseBreakdown';
-import RecentTransactions from '@/components/dashboard/RecentTransactions';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -75,22 +73,12 @@ export default function DashboardPage() {
       <div className="p-1">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <div className="lg:col-span-2">
-                <Card className="h-[450px]">
+                <Card className="h-[600px]">
                     <CardContent className="p-4 h-full">
                         <FinancialChart />
                     </CardContent>
                 </Card>
             </div>
-            <Card className="h-[450px] p-4 grid grid-rows-[auto_1fr]">
-                <CardTitle className="mb-4">Despesas por Categoria</CardTitle>
-                <div className="overflow-hidden">
-                    <CategoryExpenseBreakdown />
-                </div>
-            </Card>
-        </div>
-
-        <div className="mt-4">
-            <RecentTransactions />
         </div>
 
         <div className="flex justify-center items-center gap-4 mt-8">
