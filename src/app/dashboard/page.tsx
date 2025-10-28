@@ -73,7 +73,7 @@ export default function DashboardPage() {
       <div className="p-1">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             <div className="lg:col-span-2">
-                <Card className="h-[600px]">
+                <Card className="h-[350px]">
                     <CardContent className="p-4 h-full">
                         <FinancialChart />
                     </CardContent>
