@@ -68,6 +68,8 @@ export const text = {
     goToDashboard: 'Ver Lançamentos',
     newTransaction: 'Nova Despesa',
     newIncome: 'Nova Receita',
+    income: 'Entradas',
+    expenses: 'Saídas',
   },
   addExpenseForm: {
     title: 'Adicionar Nova Despesa',
