@@ -29,7 +29,6 @@ import {
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
-import DonutChart from '@/components/dashboard/DonutChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 import {
@@ -185,11 +184,11 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card className="h-full">
+            <Card>
               <CardHeader>
                   <CardTitle>Resumo Financeiro Anual</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 h-full">
+              <CardContent className="p-4">
                 <FinancialChart
                   timePeriod={selectedTimePeriod}
                   transactionType={selectedTransactionType}
@@ -197,7 +196,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-1 grid grid-rows-1 sm:grid-rows-2 gap-6">
+          <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -236,7 +235,6 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
-            <DonutChart />
           </div>
         </div>
       </div>
