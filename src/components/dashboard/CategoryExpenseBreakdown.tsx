@@ -14,6 +14,22 @@ interface CategoryData {
   percentage: number;
 }
 
+const ProgressBarWithLabel = ({ value }: { value: number }) => {
+  const displayValue = value.toFixed(1);
+  return (
+    <div className="w-full bg-slate-200 rounded-full h-4 relative text-center">
+      <div
+        className="bg-blue-500 h-4 rounded-full"
+        style={{ width: `${value}%` }}
+      />
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
+        {displayValue}%
+      </span>
+    </div>
+  );
+};
+
+
 export default function CategoryExpenseBreakdown() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -76,27 +92,35 @@ export default function CategoryExpenseBreakdown() {
   }
 
   return (
-    <div className="grid grid-cols-5 gap-4 items-center h-full">
-      <div className="col-span-3 flex flex-col justify-center h-full">
-        {categoryData.map((category, index) => (
-          <div key={index} className="grid grid-cols-3 gap-4 items-center text-xs py-1">
-            <div className="truncate">{category.name}</div>
-            <div className="font-semibold text-center">{`${category.percentage.toFixed(1)}%`}</div>
-            <div className="text-muted-foreground text-right">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
+    <div className="grid grid-cols-5 gap-4 h-full">
+      <div className="col-span-3 flex flex-col justify-center h-full overflow-y-auto pr-2">
+        {categoryData.length > 0 ? (
+            categoryData.map((category, index) => (
+                <div key={index} className="mb-2">
+                    <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="truncate font-medium">{category.name}</span>
+                        <span className="text-muted-foreground font-semibold">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
+                        </span>
+                    </div>
+                    <ProgressBarWithLabel value={category.percentage} />
+                </div>
+            ))
+        ) : (
+            <div className="text-center text-sm text-muted-foreground">
+                Sem despesas nesta categoria.
             </div>
-          </div>
-        ))}
+        )}
       </div>
       <div className="col-span-2 flex justify-center items-center h-full">
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={120}>
           <PieChart>
             <Pie
               data={donutData}
               cx="50%"
               cy="50%"
-              innerRadius={30}
-              outerRadius={40}
+              innerRadius={35}
+              outerRadius={45}
               dataKey="value"
               startAngle={90}
               endAngle={450}
@@ -104,7 +128,7 @@ export default function CategoryExpenseBreakdown() {
               <Cell fill="#FF8042" />
             </Pie>
             <foreignObject x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" width="100px" height="100px" style={{ transform: 'translate(-50px, -50px)' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '18px', fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '20px', fontWeight: 'bold' }}>
                 {`${Math.round(expenseIncomeRatio)}%`}
               </div>
             </foreignObject>
