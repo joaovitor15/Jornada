@@ -9,6 +9,7 @@ export const personalExpenseCategories = {
   "Investimentos": ["Mypofit IR", "Status Invest"],
   "Segurança": ["Nord-Security"],
   "Ajuste de Saldo (-)" : ["Ajuste de Saldo (-)"],
+  "Dona Maria": ["Gasto"]
 };
 
 export const personalIncomeCategories = {
