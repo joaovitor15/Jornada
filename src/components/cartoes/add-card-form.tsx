@@ -28,8 +28,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { text } from '@/lib/strings';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle } from 'lucide-react';
+import { CurrencyInput } from '../ui/currency-input';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -47,23 +48,31 @@ const cardSchema = z.object({
 export default function AddCardForm() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
     defaultValues: {
       name: '',
+      limit: undefined,
+      closingDay: undefined,
+      dueDay: undefined,
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   const handleSubmit = async (values: z.infer<typeof cardSchema>) => {
     if (!user || !activeProfile) {
-      toast.error('Você precisa estar logado e ter um perfil ativo.');
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'Você precisa estar logado e ter um perfil ativo.',
+      });
       return;
     }
 
-    setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'cards'), {
         ...values,
@@ -72,14 +81,19 @@ export default function AddCardForm() {
         createdAt: serverTimestamp(),
       });
 
-      toast.success('Cartão adicionado com sucesso!');
+      toast({
+        title: text.common.success,
+        description: 'Cartão adicionado com sucesso!',
+      });
       form.reset();
       setIsOpen(false);
     } catch (error) {
       console.error('Erro ao adicionar cartão:', error);
-      toast.error('Erro ao adicionar o cartão. Tente novamente.');
-    } finally {
-      setIsSubmitting(false);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'Erro ao adicionar o cartão. Tente novamente.',
+      });
     }
   };
 
@@ -105,7 +119,10 @@ export default function AddCardForm() {
                 <FormItem>
                   <FormLabel>{text.addCardForm.cardName}</FormLabel>
                   <FormControl>
-                    <Input placeholder={text.addCardForm.cardNamePlaceholder} {...field} />
+                    <Input
+                      placeholder={text.addCardForm.cardNamePlaceholder}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +135,14 @@ export default function AddCardForm() {
                 <FormItem>
                   <FormLabel>{text.addCardForm.limit}</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder={text.addCardForm.limitPlaceholder} {...field} />
+                    <CurrencyInput
+                      placeholder={text.addCardForm.limitPlaceholder}
+                      disabled={isSubmitting}
+                      value={field.value}
+                      onValueChange={(values) => {
+                        field.onChange(values?.floatValue);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -132,7 +156,13 @@ export default function AddCardForm() {
                   <FormItem>
                     <FormLabel>{text.addCardForm.closingDay}</FormLabel>
                     <FormControl>
-                      <Input type="number" min={1} max={31} {...field} />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,7 +175,13 @@ export default function AddCardForm() {
                   <FormItem>
                     <FormLabel>{text.addCardForm.dueDay}</FormLabel>
                     <FormControl>
-                      <Input type="number" min={1} max={31} {...field} />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -153,11 +189,18 @@ export default function AddCardForm() {
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={isSubmitting}
+              >
                 {text.common.cancel}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {text.addCardForm.addCard}
               </Button>
             </DialogFooter>
