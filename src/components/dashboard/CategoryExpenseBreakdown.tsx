@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface CategoryData {
@@ -76,27 +77,30 @@ export default function CategoryExpenseBreakdown() {
   }
 
   return (
-    <div className="grid grid-cols-10 gap-2 items-center h-full">
-        <div className="col-span-6">
+    <div className="grid grid-cols-5 gap-4 items-center">
+        <div className="col-span-3">
             {categoryData.map((category, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center text-xs mb-2">
-                    <div className="col-span-5 truncate">{category.name}</div>
-                    <div className="col-span-3 text-right font-semibold">{`${category.percentage.toFixed(1)}%`}</div>
-                    <div className="col-span-4 text-right text-muted-foreground">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
+                <div key={index} className="grid grid-cols-2 grid-rows-2 gap-x-2 mb-1">
+                    <div className="text-xs truncate">{category.name}</div>
+                    <div className="text-xs font-semibold text-right">{`${category.percentage.toFixed(1)}%`}</div>
+                    <div className="pr-2">
+                        <Progress value={category.percentage} className="h-1" />
+                    </div>
+                    <div className="text-xs text-muted-foreground text-right">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(category.value)}
                     </div>
                 </div>
             ))}
         </div>
-        <div className="col-span-4 flex justify-center items-center h-full">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="col-span-2 flex justify-center items-center">
+            <ResponsiveContainer width="100%" height={100}>
                 <PieChart>
                     <Pie
                         data={donutData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={35}
-                        outerRadius={45}
+                        innerRadius={30}
+                        outerRadius={40}
                         dataKey="value"
                         startAngle={90}
                         endAngle={450}
