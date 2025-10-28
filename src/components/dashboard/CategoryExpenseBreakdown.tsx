@@ -78,7 +78,8 @@ export default function CategoryExpenseBreakdown() {
     });
 
     return () => {
-        unsubscribeExpenses();n        unsubscribeIncomes();
+        unsubscribeExpenses();
+        unsubscribeIncomes();
     }
 
   }, [user, activeProfile]);
@@ -94,17 +95,19 @@ export default function CategoryExpenseBreakdown() {
     <div className="flex gap-4 h-full">
       <div className="w-3/5 overflow-y-auto pr-2">
         {categoryData.length > 0 ? (
-            categoryData.map((category, index) => (
-                <div key={index} className="mb-2 flex-shrink-0">
-                    <div className="flex justify-between items-center text-xs mb-1">
-                        <span className="truncate font-medium">{category.name}</span>
-                        <span className="text-muted-foreground font-semibold">
+            <div className="space-y-2">
+                {categoryData.map((category, index) => (
+                    <div key={index} className="flex items-center gap-2 text-xs">
+                        <span className="w-1/3 truncate font-medium">{category.name}</span>
+                        <div className="w-1/3">
+                            <ProgressBarWithLabel value={category.percentage} />
+                        </div>
+                        <span className="w-1/3 text-right text-muted-foreground font-semibold">
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
                         </span>
                     </div>
-                    <ProgressBarWithLabel value={category.percentage} />
-                </div>
-            ))
+                ))}
+            </div>
         ) : (
             <div className="flex items-center justify-center h-full">
                 <p className="text-center text-sm text-muted-foreground">
