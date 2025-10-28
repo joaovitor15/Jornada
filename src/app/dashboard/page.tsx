@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
-import DonutChart from '@/components/dashboard/DonutChart';
+import CategoryExpenseBreakdown from '@/components/dashboard/CategoryExpenseBreakdown';
+import CategoryExpenseBarChart from '@/components/dashboard/CategoryExpenseBarChart';
+import CreditCardExpenses from '@/components/dashboard/CreditCardExpenses';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 
@@ -73,18 +75,27 @@ export default function DashboardPage() {
     <>
       <div className="p-1">
         <Card>
-          <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-            <div className="lg:col-span-2">
-              <FinancialChart />
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <CardHeader>
-                <CardTitle>Despesas por Categoria</CardTitle>
-              </CardHeader>
-              <DonutChart />
-            </div>
-          </CardContent>
+            <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+                <div className="lg:col-span-2">
+                    <FinancialChart />
+                </div>
+                <div className="flex flex-col justify-center">
+                    <CardHeader>
+                        <CardTitle>Despesas por Categoria</CardTitle>
+                    </CardHeader>
+                    <CategoryExpenseBreakdown />
+                </div>
+            </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <div>
+                <CategoryExpenseBarChart />
+            </div>
+            <div>
+                <CreditCardExpenses />
+            </div>
+        </div>
 
         <div className="flex justify-center items-center gap-4 mt-8">
           <div>
