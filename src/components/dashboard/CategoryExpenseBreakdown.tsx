@@ -1,21 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
-import { Progress } from '@/components/ui/progress';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface CategoryData {
   name: string;
   value: number;
   percentage: number;
 }
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF6666', '#66FF66', '#6666FF'];
 
 export default function CategoryExpenseBreakdown() {
   const { user } = useAuth();
@@ -79,30 +76,27 @@ export default function CategoryExpenseBreakdown() {
   }
 
   return (
-    <div className="grid grid-cols-5 gap-4 items-center">
-        <div className="col-span-3">
+    <div className="grid grid-cols-10 gap-2 items-center h-full">
+        <div className="col-span-6">
             {categoryData.map((category, index) => (
-                <div key={index} className="mb-3">
-                    <div className="flex justify-between items-center text-xs mb-1">
-                        <span>{category.name}</span>
-                        <span>{category.percentage.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={category.percentage} className="h-2" />
-                    <div className="text-right text-xs text-muted-foreground mt-1">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
+                <div key={index} className="grid grid-cols-12 gap-2 items-center text-xs mb-2">
+                    <div className="col-span-5 truncate">{category.name}</div>
+                    <div className="col-span-3 text-right font-semibold">{`${category.percentage.toFixed(1)}%`}</div>
+                    <div className="col-span-4 text-right text-muted-foreground">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(category.value)}
                     </div>
                 </div>
             ))}
         </div>
-        <div className="col-span-2 flex justify-center items-center">
-            <ResponsiveContainer width="100%" height={120}>
+        <div className="col-span-4 flex justify-center items-center h-full">
+            <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
                         data={donutData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={50}
+                        innerRadius={35}
+                        outerRadius={45}
                         dataKey="value"
                         startAngle={90}
                         endAngle={450}
@@ -110,7 +104,7 @@ export default function CategoryExpenseBreakdown() {
                         <Cell fill="#FF8042" />
                     </Pie>
                     <foreignObject x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" width="100px" height="100px" style={{ transform: 'translate(-50px, -50px)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '20px', fontWeight: 'bold' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', fontSize: '18px', fontWeight: 'bold' }}>
                             {`${Math.round(expenseIncomeRatio)}%`}
                         </div>
                     </foreignObject>
