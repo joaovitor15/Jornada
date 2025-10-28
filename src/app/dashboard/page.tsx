@@ -74,19 +74,25 @@ export default function DashboardPage() {
   return (
     <>
       <div className="p-1">
-        <Card>
-            <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-                <div className="lg:col-span-2">
-                    <FinancialChart />
-                </div>
-                <div className="flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardContent className="p-4">
+                        <FinancialChart />
+                    </CardContent>
+                </Card>
+            </div>
+            <div>
+                <Card>
                     <CardHeader>
                         <CardTitle>Despesas por Categoria</CardTitle>
                     </CardHeader>
-                    <CategoryExpenseBreakdown />
-                </div>
-            </CardContent>
-        </Card>
+                    <CardContent className="p-4">
+                        <CategoryExpenseBreakdown />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
             <div>
