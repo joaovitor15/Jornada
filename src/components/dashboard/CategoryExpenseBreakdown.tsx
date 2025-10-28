@@ -78,8 +78,7 @@ export default function CategoryExpenseBreakdown() {
     });
 
     return () => {
-        unsubscribeExpenses();
-        unsubscribeIncomes();
+        unsubscribeExpenses();n        unsubscribeIncomes();
     }
 
   }, [user, activeProfile]);
@@ -92,11 +91,11 @@ export default function CategoryExpenseBreakdown() {
   }
 
   return (
-    <div className="grid grid-cols-5 gap-4 h-full">
-      <div className="col-span-3 flex flex-col justify-center h-full overflow-y-auto pr-2">
+    <div className="flex gap-4 h-full">
+      <div className="w-3/5 overflow-y-auto pr-2">
         {categoryData.length > 0 ? (
             categoryData.map((category, index) => (
-                <div key={index} className="mb-2">
+                <div key={index} className="mb-2 flex-shrink-0">
                     <div className="flex justify-between items-center text-xs mb-1">
                         <span className="truncate font-medium">{category.name}</span>
                         <span className="text-muted-foreground font-semibold">
@@ -107,12 +106,14 @@ export default function CategoryExpenseBreakdown() {
                 </div>
             ))
         ) : (
-            <div className="text-center text-sm text-muted-foreground">
-                Sem despesas nesta categoria.
+            <div className="flex items-center justify-center h-full">
+                <p className="text-center text-sm text-muted-foreground">
+                    Sem despesas nesta categoria.
+                </p>
             </div>
         )}
       </div>
-      <div className="col-span-2 flex justify-center items-center h-full">
+      <div className="w-2/5 flex justify-center items-center">
         <ResponsiveContainer width="100%" height={120}>
           <PieChart>
             <Pie

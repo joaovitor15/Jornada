@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import { Loader2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import AddIncomeForm from '@/components/dashboard/add-income-form';
 import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
@@ -82,16 +82,12 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-            <div>
-                <Card className="h-[350px]">
-                    <CardHeader>
-                        <CardTitle>Despesas por Categoria</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                        <CategoryExpenseBreakdown />
-                    </CardContent>
-                </Card>
-            </div>
+            <Card className="h-[350px] p-4 grid grid-rows-[auto_1fr]">
+                <CardTitle className="mb-4">Despesas por Categoria</CardTitle>
+                <div className="overflow-hidden">
+                    <CategoryExpenseBreakdown />
+                </div>
+            </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
