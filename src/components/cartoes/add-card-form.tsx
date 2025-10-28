@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -29,8 +28,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
+import { type Card } from '@/lib/types';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -45,11 +45,17 @@ const cardSchema = z.object({
     .max(31, 'O dia deve ser entre 1 e 31'),
 });
 
-export default function AddCardForm() {
+type CardFormProps = {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  cardToEdit?: Card | null;
+};
+
+export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const isEditMode = !!cardToEdit;
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
@@ -60,6 +66,26 @@ export default function AddCardForm() {
       dueDay: undefined,
     },
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (isEditMode && cardToEdit) {
+        form.reset({
+          name: cardToEdit.name,
+          limit: cardToEdit.limit,
+          closingDay: cardToEdit.closingDay,
+          dueDay: cardToEdit.dueDay,
+        });
+      } else {
+        form.reset({
+          name: '',
+          limit: undefined,
+          closingDay: undefined,
+          dueDay: undefined,
+        });
+      }
+    }
+  }, [isOpen, isEditMode, cardToEdit, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -74,41 +100,46 @@ export default function AddCardForm() {
     }
 
     try {
-      await addDoc(collection(db, 'cards'), {
-        ...values,
-        userId: user.uid,
-        profile: activeProfile,
-        createdAt: serverTimestamp(),
-      });
-
-      toast({
-        title: text.common.success,
-        description: 'Cartão adicionado com sucesso!',
-      });
-      form.reset();
-      setIsOpen(false);
+      if (isEditMode && cardToEdit?.id) {
+        const cardRef = doc(db, 'cards', cardToEdit.id);
+        await updateDoc(cardRef, values);
+        toast({
+          title: text.common.success,
+          description: 'Cartão atualizado com sucesso!',
+        });
+      } else {
+        await addDoc(collection(db, 'cards'), {
+          ...values,
+          userId: user.uid,
+          profile: activeProfile,
+          createdAt: serverTimestamp(),
+        });
+        toast({
+          title: text.common.success,
+          description: 'Cartão adicionado com sucesso!',
+        });
+      }
+      onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao adicionar cartão:', error);
+      console.error('Erro ao salvar cartão:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: 'Erro ao adicionar o cartão. Tente novamente.',
+        description: `Erro ao ${isEditMode ? 'atualizar' : 'adicionar'} o cartão. Tente novamente.`,
       });
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {text.addCardForm.title}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{text.addCardForm.title}</DialogTitle>
-          <DialogDescription>{text.addCardForm.description}</DialogDescription>
+          <DialogTitle>{isEditMode ? 'Editar Cartão' : text.addCardForm.title}</DialogTitle>
+          <DialogDescription>
+            {isEditMode
+              ? 'Atualize as informações do seu cartão.'
+              : text.addCardForm.description}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -192,7 +223,7 @@ export default function AddCardForm() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
                 {text.common.cancel}
@@ -201,7 +232,7 @@ export default function AddCardForm() {
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {text.addCardForm.addCard}
+                {isEditMode ? 'Salvar Alterações' : text.addCardForm.addCard}
               </Button>
             </DialogFooter>
           </form>
