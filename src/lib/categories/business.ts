@@ -1,11 +1,16 @@
 export const businessExpenseCategories = {
-    "Impostos": ["DARF", "DAS"],
-    "Funcionários": ["FGTS", "INSS", "IRRF", "Salário"],
-    "Aluguel": ["Sala", "Casa"],
-    "Fornecedores": ["Pro A,", "Jogador"],
-    "Sistema": ["Sistema"],
-    "Despesas": ["Luz", "Água", "Internet", "Alarmes", "Telefone", "Ar condicionado", "Gazin", "Frete", "Condomínio"],
-    "Serviços": ["Contabilidade", "Marketing", "Advogado"],
+   "Fornecedores": ["Pagamentos Fonecedores"], 
+   "Funcionários": ["João Vitor", "Mari Lucia Dama", "Lucas", "Lisi", "Aline", "Jesica", "Eliza"],
+   "Conta Consumo": ["Água", "Luz (SA)", "Luz (AP1)"],
+   "Sistema": ["BrPhonia", "Trier Sistemas", "SKY TEF"],
+   "PBM": ["Portal Drogaria", "Funcional", "Portal E-pharma"],
+   "Agafarma": ["Mensalidade", "Cartão"],
+   "Maketing": ["Rádio", "ACI", "Outros"],
+   "Escritorio": ["Lider", "Serplamed", "Certificado Digital"],
+   "Impostos": ["FGTS", "Receitas (INSS + IRPF)", "Simples Nacional"],
+   "Fiscalização" : ["CRF/RS, Certidão Simplificada, ARL (Lixos)"]
+
+    
 };
 
 export const businessIncomeCategories = {
