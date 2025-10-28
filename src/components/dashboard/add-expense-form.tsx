@@ -55,10 +55,10 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { text } from '@/lib/strings';
 import {
+  type Card,
   type Expense,
   type PaymentMethod,
   type Profile,
-  type Card,
 } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
@@ -66,10 +66,8 @@ import {
   homeExpenseCategories,
   businessExpenseCategories,
 } from '@/lib/categories';
-import AddCardForm from './add-card-form';
 
 const basePaymentMethods: PaymentMethod[] = ['Pix', 'Dinheiro', 'Débito'];
-const ADD_NEW_CARD_VALUE = 'add_new_card';
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -120,8 +118,6 @@ export default function AddExpenseForm({
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const isEditMode = !!expenseToEdit;
-
-  const [isAddCardFormOpen, setIsAddCardFormOpen] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -279,258 +275,234 @@ export default function AddExpenseForm({
     }
   }
 
-  const handleCardAdded = (cardId: string, cardName: string) => {
-    setValue('paymentMethod', cardName, { shouldValidate: true });
-    setIsAddCardFormOpen(false);
-  };
-
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="sm:max-w-[425px]"
-          onInteractOutside={(e) => {
-            if (isSubmitting) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode
-                ? text.editExpenseForm.title
-                : text.addExpenseForm.title}
-            </DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-4 py-4"
-            >
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onInteractOutside={(e) => {
+          if (isSubmitting) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {isEditMode
+              ? text.editExpenseForm.title
+              : text.addExpenseForm.title}
+          </DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{text.common.description}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={text.addExpenseForm.descriptionPlaceholder}
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="description"
+                name="mainCategory"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{text.common.description}</FormLabel>
+                    <FormLabel>{text.common.mainCategory}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectCategory}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        {allCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="subcategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.subcategory}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              text.addExpenseForm.selectSubcategory
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        {selectedCategory
+                          ? subcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))
+                          : allSubcategories.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.amount}</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder={text.addExpenseForm.descriptionPlaceholder}
-                        {...field}
+                      <CurrencyInput
+                        placeholder={text.addExpenseForm.amountPlaceholder}
                         disabled={isSubmitting}
+                        value={field.value}
+                        onValueChange={(values) => {
+                          field.onChange(values.floatValue);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="mainCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.mainCategory}</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                        }}
-                        value={field.value}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={text.addExpenseForm.selectCategory}
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent position="popper">
-                          {allCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="subcategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.subcategory}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                text.addExpenseForm.selectSubcategory
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent position="popper">
-                          {selectedCategory
-                            ? subcategories.map((sub) => (
-                                <SelectItem key={sub} value={sub}>
-                                  {sub}
-                                </SelectItem>
-                              ))
-                            : allSubcategories.map((sub) => (
-                                <SelectItem key={sub} value={sub}>
-                                  {sub}
-                                </SelectItem>
-                              ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.amount}</FormLabel>
-                      <FormControl>
-                        <CurrencyInput
-                          placeholder={text.addExpenseForm.amountPlaceholder}
-                          disabled={isSubmitting}
-                          value={field.value}
-                          onValueChange={(values) => {
-                            field.onChange(values.floatValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.paymentMethod}</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          if (value === ADD_NEW_CARD_VALUE) {
-                            setIsAddCardFormOpen(true);
-                          } else {
-                            field.onChange(value);
-                          }
-                        }}
-                        value={field.value}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                text.addExpenseForm.selectPaymentMethod
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent position="popper">
-                          {paymentMethods.map((method) => (
-                            <SelectItem key={method} value={method}>
-                              {method}
-                            </SelectItem>
-                          ))}
-                          <SelectItem
-                            value={ADD_NEW_CARD_VALUE}
-                            className="text-primary focus:text-primary"
-                          >
-                            {text.addCardForm.addNewCard}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <FormField
                 control={form.control}
-                name="date"
+                name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={cn(
-                              'w-full justify-start text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                            disabled={isSubmitting}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, 'dd/MM/yyyy', { locale: ptBR })
-                            ) : (
-                              <span>{text.addExpenseForm.pickDate}</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          disabled={isSubmitting}
-                          locale={ptBR}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>{text.common.paymentMethod}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              text.addExpenseForm.selectPaymentMethod
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper">
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method} value={method as string}>
+                            {method as string}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={{
-                    backgroundColor: 'hsl(var(--accent))',
-                    color: 'hsl(var(--accent-foreground))',
-                  }}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {isEditMode
-                    ? text.editExpenseForm.save
-                    : text.addExpenseForm.title}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      <AddCardForm
-        isOpen={isAddCardFormOpen}
-        onOpenChange={setIsAddCardFormOpen}
-        onCardAdded={handleCardAdded}
-      />
-    </>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                          disabled={isSubmitting}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? (
+                            format(field.value, 'dd/MM/yyyy', { locale: ptBR })
+                          ) : (
+                            <span>{text.addExpenseForm.pickDate}</span>
+                          )}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        disabled={isSubmitting}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  backgroundColor: 'hsl(var(--accent))',
+                  color: 'hsl(var(--accent-foreground))',
+                }}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {isEditMode
+                  ? text.editExpenseForm.save
+                  : text.addExpenseForm.addExpense}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

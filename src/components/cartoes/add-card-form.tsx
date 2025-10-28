@@ -10,12 +10,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog, // Changed from Modal
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -28,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { text } from '@/lib/strings';
 import { toast } from 'sonner';
+import { Loader2, PlusCircle } from 'lucide-react';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -42,16 +44,11 @@ const cardSchema = z.object({
     .max(31, 'O dia deve ser entre 1 e 31'),
 });
 
-interface AddCardFormProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onCardAdded: (cardId: string, cardName: string) => void;
-}
-
-export default function AddCardForm({ isOpen, onOpenChange, onCardAdded }: AddCardFormProps) {
+export default function AddCardForm() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<z.infer<typeof cardSchema>>({
     resolver: zodResolver(cardSchema),
@@ -68,7 +65,7 @@ export default function AddCardForm({ isOpen, onOpenChange, onCardAdded }: AddCa
 
     setIsSubmitting(true);
     try {
-      const docRef = await addDoc(collection(db, 'cards'), {
+      await addDoc(collection(db, 'cards'), {
         ...values,
         userId: user.uid,
         profile: activeProfile,
@@ -76,9 +73,8 @@ export default function AddCardForm({ isOpen, onOpenChange, onCardAdded }: AddCa
       });
 
       toast.success('Cartão adicionado com sucesso!');
-      onCardAdded(docRef.id, values.name);
       form.reset();
-      onOpenChange(false);
+      setIsOpen(false);
     } catch (error) {
       console.error('Erro ao adicionar cartão:', error);
       toast.error('Erro ao adicionar o cartão. Tente novamente.');
@@ -88,7 +84,13 @@ export default function AddCardForm({ isOpen, onOpenChange, onCardAdded }: AddCa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          {text.addCardForm.title}
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{text.addCardForm.title}</DialogTitle>
@@ -122,38 +124,41 @@ export default function AddCardForm({ isOpen, onOpenChange, onCardAdded }: AddCa
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="closingDay"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.addCardForm.closingDay}</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={1} max={31} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="dueDay"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.addCardForm.dueDay}</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={1} max={31} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="closingDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.addCardForm.closingDay}</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={31} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dueDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.addCardForm.dueDay}</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={31} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                 {text.common.cancel}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Adicionando...' : text.addCardForm.addCard}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {text.addCardForm.addCard}
               </Button>
             </DialogFooter>
           </form>

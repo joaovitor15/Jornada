@@ -95,6 +95,7 @@ export const text = {
     selectPaymentMethod: 'Selecione um meio de pagamento',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
+    addExpense: 'Adicionar Despesa',
     addSuccess: 'Despesa adicionada com sucesso.',
     addError: 'Falha ao adicionar despesa. Por favor, tente novamente.',
     notLoggedIn: 'Você deve estar logado para adicionar uma despesa.',
