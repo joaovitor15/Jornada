@@ -146,7 +146,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="p-4 md:p-6 lg:p-8">
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
         <div className="mb-6 flex flex-wrap items-center justify-start gap-x-6 gap-y-4">
             <div className="flex items-center gap-2">
                 <label className="text-sm font-medium">Período</label>
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                 <label className="text-sm font-medium">Tipo</label>
                 <Select
                     value={selectedTransactionType}
-                    onValueChange={(value) => setSelectedTransactionType(value as TransactionTypeFilter)}
+                    onValuechange={(value) => setSelectedTransactionType(value as TransactionTypeFilter)}
                 >
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Selecione" />
