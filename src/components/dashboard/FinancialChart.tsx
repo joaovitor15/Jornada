@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   collection,
   query,
@@ -12,7 +12,18 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
-import { format, getYear, setMonth } from 'date-fns';
+import {
+  format,
+  getYear,
+  getMonth,
+  setMonth,
+  subMonths,
+  startOfYear,
+  endOfYear,
+  eachMonthOfInterval,
+  isWithinInterval,
+  subYears,
+} from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   ResponsiveContainer,
@@ -33,23 +44,37 @@ interface ChartData {
   expense: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type TimePeriod = 'last-12-months' | 'this-year' | 'last-year';
+type TransactionTypeFilter = 'all' | 'income' | 'expense';
+
+interface FinancialChartProps {
+  timePeriod: TimePeriod;
+  transactionType: TransactionTypeFilter;
+}
+
+const CustomTooltip = ({ active, payload, label, transactionType }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background border border-border p-2 rounded-lg shadow-lg">
         <p className="label font-bold">{`${label}`}</p>
-        <p className="intro text-green-500">{
-          `Receita: ${new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }).format(payload[0].value)}`
-        }</p>
-        <p className="intro text-red-500">{
-          `Despesa: ${new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }).format(payload[1].value)}`
-        }</p>
+        {(transactionType === 'all' || transactionType === 'income') && payload[0] && (
+          <p className="intro text-green-500">{`Receita: ${new Intl.NumberFormat(
+            'pt-BR',
+            {
+              style: 'currency',
+              currency: 'BRL',
+            }
+          ).format(payload[0].value)}`}</p>
+        )}
+        {(transactionType === 'all' || transactionType === 'expense') && payload[transactionType === 'all' ? 1 : 0] && (
+          <p className="intro text-red-500">{`Despesa: ${new Intl.NumberFormat(
+            'pt-BR',
+            {
+              style: 'currency',
+              currency: 'BRL',
+            }
+          ).format(payload[transactionType === 'all' ? 1 : 0].value)}`}</p>
+        )}
       </div>
     );
   }
@@ -57,12 +82,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function FinancialChart() {
+export default function FinancialChart({
+  timePeriod,
+  transactionType,
+}: FinancialChartProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const animationKey = useMemo(() => `${timePeriod}-${transactionType}-${activeProfile}`, [timePeriod, transactionType, activeProfile]);
 
   useEffect(() => {
     if (!user) {
@@ -70,11 +100,13 @@ export default function FinancialChart() {
       return;
     }
 
+    setLoading(true);
+    setError(null);
+
     const incomesQuery = query(
       collection(db, 'incomes'),
       where('userId', '==', user.uid)
     );
-
     const expensesQuery = query(
       collection(db, 'expenses'),
       where('userId', '==', user.uid)
@@ -82,67 +114,104 @@ export default function FinancialChart() {
 
     const handleSnapshots = (incomesSnapshot: any, expensesSnapshot: any) => {
       try {
-        setLoading(true);
-        const monthlyData = new Map<string, ChartData>();
-        const currentYear = getYear(new Date());
+        const now = new Date();
+        let startDate: Date, endDate: Date;
 
-        for (let i = 0; i < 12; i++) {
-          const monthDate = setMonth(new Date(currentYear, 0, 1), i);
-          const monthKey = format(monthDate, 'yyyy-MM');
-          const monthName = format(monthDate, 'MMM', { locale: ptBR });
-          monthlyData.set(monthKey, { month: monthName.charAt(0).toUpperCase() + monthName.slice(1), monthKey, income: 0, expense: 0 });
+        if (timePeriod === 'last-12-months') {
+            startDate = subMonths(now, 11);
+            startDate.setDate(1);
+            endDate = now;
+        } else if (timePeriod === 'this-year') {
+            startDate = startOfYear(now);
+            endDate = now;
+        } else { // 'last-year'
+            const lastYearDate = subYears(now, 1);
+            startDate = startOfYear(lastYearDate);
+            endDate = endOfYear(lastYearDate);
         }
+        
+        const interval = { start: startDate, end: endDate };
+        const monthsInInterval = eachMonthOfInterval(interval);
 
-        const incomes = incomesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'income' })) as Transaction[];
-        const expenses = expensesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'expense' })) as Transaction[];
-        const transactions = [...incomes, ...expenses];
-
-        const filteredTransactions = transactions.filter(t => t.profile === activeProfile);
-
-        filteredTransactions.forEach((transaction) => {
-          const date = (transaction.date as unknown as Timestamp).toDate();
-          if (getYear(date) !== currentYear) return;
-          
-          const monthKey = format(date, 'yyyy-MM');
-          const entry = monthlyData.get(monthKey);
-
-          if (entry) {
-            if (transaction.type === 'income') {
-              entry.income += transaction.amount;
-            } else {
-              entry.expense += transaction.amount;
-            }
-          }
+        const monthlyData = new Map<string, ChartData>();
+        monthsInInterval.forEach(monthDate => {
+            const monthKey = format(monthDate, 'yyyy-MM');
+            const monthName = format(monthDate, 'MMM', { locale: ptBR });
+            monthlyData.set(monthKey, {
+                month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+                monthKey,
+                income: 0,
+                expense: 0,
+            });
         });
 
-        const sortedData = Array.from(monthlyData.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+        const processTransactions = (snapshot: any, type: 'income' | 'expense') => {
+            snapshot.docs.forEach((doc: any) => {
+                const transaction = { ...doc.data(), id: doc.id, type } as Transaction;
+                if (transaction.profile !== activeProfile) return;
+
+                const date = (transaction.date as unknown as Timestamp).toDate();
+                if (!isWithinInterval(date, interval)) return;
+                
+                const monthKey = format(date, 'yyyy-MM');
+                const entry = monthlyData.get(monthKey);
+                if (entry) {
+                    if (type === 'income') {
+                        entry.income += transaction.amount;
+                    } else {
+                        entry.expense += transaction.amount;
+                    }
+                }
+            });
+        };
+
+        if (transactionType === 'all' || transactionType === 'income') {
+            processTransactions(incomesSnapshot, 'income');
+        }
+        if (transactionType === 'all' || transactionType === 'expense') {
+            processTransactions(expensesSnapshot, 'expense');
+        }
+
+        const sortedData = Array.from(monthlyData.values()).sort((a, b) =>
+          a.monthKey.localeCompare(b.monthKey)
+        );
+        
         setChartData(sortedData);
       } catch (err) {
-        setError('Failed to process chart data.');
+        console.error(err);
+        setError('Falha ao processar os dados do gráfico.');
       } finally {
         setLoading(false);
       }
     };
 
     const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
-      const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-        handleSnapshots(incomesSnapshot, expensesSnapshot);
-      });
+      const unsubscribeExpenses = onSnapshot(
+        expensesQuery,
+        (expensesSnapshot) => {
+          handleSnapshots(incomesSnapshot, expensesSnapshot);
+        },
+        (err) => {
+          console.error(err);
+          setError('Falha ao buscar despesas.');
+          setLoading(false);
+        }
+      );
       return () => unsubscribeExpenses();
     }, (err) => {
       console.error(err);
-      setError('Failed to fetch incomes.');
+      setError('Falha ao buscar receitas.');
       setLoading(false);
     });
 
     return () => {
       unsubscribeIncomes();
     };
-  }, [user, activeProfile]);
+  }, [user, activeProfile, timePeriod, transactionType]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-10">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -151,27 +220,36 @@ export default function FinancialChart() {
   if (error) {
     return <p className="text-red-500 text-center py-10">{error}</p>;
   }
+  
+  const noData = chartData.every(d => d.income === 0 && d.expense === 0);
+
+  if (noData) {
+    return <div className="flex justify-center items-center h-full text-muted-foreground">Nenhum dado encontrado para os filtros selecionados.</div>;
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
+    <ResponsiveContainer width="100%" height={280} key={animationKey}>
+      <AreaChart
+        data={chartData}
+        margin={{ top: 20, right: 20, left: -10, bottom: 20 }}
+      >
         <defs>
           <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#4CAF50" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#4CAF50" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#FF7300" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="#FF7300" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} />
-        <XAxis 
-          dataKey="month" 
+        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
+        <XAxis
+          dataKey="month"
           interval={0}
-          tick={{ fontSize: 12 }} 
-          axisLine={false} 
-          tickLine={false} 
+          tick={{ fontSize: 12 }}
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
           width={80}
@@ -180,22 +258,41 @@ export default function FinancialChart() {
               style: 'currency',
               currency: 'BRL',
               maximumFractionDigits: 0,
+              notation: 'compact',
             }).format(value)
           }
           tick={{ fontSize: 12 }}
-          tickCount={8}
+          tickCount={6}
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend 
-          verticalAlign="top" 
-          align="right" 
+        <Tooltip content={<CustomTooltip transactionType={transactionType} />} />
+        <Legend
+          verticalAlign="top"
+          align="right"
           iconSize={14}
-          wrapperStyle={{ fontSize: '14px', paddingTop: '10px' }}
+          wrapperStyle={{ fontSize: '14px', top: '0px' }}
         />
-        <Area type="monotone" dataKey="income" stroke="#4CAF50" fill="url(#colorIncome)" name="Receita" strokeWidth={2} />
-        <Area type="monotone" dataKey="expense" stroke="#FF7300" fill="url(#colorExpense)" name="Despesa" strokeWidth={2} />
+        {(transactionType === 'all' || transactionType === 'income') && (
+          <Area
+            type="monotone"
+            dataKey="income"
+            stroke="#4CAF50"
+            fill="url(#colorIncome)"
+            name="Receita"
+            strokeWidth={2}
+          />
+        )}
+        {(transactionType === 'all' || transactionType === 'expense') && (
+          <Area
+            type="monotone"
+            dataKey="expense"
+            stroke="#FF7300"
+            fill="url(#colorExpense)"
+            name="Despesa"
+            strokeWidth={2}
+          />
+        )}
       </AreaChart>
     </ResponsiveContainer>
   );
