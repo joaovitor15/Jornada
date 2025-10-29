@@ -40,3 +40,12 @@ export type Card = {
   dueDay: number;
   createdAt: Timestamp;
 };
+
+export type BillPayment = {
+  id?: string;
+  userId: string;
+  profile: Profile;
+  cardId: string;
+  amount: number;
+  date: Timestamp;
+};
