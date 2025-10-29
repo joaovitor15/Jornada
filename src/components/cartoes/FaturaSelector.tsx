@@ -16,8 +16,6 @@ import {
   where,
   getDocs,
   Timestamp,
-  orderBy,
-  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -59,26 +57,12 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
 
       try {
         const today = new Date();
-        let monthsToFetch = [];
-
-        // Get last transaction to have a better range
-        const lastTransactionQuery = query(
-            collection(db, 'expenses'),
-            where('userId', '==', user.uid),
-            where('profile', '==', activeProfile),
-            where('paymentMethod', '==', `Cartão: ${card.name}`),
-            orderBy('date', 'desc'),
-            limit(1)
-        );
-        const lastTransactionSnap = await getDocs(lastTransactionQuery);
-        const lastTransactionDate = lastTransactionSnap.empty ? new Date() : (lastTransactionSnap.docs[0].data().date as Timestamp).toDate();
-
-        let currentDate = startOfMonth(new Date());
-
+        const monthsToFetch = [];
+        
+        // Fetch last 12 months from today
         for (let i = 0; i < 12; i++) {
-           if (currentDate < startOfMonth(subMonths(lastTransactionDate, 1))) break;
-            monthsToFetch.push({ month: getMonth(currentDate), year: getYear(currentDate) });
-            currentDate = subMonths(currentDate, 1);
+            const dateToFetch = subMonths(today, i);
+            monthsToFetch.push({ month: getMonth(dateToFetch), year: getYear(dateToFetch) });
         }
         
         const faturasDataPromises = monthsToFetch.map(async ({ month, year }) => {
