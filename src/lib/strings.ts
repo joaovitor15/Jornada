@@ -165,9 +165,19 @@ export const text = {
     deleteConfirmDescription:
       'Esta ação não pode ser desfeita. Isso excluirá permanentemente esta receita de nossos servidores.',
   },
+  billPaymentsList: {
+    noPayments: 'Nenhum pagamento de fatura registrado.',
+    deleteSuccess: 'Pagamento de fatura excluído.',
+    deleteError: 'Falha ao excluir pagamento de fatura.',
+    fetchError: 'Falha ao buscar pagamentos de fatura.',
+    deleteConfirmTitle: 'Excluir este pagamento?',
+    deleteConfirmDescription:
+      'Esta ação não pode ser desfeita. Isso excluirá permanentemente este registro de pagamento.',
+  },
   lists: {
     expenses: 'Despesas',
     income: 'Receitas',
+    billPayments: 'Pagamentos de Fatura',
   },
   common: {
     description: 'Descrição',
