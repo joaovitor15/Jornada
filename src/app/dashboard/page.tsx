@@ -37,6 +37,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
 import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
+import { BillPayment } from '@/lib/types';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -86,6 +87,7 @@ export default function DashboardPage() {
 
     const incomesQuery = baseQuery('incomes');
     const expensesQuery = baseQuery('expenses');
+    const billPaymentsQuery = baseQuery('billPayments');
 
     const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
       const incomes = incomesSnapshot.docs.map((doc) => ({
@@ -93,11 +95,15 @@ export default function DashboardPage() {
         id: doc.id,
       }));
 
-      const unsubscribeExpenses = onSnapshot(
-        expensesQuery,
-        (expensesSnapshot) => {
-          const expenses = expensesSnapshot.docs.map((doc) => ({
-            ...(doc.data() as Omit<Transaction, 'id'>),
+      const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
+        const expenses = expensesSnapshot.docs.map((doc) => ({
+          ...(doc.data() as Omit<Transaction, 'id'>),
+          id: doc.id,
+        }));
+        
+        const unsubscribeBillPayments = onSnapshot(billPaymentsQuery, (billPaymentsSnapshot) => {
+           const billPayments = billPaymentsSnapshot.docs.map((doc) => ({
+            ...(doc.data() as Omit<BillPayment, 'id'>),
             id: doc.id,
           }));
 
@@ -121,7 +127,7 @@ export default function DashboardPage() {
             setAvailableYears([currentYear]);
           }
 
-          const filterByMonthAndYear = (t: Omit<Transaction, 'id'>) => {
+          const filterByMonthAndYear = (t: Omit<Transaction | BillPayment, 'id'>) => {
             if (!t.date) return false;
             const date = (t.date as unknown as Timestamp).toDate();
             return (
@@ -132,16 +138,26 @@ export default function DashboardPage() {
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
             .reduce((acc, curr) => acc + curr.amount, 0);
-          const monthlyExpenses = expenses
+
+          const monthlyNonCardExpenses = expenses
+            .filter(filterByMonthAndYear)
+            .filter(e => !e.paymentMethod.startsWith('Cartão:'))
+            .reduce((acc, curr) => acc + curr.amount, 0);
+          
+          const monthlyBillPayments = billPayments
             .filter(filterByMonthAndYear)
             .reduce((acc, curr) => acc + curr.amount, 0);
 
+          const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
+
           setTotalIncomes(monthlyIncomes);
-          setTotalExpenses(monthlyExpenses);
-          setTotalBalance(monthlyIncomes - monthlyExpenses);
+          setTotalExpenses(totalMonthlyExpenses);
+          setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
           setLoadingBalance(false);
-        }
-      );
+        });
+
+        return () => unsubscribeBillPayments();
+      });
 
       return () => unsubscribeExpenses();
     });

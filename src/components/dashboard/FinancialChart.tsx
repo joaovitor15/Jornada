@@ -11,7 +11,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { Transaction } from '@/lib/types';
+import { Transaction, BillPayment } from '@/lib/types';
 import {
   format,
   getYear,
@@ -100,8 +100,13 @@ export default function FinancialChart({
       
     const incomesQuery = baseQuery('incomes');
     const expensesQuery = baseQuery('expenses');
+    const billPaymentsQuery = baseQuery('billPayments');
 
-    const handleSnapshots = (incomesSnapshot: any, expensesSnapshot: any) => {
+    const handleSnapshots = (
+      incomesSnapshot: any,
+      expensesSnapshot: any,
+      billPaymentsSnapshot: any
+    ) => {
       try {
         const yearDate = setYear(new Date(), year);
         const startDate = startOfYear(yearDate);
@@ -122,9 +127,9 @@ export default function FinancialChart({
             });
         });
 
-        const processTransactions = (snapshot: any, type: 'income' | 'expense') => {
+        const processTransactions = (snapshot: any, type: 'income' | 'expense' | 'billPayment') => {
             snapshot.docs.forEach((doc: any) => {
-                const transaction = { ...doc.data(), id: doc.id } as Transaction;
+                const transaction = { ...doc.data(), id: doc.id } as Transaction | BillPayment;
                 const date = (transaction.date as unknown as Timestamp).toDate();
                 if (getYear(date) !== year) return;
                 
@@ -133,7 +138,11 @@ export default function FinancialChart({
                 if (entry) {
                     if (type === 'income') {
                         entry.income += transaction.amount;
-                    } else {
+                    } else if (type === 'expense') {
+                      if (!(transaction as Transaction).paymentMethod.startsWith('Cartão:')) {
+                        entry.expense += transaction.amount;
+                      }
+                    } else if (type === 'billPayment') {
                         entry.expense += transaction.amount;
                     }
                 }
@@ -142,6 +151,7 @@ export default function FinancialChart({
 
         processTransactions(incomesSnapshot, 'income');
         processTransactions(expensesSnapshot, 'expense');
+        processTransactions(billPaymentsSnapshot, 'billPayment');
 
         const sortedData = Array.from(monthlyData.values()).sort((a, b) =>
           a.monthKey.localeCompare(b.monthKey)
@@ -160,7 +170,18 @@ export default function FinancialChart({
       const unsubscribeExpenses = onSnapshot(
         expensesQuery,
         (expensesSnapshot) => {
-          handleSnapshots(incomesSnapshot, expensesSnapshot);
+          const unsubscribeBillPayments = onSnapshot(
+            billPaymentsQuery,
+            (billPaymentsSnapshot) => {
+              handleSnapshots(incomesSnapshot, expensesSnapshot, billPaymentsSnapshot);
+            },
+            (err) => {
+              console.error(err);
+              setError('Falha ao buscar pagamentos de fatura.');
+              setLoading(false);
+            }
+          );
+          return () => unsubscribeBillPayments();
         },
         (err) => {
           console.error(err);
