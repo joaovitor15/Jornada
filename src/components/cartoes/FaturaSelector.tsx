@@ -16,11 +16,13 @@ import {
   where,
   getDocs,
   Timestamp,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, getMonth, getYear, addMonths } from 'date-fns';
+import { subMonths, getMonth, getYear, addMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -56,14 +58,34 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
       setLoading(true);
 
       try {
+        const longestInstallmentQuery = query(
+          collection(db, 'expenses'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('paymentMethod', '==', `Cartão: ${card.name}`),
+          orderBy('installments', 'desc'),
+          limit(1)
+        );
+
+        const longestInstallmentSnap = await getDocs(longestInstallmentQuery);
+        let maxInstallments = 0;
+        if (!longestInstallmentSnap.empty) {
+          maxInstallments = longestInstallmentSnap.docs[0].data().installments || 1;
+        }
+
         const today = new Date();
-        // Vamos checar os últimos 12 meses e os próximos 12 para pegar parcelas futuras
-        const monthsToFetch = Array.from({ length: 25 }).map((_, i) => {
-            const date = subMonths(addMonths(today, 12), i);
+        const futureMonthsToShow = Math.max(12, maxInstallments); 
+        
+        const monthsToFetch = Array.from({ length: 12 + futureMonthsToShow }).map((_, i) => {
+            const date = subMonths(addMonths(today, futureMonthsToShow), i);
             return { month: getMonth(date), year: getYear(date) };
         });
+
+        const uniqueMonths = monthsToFetch.filter(
+          (f, i, self) => i === self.findIndex(t => t.month === f.month && t.year === f.year)
+        );
         
-        const faturasDataPromises = monthsToFetch.map(async ({ month, year }) => {
+        const faturasDataPromises = uniqueMonths.map(async ({ month, year }) => {
             const { startDate, endDate, dueDate, closingDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
             
             const expensesQuery = query(
@@ -88,10 +110,8 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             const [expensesSnap, paymentsSnap] = await Promise.all([getDocs(expensesQuery), getDocs(paymentsQuery)]);
 
             const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-
-            // Only show invoices that have expenses
-            if (totalExpenses === 0) return null;
-
+            
+            // Do not filter out invoices with zero expenses, to show future installments
             const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
             const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
 
@@ -99,9 +119,8 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         });
 
         const resolvedFaturas = (await Promise.all(faturasDataPromises))
-            .filter(Boolean) as Fatura[];
+            .filter(f => f.value > 0 || (f.year > today.getFullYear() || (f.year === today.getFullYear() && f.month >= today.getMonth()))) as Fatura[];
 
-        // Ordena as faturas da mais recente para a mais antiga
         resolvedFaturas.sort((a, b) => {
             if (a.year !== b.year) return b.year - a.year;
             return b.month - a.month;
@@ -153,7 +172,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
               >
                 <div>
                   <p className="font-semibold">{months[fatura.month]} de {fatura.year}</p>
-                  <p className={`text-sm ${fatura.status.includes('paga') ? 'text-green-500' : (fatura.status.includes('vencida') ? 'text-red-500' : 'text-blue-500')}`}>
+                  <p className={`text-sm ${fatura.status.includes('Paga') ? 'text-green-500' : (fatura.status.includes('Vencida') ? 'text-red-500' : 'text-blue-500')}`}>
                     {fatura.status}
                   </p>
                 </div>
