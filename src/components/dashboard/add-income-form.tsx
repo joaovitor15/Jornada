@@ -9,7 +9,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -348,33 +348,51 @@ export default function AddIncomeForm({
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                 <FormItem className="flex flex-col">
                   <FormLabel>{text.addIncomeForm.incomeDate}</FormLabel>
                   <Popover>
-                    <PopoverTrigger asChild>
+                    <div className="relative">
                       <FormControl>
+                        <Input
+                          className="pr-8"
+                          disabled={isSubmitting}
+                          value={
+                            field.value
+                              ? format(field.value, 'dd/MM/yyyy')
+                              : ''
+                          }
+                          onChange={(e) => {
+                            const date = parse(
+                              e.target.value,
+                              'dd/MM/yyyy',
+                              new Date()
+                            );
+                            if (!isNaN(date.getTime())) {
+                              field.onChange(date);
+                            }
+                          }}
+                          placeholder="DD/MM/AAAA"
+                        />
+                      </FormControl>
+                      <PopoverTrigger asChild>
                         <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
                           disabled={isSubmitting}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? (
-                            format(field.value, 'dd/MM/yyyy', { locale: ptBR })
-                          ) : (
-                            <span>{text.addIncomeForm.pickDate}</span>
-                          )}
+                          <CalendarIcon className="h-4 w-4" />
+                          <span className="sr-only">Abrir calendário</span>
                         </Button>
-                      </FormControl>
-                    </PopoverTrigger>
+                      </PopoverTrigger>
+                    </div>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          if (date) field.onChange(date);
+                        }}
                         initialFocus
                         disabled={isSubmitting}
                         locale={ptBR}
