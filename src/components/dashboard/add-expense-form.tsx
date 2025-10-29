@@ -13,12 +13,13 @@ import {
   onSnapshot,
   query,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { format, parse, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -86,8 +87,8 @@ const formSchema = z.object({
   paymentMethod: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectPaymentMethod }),
-
   date: z.date(),
+  installments: z.coerce.number().int().min(1).optional().default(1),
 });
 
 type AddExpenseFormProps = {
@@ -123,6 +124,11 @@ export default function AddExpenseForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+  
+  const { watch, setValue, resetField, control, formState: { isSubmitting } } = form;
+  const selectedPaymentMethod = watch('paymentMethod');
+  const isCreditCardPayment = useMemo(() => cards.some(card => card.name === selectedPaymentMethod), [cards, selectedPaymentMethod]);
+
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -160,6 +166,7 @@ export default function AddExpenseForm({
           subcategory: expenseToEdit.subcategory,
           paymentMethod: expenseToEdit.paymentMethod,
           date: expenseToEdit.date.toDate(),
+          installments: expenseToEdit.installments || 1,
         });
       } else {
         form.reset({
@@ -169,12 +176,12 @@ export default function AddExpenseForm({
           subcategory: '',
           paymentMethod: '',
           date: new Date(),
+          installments: 1,
         });
       }
     }
   }, [isOpen, isEditMode, expenseToEdit, form]);
 
-  const { isSubmitting, watch, setValue, resetField } = form;
   const selectedCategory = watch('mainCategory');
   const selectedSubcategory = watch('subcategory');
 
@@ -235,28 +242,58 @@ export default function AddExpenseForm({
       });
       return;
     }
-
-    const expenseData = {
-      userId: user.uid,
-      profile: activeProfile,
-      description: values.description || '',
-      amount: values.amount,
-      mainCategory: values.mainCategory,
-      subcategory: values.subcategory,
-      paymentMethod: values.paymentMethod,
-      date: Timestamp.fromDate(values.date),
-    };
+     const { installments = 1 } = values;
 
     try {
       if (isEditMode && expenseToEdit?.id) {
+        // Logic for editing is simplified for now, no installment change handling
+        const expenseData = {
+          ...expenseToEdit,
+          description: values.description || '',
+          amount: values.amount,
+          mainCategory: values.mainCategory,
+          subcategory: values.subcategory,
+          paymentMethod: values.paymentMethod,
+          date: Timestamp.fromDate(values.date),
+        };
         const expenseRef = doc(db, 'expenses', expenseToEdit.id);
         await updateDoc(expenseRef, expenseData);
         toast({
           title: text.common.success,
           description: text.editExpenseForm.updateSuccess,
         });
+
       } else {
-        await addDoc(collection(db, 'expenses'), expenseData);
+        const batch = writeBatch(db);
+        const originalExpenseId = doc(collection(db, 'expenses')).id;
+        const installmentAmount = values.amount / installments;
+        
+        for (let i = 0; i < installments; i++) {
+          const installmentDate = addMonths(values.date, i);
+          const expenseData = {
+            userId: user.uid,
+            profile: activeProfile,
+            description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
+            amount: installmentAmount,
+            mainCategory: values.mainCategory,
+            subcategory: values.subcategory,
+            paymentMethod: values.paymentMethod,
+            date: Timestamp.fromDate(installmentDate),
+            installments: installments,
+            currentInstallment: i + 1,
+            originalExpenseId: installments > 1 ? originalExpenseId : undefined,
+          };
+          
+          let docRef;
+          if (i === 0) {
+             docRef = doc(db, 'expenses', originalExpenseId);
+          } else {
+             docRef = doc(collection(db, 'expenses'));
+          }
+          batch.set(docRef, expenseData);
+        }
+        await batch.commit();
+
         toast({
           title: text.common.success,
           description: text.addExpenseForm.addSuccess,
@@ -307,7 +344,7 @@ export default function AddExpenseForm({
                     <Input
                       placeholder={text.addExpenseForm.descriptionPlaceholder}
                       {...field}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isEditMode}
                     />
                   </FormControl>
                   <FormMessage />
@@ -397,7 +434,7 @@ export default function AddExpenseForm({
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isEditMode}
                         value={field.value}
                         onValueChange={(values) => {
                           field.onChange(values.floatValue);
@@ -441,6 +478,27 @@ export default function AddExpenseForm({
                 )}
               />
             </div>
+             {isCreditCardPayment && !isEditMode && (
+              <FormField
+                control={control}
+                name="installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parcelas</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -476,7 +534,7 @@ export default function AddExpenseForm({
                         <Button
                           variant={'outline'}
                           size="icon"
-                          className="h-10 w-10 rounded-full"
+                           className="h-10 w-10 rounded-full"
                           disabled={isSubmitting}
                         >
                           <CalendarIcon className="h-4 w-4" />
@@ -505,7 +563,7 @@ export default function AddExpenseForm({
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full"
+                 className="w-full"
                 style={{
                   backgroundColor: 'hsl(var(--accent))',
                   color: 'hsl(var(--accent-foreground))',

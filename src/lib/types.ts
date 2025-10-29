@@ -2,7 +2,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
 
-export type PaymentMethod = 'Pix' | 'Dinheiro' | 'Débito' | 'Crédito';
+export type PaymentMethod = 'Pix' | 'Dinheiro' | 'Débito' | string; // string for credit cards
 
 export type Expense = {
   id?: string;
@@ -14,6 +14,9 @@ export type Expense = {
   subcategory: string;
   date: Timestamp;
   paymentMethod: PaymentMethod;
+  installments?: number;
+  currentInstallment?: number;
+  originalExpenseId?: string; 
 };
 
 export type Income = {
@@ -22,6 +25,18 @@ export type Income = {
   profile: Profile;
   description: string;
   amount: number;
-  category: string;
+  mainCategory: string;
+  subcategory: string;
   date: Timestamp;
+};
+
+export type Card = {
+  id: string;
+  userId: string;
+  profile: Profile;
+  name: string;
+  limit: number;
+  closingDay: number;
+  dueDay: number;
+  createdAt: Timestamp;
 };

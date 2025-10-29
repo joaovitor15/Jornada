@@ -188,4 +188,12 @@ export const text = {
     previous: 'Anterior',
     next: 'Próximo',
   },
+  payBillForm: {
+    billClosed: '(fatura fechada)',
+    billToPay: (value: string) => `(a pagar: ${value})`,
+    billOverdue: '(fatura vencida)',
+    billPaid: '(fatura paga)',
+    creditStatus: (value: string) => `(crédito de ${value})`,
+    closedBillToPay: (value: string) => `(fatura fechou valor para pagar ${value})`
+  },
 };
