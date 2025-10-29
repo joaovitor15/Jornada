@@ -12,9 +12,9 @@ import {
   onSnapshot,
   Timestamp,
 } from 'firebase/firestore';
-import { Card as CardType, Expense, BillPayment, Transaction } from '@/lib/types';
+import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format, getMonth, getYear } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import {
@@ -33,6 +33,9 @@ interface FaturaDetailsProps {
   onFaturaSelect: () => void;
 }
 
+type FaturaTransaction = (Expense | BillPayment) & { type: 'expense' | 'payment' };
+
+
 export default function FaturaDetails({
   card,
   selectedFatura,
@@ -41,7 +44,7 @@ export default function FaturaDetails({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<FaturaTransaction[]>([]);
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState('');
   const [fechamento, setFechamento] = useState<Date | null>(null);
@@ -71,46 +74,43 @@ export default function FaturaDetails({
       orderBy('date', 'desc')
     );
     
+    // Period for payments is wider, from current closing date to next closing date
+    const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
     const paymentsQuery = query(
         collection(db, 'billPayments'),
         where('userId', '==', user.uid),
         where('profile', '==', activeProfile),
         where('cardId', '==', card.id),
-        where('date', '>=', Timestamp.fromDate(startDate)),
-        // Payments can happen after the closing date, so we check until the due date of next month for safety
-        where('date', '<=', Timestamp.fromDate(new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0)))
+        where('date', '>=', Timestamp.fromDate(closingDate)),
+        where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
     );
 
     const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-      const expenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' } as Expense & {type: 'expense'}));
+      const expenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' } as FaturaTransaction));
+      const totalExpenses = expenses.reduce((acc, tx) => acc + tx.amount, 0);
+      setTotal(totalExpenses);
       
       const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
-        const payments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'payment' } as BillPayment & {type: 'payment'}));
+        const payments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'payment' } as FaturaTransaction));
+        const totalPayments = payments.reduce((acc, tx) => acc + tx.amount, 0);
         
         const allTransactions = [...expenses, ...payments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
-        
-        setTransactions(allTransactions as unknown as Transaction[]);
+        setTransactions(allTransactions);
 
-        const totalExpenses = expenses.reduce((acc, tx) => acc + tx.amount, 0);
-        const totalPayments = payments
-            .filter(p => {
-                const pDate = p.date.toDate();
-                // Consider payments made between closing date and next closing date
-                return pDate >= closingDate && pDate < getFaturaPeriod(closingDate.getFullYear(), closingDate.getMonth() +1, card.closingDay, card.dueDay).closingDate
-            })
-            .reduce((acc, tx) => acc + tx.amount, 0);
-
-        setTotal(totalExpenses);
-        
         const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
         setStatus(faturaStatus);
 
         setLoading(false);
+      }, (error) => {
+        console.error("Error fetching payments: ", error);
+        setLoading(false);
       });
       
       return () => unsubscribePayments();
+    }, (error) => {
+      console.error("Error fetching expenses: ", error);
+      setLoading(false);
     });
-
 
     return () => unsubscribeExpenses();
   }, [user, activeProfile, card, selectedFatura]);
@@ -162,7 +162,7 @@ export default function FaturaDetails({
               </TableHeader>
               <TableBody>
                 {transactions.map((tx) => {
-                    const isPayment = 'cardId' in tx;
+                    const isPayment = tx.type === 'payment';
                     return (
                         <TableRow key={tx.id}>
                             <TableCell className="text-xs text-muted-foreground">{tx.date.toDate().toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>

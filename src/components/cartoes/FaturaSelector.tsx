@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Card as CardType, Expense } from '@/lib/types';
+import { Card as CardType } from '@/lib/types';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -20,7 +20,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, startOfMonth, getMonth, getYear } from 'date-fns';
+import { subMonths, getMonth, getYear } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -57,16 +57,13 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
 
       try {
         const today = new Date();
-        const monthsToFetch = [];
-        
-        // Fetch last 12 months from today
-        for (let i = 0; i < 12; i++) {
-            const dateToFetch = subMonths(today, i);
-            monthsToFetch.push({ month: getMonth(dateToFetch), year: getYear(dateToFetch) });
-        }
+        const monthsToFetch = Array.from({ length: 12 }).map((_, i) => {
+            const date = subMonths(today, i);
+            return { month: getMonth(date), year: getYear(date) };
+        });
         
         const faturasDataPromises = monthsToFetch.map(async ({ month, year }) => {
-            const { startDate, endDate, dueDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
+            const { startDate, endDate, dueDate, closingDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
             
             const expensesQuery = query(
                 collection(db, 'expenses'),
@@ -77,28 +74,24 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
                 where('date', '<=', Timestamp.fromDate(endDate))
             );
 
+            const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
             const paymentsQuery = query(
                 collection(db, 'billPayments'),
                 where('userId', '==', user.uid),
                 where('profile', '==', activeProfile),
-                where('cardId', '==', card.id)
+                where('cardId', '==', card.id),
+                where('date', '>=', Timestamp.fromDate(closingDate)),
+                where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
             );
 
             const [expensesSnap, paymentsSnap] = await Promise.all([getDocs(expensesQuery), getDocs(paymentsQuery)]);
 
             const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
 
-             if (totalExpenses === 0) return null;
+            // Only show invoices that have expenses
+            if (totalExpenses === 0) return null;
 
-            const relevantPayments = paymentsSnap.docs
-                .map(doc => ({...doc.data(), id: doc.id}))
-                .filter(p => {
-                    const pDate = (p.date as Timestamp).toDate();
-                     return pDate >= endDate && pDate < getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay).closingDate
-                });
-
-            const totalPayments = relevantPayments.reduce((acc, p) => acc + p.amount, 0);
-
+            const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
             const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
 
             return { month, year, status, value: totalExpenses };
