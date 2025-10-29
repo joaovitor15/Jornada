@@ -127,7 +127,7 @@ export default function AddExpenseForm({
   
   const { watch, setValue, resetField, control, formState: { isSubmitting } } = form;
   const selectedPaymentMethod = watch('paymentMethod');
-  const isCreditCardPayment = useMemo(() => cards.some(card => card.name === selectedPaymentMethod), [cards, selectedPaymentMethod]);
+  const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
 
 
   useEffect(() => {
@@ -186,7 +186,7 @@ export default function AddExpenseForm({
   const selectedSubcategory = watch('subcategory');
 
   const paymentMethods = useMemo(() => {
-    const cardNames = cards.map((card) => card.name);
+    const cardNames = cards.map((card) => `Cartão: ${card.name}`);
     return [...basePaymentMethods, ...cardNames];
   }, [cards]);
 
@@ -344,7 +344,7 @@ export default function AddExpenseForm({
                     <Input
                       placeholder={text.addExpenseForm.descriptionPlaceholder}
                       {...field}
-                      disabled={isSubmitting || isEditMode}
+                      disabled={isSubmitting || (isEditMode && values.installments > 1)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -434,7 +434,7 @@ export default function AddExpenseForm({
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
-                        disabled={isSubmitting || isEditMode}
+                        disabled={isSubmitting || (isEditMode && values.installments > 1)}
                         value={field.value}
                         onValueChange={(values) => {
                           field.onChange(values.floatValue);
