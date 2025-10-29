@@ -5,7 +5,7 @@ export type Profile = 'Personal' | 'Home' | 'Business';
 export type PaymentMethod = 'Pix' | 'Dinheiro' | 'Débito' | string;
 
 export type Expense = {
-  id?: string;
+  id: string;
   userId: string;
   profile: Profile;
   description: string;
@@ -20,7 +20,7 @@ export type Expense = {
 };
 
 export type Income = {
-  id?: string;
+  id: string;
   userId: string;
   profile: Profile;
   description: string;
@@ -42,10 +42,12 @@ export type Card = {
 };
 
 export type BillPayment = {
-  id?: string;
+  id: string;
   userId: string;
   profile: Profile;
   cardId: string;
   amount: number;
   date: Timestamp;
 };
+
+export type Transaction = Expense | BillPayment;
