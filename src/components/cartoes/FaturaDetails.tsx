@@ -35,7 +35,6 @@ interface FaturaDetailsProps {
 
 type FaturaTransaction = (Expense | BillPayment) & { type: 'expense' | 'payment' };
 
-
 export default function FaturaDetails({
   card,
   selectedFatura,
@@ -54,6 +53,8 @@ export default function FaturaDetails({
     if (!user || !activeProfile || !card) return;
 
     setLoading(true);
+    setTransactions([]); // Limpa transações anteriores ao trocar de fatura
+    
     const { startDate, endDate, closingDate, dueDate } = getFaturaPeriod(
       selectedFatura.year,
       selectedFatura.month,
@@ -74,7 +75,6 @@ export default function FaturaDetails({
       orderBy('date', 'desc')
     );
     
-    // Period for payments is wider, from current closing date to next closing date
     const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
     const paymentsQuery = query(
         collection(db, 'billPayments'),
@@ -85,34 +85,45 @@ export default function FaturaDetails({
         where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
     );
 
+    let localExpenses: FaturaTransaction[] = [];
+    let localPayments: FaturaTransaction[] = [];
+
     const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-      const expenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' } as FaturaTransaction));
-      const totalExpenses = expenses.reduce((acc, tx) => acc + tx.amount, 0);
+      localExpenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' } as FaturaTransaction));
+      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
       setTotal(totalExpenses);
-      
-      const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
-        const payments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'payment' } as FaturaTransaction));
-        const totalPayments = payments.reduce((acc, tx) => acc + tx.amount, 0);
-        
-        const allTransactions = [...expenses, ...payments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
-        setTransactions(allTransactions);
 
-        const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
-        setStatus(faturaStatus);
+      const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+      setTransactions(allTransactions);
 
-        setLoading(false);
-      }, (error) => {
-        console.error("Error fetching payments: ", error);
-        setLoading(false);
-      });
+      const totalPayments = localPayments.reduce((acc, tx) => acc + tx.amount, 0);
+      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
+      setStatus(faturaStatus);
       
-      return () => unsubscribePayments();
+      setLoading(false); 
     }, (error) => {
       console.error("Error fetching expenses: ", error);
       setLoading(false);
     });
 
-    return () => unsubscribeExpenses();
+    const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
+      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'payment' } as FaturaTransaction));
+      const totalPayments = localPayments.reduce((acc, tx) => acc + tx.amount, 0);
+      
+      const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+      setTransactions(allTransactions);
+
+      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
+      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
+      setStatus(faturaStatus);
+    }, (error) => {
+      console.error("Error fetching payments: ", error);
+    });
+
+    return () => {
+      unsubscribeExpenses();
+      unsubscribePayments();
+    };
   }, [user, activeProfile, card, selectedFatura]);
 
   const faturaDate = new Date(selectedFatura.year, selectedFatura.month);
@@ -131,7 +142,6 @@ export default function FaturaDetails({
         <div className="flex-1 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
       ) : (
         <>
-          {/* Resumo da Fatura */}
           <div className="border rounded-lg p-4 text-center">
             <p className={`text-sm font-semibold ${status.includes('Paga') ? 'text-green-500' : 'text-blue-500'}`}>{status}</p>
             <p className="text-3xl font-bold">
@@ -146,7 +156,6 @@ export default function FaturaDetails({
             </div>
           </div>
 
-          {/* Lista de Movimentações */}
           <div className="flex-1 overflow-auto">
             <h3 className="text-md font-semibold mb-2">Movimentações da Fatura</h3>
             {transactions.length === 0 ? (
