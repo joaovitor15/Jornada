@@ -487,6 +487,7 @@ export default function AddExpenseForm({
               <Button
                 type="submit"
                 disabled={isSubmitting}
+                className="w-full"
                 style={{
                   backgroundColor: 'hsl(var(--accent))',
                   color: 'hsl(var(--accent-foreground))',

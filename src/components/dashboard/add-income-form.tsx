@@ -390,6 +390,7 @@ export default function AddIncomeForm({
               <Button
                 type="submit"
                 disabled={isSubmitting}
+                className="w-full"
                 style={{
                   backgroundColor: 'hsl(var(--accent))',
                   color: 'hsl(var(--accent-foreground))',
@@ -398,7 +399,7 @@ export default function AddIncomeForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {isEditMode ? text.editIncomeForm.save : text.dashboard.addIncome}
+                {isEditMode ? text.editIncomeForm.save : text.addIncomeForm.addIncome}
               </Button>
             </DialogFooter>
           </form>
