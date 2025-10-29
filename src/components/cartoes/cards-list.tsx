@@ -10,9 +10,16 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { text } from '@/lib/strings';
 import CardForm from './add-card-form';
-import CardActionsMenu from './card-actions-menu';
+import CardDetails from './CardDetails';
+import { cn } from '@/lib/utils';
 
-export default function CardsList() {
+
+interface CardsListProps {
+  selectedCardId: string | undefined;
+  onCardSelect: (card: Card | null) => void;
+}
+
+export default function CardsList({ selectedCardId, onCardSelect }: CardsListProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [cards, setCards] = useState<Card[]>([]);
@@ -23,6 +30,7 @@ export default function CardsList() {
   useEffect(() => {
     if (!user || !activeProfile) {
       setLoading(false);
+      onCardSelect(null);
       return;
     }
 
@@ -41,6 +49,17 @@ export default function CardsList() {
           ...doc.data(),
         })) as Card[];
         setCards(userCards);
+        
+        // Auto-select first card if none is selected or selected is gone
+        if (userCards.length > 0) {
+          const currentSelectedCardExists = selectedCardId && userCards.some(c => c.id === selectedCardId);
+          if (!currentSelectedCardExists) {
+             onCardSelect(userCards[0]);
+          }
+        } else {
+          onCardSelect(null);
+        }
+
         setLoading(false);
       },
       (error) => {
@@ -61,9 +80,14 @@ export default function CardsList() {
     setCardToEdit(card);
     setIsFormOpen(true);
   };
+  
+  const handleSelectCard = (card: Card) => {
+    onCardSelect(card);
+  };
+
 
   return (
-    <div>
+    <div className="space-y-4">
       <div className="flex justify-end mb-4">
         <Button onClick={handleAddClick}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -73,34 +97,18 @@ export default function CardsList() {
       {loading ? (
         <p>Carregando cartões...</p>
       ) : cards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {cards.map((card) => (
-            <div
-              key={card.id}
-              className="border p-4 rounded-lg shadow-sm relative"
-            >
-              <div className="absolute top-1 right-1">
-                <CardActionsMenu card={card} onEdit={() => handleEditClick(card)} />
-              </div>
-              <h3 className="text-lg font-semibold pr-8">{card.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                Limite:{' '}
-                {card.limit.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Fecha dia: {card.closingDay}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Vence dia: {card.dueDay}
-              </p>
+             <div key={card.id} onClick={() => handleSelectCard(card)} className={cn(
+                "border p-4 rounded-lg shadow-sm relative cursor-pointer transition-all",
+                selectedCardId === card.id ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
+              )}>
+              <CardDetails card={card} onEdit={() => handleEditClick(card)} />
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-10">
+        <div className="text-center py-10 border-2 border-dashed rounded-lg">
           <p>Nenhum cartão cadastrado ainda.</p>
         </div>
       )}
