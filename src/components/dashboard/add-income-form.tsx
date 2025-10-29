@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +9,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,7 @@ const formSchema = z.object({
   subcategory: z
     .string()
     .min(1, { message: text.addIncomeForm.validation.pleaseSelectSubcategory }),
-  date: z.date(),
+  date: z.date({ required_error: 'A data é obrigatória.' }),
 });
 
 type AddIncomeFormProps = {
@@ -98,6 +98,7 @@ export default function AddIncomeForm({
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const isEditMode = !!incomeToEdit;
+  const [dateInput, setDateInput] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -105,27 +106,41 @@ export default function AddIncomeForm({
 
   useEffect(() => {
     if (isOpen) {
+      let initialDate;
       if (isEditMode && incomeToEdit) {
+        initialDate = incomeToEdit.date.toDate();
         form.reset({
           description: incomeToEdit.description || '',
           amount: incomeToEdit.amount,
           mainCategory: incomeToEdit.mainCategory,
           subcategory: incomeToEdit.subcategory,
-          date: incomeToEdit.date.toDate(),
+          date: initialDate,
         });
       } else {
+        initialDate = new Date();
         form.reset({
           description: '',
           amount: undefined,
           mainCategory: '',
           subcategory: '',
-          date: new Date(),
+          date: initialDate,
         });
       }
+      setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
   }, [isOpen, isEditMode, incomeToEdit, form]);
 
-  const { isSubmitting, watch, setValue, resetField } = form;
+  const { isSubmitting, watch, setValue, resetField, control } = form;
+
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === 'date' && value.date) {
+        setDateInput(format(value.date, 'dd/MM/yyyy'));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
+  
   const selectedCategory = watch('mainCategory');
   const selectedSubcategory = watch('subcategory');
 
@@ -216,6 +231,13 @@ export default function AddIncomeForm({
       });
     }
   }
+  
+  const handleDateInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const date = parse(e.target.value, 'dd/MM/yyyy', new Date());
+    if (isValid(date)) {
+      setValue('date', date, { shouldValidate: true });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -336,7 +358,7 @@ export default function AddIncomeForm({
                         disabled={isSubmitting}
                         value={field.value}
                         onValueChange={(values) => {
-                          field.onChange(values.floatValue);
+                          field.onChange(values?.floatValue);
                         }}
                       />
                     </FormControl>
@@ -345,7 +367,7 @@ export default function AddIncomeForm({
                 )}
               />
             <FormField
-              control={form.control}
+              control={control}
               name="date"
               render={({ field }) => (
                  <FormItem className="flex flex-col">
@@ -356,21 +378,9 @@ export default function AddIncomeForm({
                         <Input
                           className="pr-8"
                           disabled={isSubmitting}
-                          value={
-                            field.value
-                              ? format(field.value, 'dd/MM/yyyy')
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const date = parse(
-                              e.target.value,
-                              'dd/MM/yyyy',
-                              new Date()
-                            );
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date);
-                            }
-                          }}
+                          value={dateInput}
+                          onChange={(e) => setDateInput(e.target.value)}
+                          onBlur={handleDateInputBlur}
                           placeholder="DD/MM/AAAA"
                         />
                       </FormControl>
@@ -386,6 +396,7 @@ export default function AddIncomeForm({
                         </Button>
                       </PopoverTrigger>
                     </div>
+                    <FormMessage />
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
@@ -399,7 +410,6 @@ export default function AddIncomeForm({
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
                 </FormItem>
               )}
             />

@@ -19,7 +19,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parse, addMonths } from 'date-fns';
+import { format, parse, addMonths, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -87,7 +87,7 @@ const formSchema = z.object({
   paymentMethod: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectPaymentMethod }),
-  date: z.date(),
+  date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
 });
 
@@ -120,12 +120,13 @@ export default function AddExpenseForm({
   const { toast } = useToast();
   const isEditMode = !!expenseToEdit;
   const [cards, setCards] = useState<Card[]>([]);
+  const [dateInput, setDateInput] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
   
-  const { watch, setValue, resetField, control, formState: { isSubmitting } } = form;
+  const { watch, setValue, resetField, control, formState: { isSubmitting, errors }, getValues } = form;
   const selectedPaymentMethod = watch('paymentMethod');
   const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
 
@@ -158,29 +159,42 @@ export default function AddExpenseForm({
 
   useEffect(() => {
     if (isOpen) {
+      let initialDate;
       if (isEditMode && expenseToEdit) {
+        initialDate = expenseToEdit.date.toDate();
         form.reset({
           description: expenseToEdit.description || '',
           amount: expenseToEdit.amount,
           mainCategory: expenseToEdit.mainCategory,
           subcategory: expenseToEdit.subcategory,
           paymentMethod: expenseToEdit.paymentMethod,
-          date: expenseToEdit.date.toDate(),
+          date: initialDate,
           installments: expenseToEdit.installments || 1,
         });
       } else {
+        initialDate = new Date();
         form.reset({
           description: '',
           amount: undefined,
           mainCategory: '',
           subcategory: '',
           paymentMethod: '',
-          date: new Date(),
+          date: initialDate,
           installments: 1,
         });
       }
+      setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
   }, [isOpen, isEditMode, expenseToEdit, form]);
+  
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === 'date' && value.date) {
+        setDateInput(format(value.date, 'dd/MM/yyyy'));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
   const selectedCategory = watch('mainCategory');
   const selectedSubcategory = watch('subcategory');
@@ -312,6 +326,13 @@ export default function AddExpenseForm({
     }
   }
 
+  const handleDateInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const date = parse(e.target.value, 'dd/MM/yyyy', new Date());
+    if (isValid(date)) {
+      setValue('date', date, { shouldValidate: true });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
@@ -344,7 +365,7 @@ export default function AddExpenseForm({
                     <Input
                       placeholder={text.addExpenseForm.descriptionPlaceholder}
                       {...field}
-                      disabled={isSubmitting || (isEditMode && values.installments > 1)}
+                      disabled={isSubmitting || (isEditMode && getValues('installments') > 1)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -434,10 +455,10 @@ export default function AddExpenseForm({
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
-                        disabled={isSubmitting || (isEditMode && values.installments > 1)}
+                        disabled={isSubmitting || (isEditMode && getValues('installments') > 1)}
                         value={field.value}
                         onValueChange={(values) => {
-                          field.onChange(values.floatValue);
+                          field.onChange(values?.floatValue);
                         }}
                       />
                     </FormControl>
@@ -501,7 +522,7 @@ export default function AddExpenseForm({
             )}
 
             <FormField
-              control={form.control}
+              control={control}
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -512,21 +533,9 @@ export default function AddExpenseForm({
                         <Input
                           className="pr-8"
                           disabled={isSubmitting}
-                          value={
-                            field.value
-                              ? format(field.value, 'dd/MM/yyyy')
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const date = parse(
-                              e.target.value,
-                              'dd/MM/yyyy',
-                              new Date()
-                            );
-                            if (!isNaN(date.getTime())) {
-                              field.onChange(date);
-                            }
-                          }}
+                          value={dateInput}
+                          onChange={(e) => setDateInput(e.target.value)}
+                          onBlur={handleDateInputBlur}
                           placeholder="DD/MM/AAAA"
                         />
                       </FormControl>
@@ -542,6 +551,7 @@ export default function AddExpenseForm({
                         </Button>
                       </PopoverTrigger>
                     </div>
+                     <FormMessage />
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
@@ -555,7 +565,6 @@ export default function AddExpenseForm({
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage />
                 </FormItem>
               )}
             />
