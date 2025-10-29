@@ -280,11 +280,11 @@ export default function AddExpenseForm({
       } else {
         const batch = writeBatch(db);
         const installmentAmount = values.amount / installments;
-        const originalExpenseId = doc(collection(db, 'id')).id; // Just for grouping
+        const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
         
         for (let i = 0; i < installments; i++) {
           const installmentDate = addMonths(values.date, i);
-          const expenseData = {
+          const expenseData: any = {
             userId: user.uid,
             profile: activeProfile,
             description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
@@ -295,9 +295,12 @@ export default function AddExpenseForm({
             date: Timestamp.fromDate(installmentDate),
             installments: installments,
             currentInstallment: i + 1,
-            originalExpenseId: installments > 1 ? originalExpenseId : undefined,
           };
           
+          if (originalExpenseId) {
+            expenseData.originalExpenseId = originalExpenseId;
+          }
+
           const docRef = doc(collection(db, 'expenses'));
           batch.set(docRef, expenseData);
         }
