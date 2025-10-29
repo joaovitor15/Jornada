@@ -20,7 +20,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, getMonth, getYear } from 'date-fns';
+import { subMonths, getMonth, getYear, addMonths } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -57,8 +57,9 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
 
       try {
         const today = new Date();
-        const monthsToFetch = Array.from({ length: 12 }).map((_, i) => {
-            const date = subMonths(today, i);
+        // Vamos checar os últimos 12 meses e os próximos 12 para pegar parcelas futuras
+        const monthsToFetch = Array.from({ length: 25 }).map((_, i) => {
+            const date = subMonths(addMonths(today, 12), i);
             return { month: getMonth(date), year: getYear(date) };
         });
         
@@ -73,7 +74,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
                 where('date', '>=', Timestamp.fromDate(startDate)),
                 where('date', '<=', Timestamp.fromDate(endDate))
             );
-
+            
             const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
             const paymentsQuery = query(
                 collection(db, 'billPayments'),
@@ -97,7 +98,15 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             return { month, year, status, value: totalExpenses };
         });
 
-        const resolvedFaturas = (await Promise.all(faturasDataPromises)).filter(Boolean) as Fatura[];
+        const resolvedFaturas = (await Promise.all(faturasDataPromises))
+            .filter(Boolean) as Fatura[];
+
+        // Ordena as faturas da mais recente para a mais antiga
+        resolvedFaturas.sort((a, b) => {
+            if (a.year !== b.year) return b.year - a.year;
+            return b.month - a.month;
+        });
+
         setFaturas(resolvedFaturas);
         
       } catch (error) {
@@ -133,7 +142,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
           ) : faturas.length > 0 ? (
             faturas.map((fatura, index) => (
                <button
-                key={index}
+                key={`${fatura.year}-${fatura.month}`}
                 onClick={() => handleSelect(fatura)}
                 className={cn(
                   "w-full text-left p-3 rounded-lg transition-colors flex items-center justify-between",
@@ -144,7 +153,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
               >
                 <div>
                   <p className="font-semibold">{months[fatura.month]} de {fatura.year}</p>
-                  <p className={`text-sm ${fatura.status.includes('paga') ? 'text-green-500' : 'text-blue-500'}`}>
+                  <p className={`text-sm ${fatura.status.includes('paga') ? 'text-green-500' : (fatura.status.includes('vencida') ? 'text-red-500' : 'text-blue-500')}`}>
                     {fatura.status}
                   </p>
                 </div>

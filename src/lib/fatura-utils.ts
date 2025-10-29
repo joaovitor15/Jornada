@@ -1,12 +1,11 @@
 import {
-  startOfMonth,
-  endOfMonth,
   set,
   addMonths,
   subMonths,
   isAfter,
   isBefore,
   isEqual,
+  getDate,
 } from 'date-fns';
 import { text } from './strings';
 
@@ -28,6 +27,7 @@ export function getFaturaPeriod(
   dueDay: number
 ) {
   // A data de fechamento da fatura do mês selecionado.
+  // Ex: Para a fatura de "Outubro", o fechamento é em 05/10.
   const closingDate = set(new Date(), {
     year,
     month,
@@ -35,26 +35,63 @@ export function getFaturaPeriod(
     hours: 23,
     minutes: 59,
     seconds: 59,
+    milliseconds: 999
   });
 
-  // A data de fechamento é o fim do período de compras.
+  // O período de compras termina na data de fechamento.
   const endDate = closingDate;
 
-  // A data de início das compras é no mês anterior ao fechamento.
-  const startDate = set(subMonths(closingDate, 1), { date: closingDay + 1, hours: 0, minutes: 0, seconds: 0 });
+  // O período de compras começa no dia seguinte ao fechamento do mês anterior.
+  // Ex: Fatura de Outubro (fecha 05/10), começa a contar em 06/09.
+  const startDate = set(subMonths(closingDate, 1), { date: closingDay + 1, hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
 
-  // A data de vencimento é no mesmo mês da fatura ou no mês seguinte.
+  // A data de vencimento é baseada no dia de vencimento configurado.
+  // Se o dia de vencimento for menor que o de fechamento (ex: fecha 5, vence 1),
+  // o vencimento ocorre no mês seguinte ao fechamento.
   let dueDate: Date;
-  if (dueDay > closingDay) {
-    // Vencimento no mesmo mês do fechamento
-    dueDate = set(closingDate, { date: dueDay });
-  } else {
-    // Vencimento no mês seguinte ao fechamento
+  if (dueDay < closingDay) {
+    // Vencimento no mês seguinte ao fechamento.
+    // Ex: Fatura de Outubro (fecha 05/10), vence em 01/11.
     dueDate = set(addMonths(closingDate, 1), { date: dueDay });
+  } else {
+    // Vencimento no mesmo mês do fechamento.
+    // Ex: Fatura de Outubro (fecha 05/10), vence em 12/10.
+    dueDate = set(closingDate, { date: dueDay });
   }
+   dueDate = set(dueDate, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
 
   return { startDate, endDate, closingDate, dueDate };
 }
+
+
+/**
+ * Determina o mês e ano da fatura "atual" (em aberto) com base na data de hoje
+ * e no dia de fechamento do cartão.
+ * @param today A data de hoje.
+ * @param closingDay O dia de fechamento do cartão.
+ * @returns Um objeto com o mês (month) e ano (year) da fatura atual.
+ */
+export function getCurrentFaturaMonthAndYear(today: Date, closingDay: number) {
+  const dayOfMonth = getDate(today);
+
+  // Se o dia de hoje for posterior ao dia de fechamento, a fatura em aberto é a do próximo mês.
+  // Ex: Hoje é 29/10, fechamento dia 5. A fatura de Outubro já fechou. A atual é a de Novembro.
+  if (dayOfMonth > closingDay) {
+    const nextMonth = addMonths(today, 1);
+    return {
+      month: nextMonth.getMonth(),
+      year: nextMonth.getFullYear()
+    };
+  }
+  
+  // Se o dia de hoje for igual ou anterior ao dia de fechamento, a fatura em aberto é a do mês corrente.
+  // Ex: Hoje é 04/10, fechamento dia 5. A fatura atual ainda é a de Outubro.
+  return {
+    month: today.getMonth(),
+    year: today.getFullYear()
+  };
+}
+
 
 /**
  * Determina o status de uma fatura.
@@ -69,11 +106,12 @@ export function getFaturaStatus(
   vencimento: Date
 ) {
   const hoje = new Date();
+  hoje.setHours(0,0,0,0);
   const valorRestante = totalFatura - totalPago;
   const BRL = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  if (totalPago >= totalFatura) {
+  if (totalFatura > 0 && totalPago >= totalFatura) {
     if (totalPago > totalFatura) {
       return {
         status: text.payBillForm.creditStatus(BRL(totalPago - totalFatura)),
@@ -96,5 +134,9 @@ export function getFaturaStatus(
   }
 
   // Fatura está vencida
-  return { status: text.payBillForm.billOverdue, color: 'text-red-500' };
+  if(totalFatura > 0) {
+    return { status: text.payBillForm.billOverdue, color: 'text-red-500' };
+  }
+
+  return { status: "Sem lançamentos", color: 'text-muted-foreground' };
 }

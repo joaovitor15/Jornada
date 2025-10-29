@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CardsList from '@/components/cartoes/cards-list';
 import { text } from '@/lib/strings';
 import FaturaDetails from '@/components/cartoes/FaturaDetails';
 import { Card } from '@/lib/types';
 import FaturaSelector from '@/components/cartoes/FaturaSelector';
+import { getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 
 export default function CardsPage() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
@@ -17,7 +18,20 @@ export default function CardsPage() {
 
   const handleCardSelection = (card: Card | null) => {
     setSelectedCard(card);
+    if (card) {
+      // Quando um novo cartão é selecionado, define a fatura para a "atual"
+      const { month, year } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
+      setSelectedFatura({ month, year });
+    }
   };
+
+  // Ajusta a fatura selecionada se o cartão mudar
+  useEffect(() => {
+    if (selectedCard) {
+      const { month, year } = getCurrentFaturaMonthAndYear(new Date(), selectedCard.closingDay);
+      setSelectedFatura({ month, year });
+    }
+  }, [selectedCard]);
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full">
