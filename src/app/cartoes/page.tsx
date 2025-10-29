@@ -22,22 +22,6 @@ export default function CardsPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-        {/* Coluna de Cartões */}
-        <div className="lg:col-span-1">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">{text.sidebar.cards}</h1>
-              <p className="text-muted-foreground">
-                Gerencie seus cartões.
-              </p>
-            </div>
-          </div>
-          <CardsList
-            selectedCardId={selectedCard?.id}
-            onCardSelect={handleCardSelection}
-          />
-        </div>
-      
         {/* Coluna de Faturas */}
         <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-4">
@@ -61,6 +45,22 @@ export default function CardsPage() {
               </p>
             </div>
           )}
+        </div>
+        
+        {/* Coluna de Cartões */}
+        <div className="lg:col-span-1">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">{text.sidebar.cards}</h1>
+              <p className="text-muted-foreground">
+                Gerencie seus cartões.
+              </p>
+            </div>
+          </div>
+          <CardsList
+            selectedCardId={selectedCard?.id}
+            onCardSelect={handleCardSelection}
+          />
         </div>
       </div>
       
