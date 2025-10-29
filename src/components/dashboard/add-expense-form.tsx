@@ -449,7 +449,7 @@ export default function AddExpenseForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>{text.addExpenseForm.expenseDate}</FormLabel>
                   <Popover>
-                    <div className="relative">
+                    <div className="flex items-center gap-2">
                       <FormControl>
                         <Input
                           className="pr-8"
@@ -474,9 +474,9 @@ export default function AddExpenseForm({
                       </FormControl>
                       <PopoverTrigger asChild>
                         <Button
-                          variant="ghost"
+                          variant={'outline'}
                           size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
+                          className="h-10 w-10 rounded-full"
                           disabled={isSubmitting}
                         >
                           <CalendarIcon className="h-4 w-4" />
