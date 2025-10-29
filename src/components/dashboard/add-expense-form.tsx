@@ -279,8 +279,8 @@ export default function AddExpenseForm({
 
       } else {
         const batch = writeBatch(db);
-        const originalExpenseId = doc(collection(db, 'expenses')).id;
         const installmentAmount = values.amount / installments;
+        const originalExpenseId = doc(collection(db, 'id')).id; // Just for grouping
         
         for (let i = 0; i < installments; i++) {
           const installmentDate = addMonths(values.date, i);
@@ -298,12 +298,7 @@ export default function AddExpenseForm({
             originalExpenseId: installments > 1 ? originalExpenseId : undefined,
           };
           
-          let docRef;
-          if (i === 0) {
-             docRef = doc(db, 'expenses', originalExpenseId);
-          } else {
-             docRef = doc(collection(db, 'expenses'));
-          }
+          const docRef = doc(collection(db, 'expenses'));
           batch.set(docRef, expenseData);
         }
         await batch.commit();
