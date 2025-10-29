@@ -15,12 +15,15 @@ import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
 import AddIncomeForm from '../dashboard/add-income-form';
+import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
+import PayBillForm from '../faturas/pay-bill-form';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { isFormOpen: isExpenseFormOpen, setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
   const { isFormOpen: isIncomeFormOpen, setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
+  const { isFormOpen: isPayBillFormOpen, setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
   const isMobile = useIsMobile();
 
   if (!user) {
@@ -71,6 +74,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AddIncomeForm
           isOpen={isIncomeFormOpen}
           onOpenChange={setIsIncomeFormOpen}
+        />
+        
+        <PayBillForm
+          isOpen={isPayBillFormOpen}
+          onOpenChange={setIsPayBillFormOpen}
         />
       </div>
     </Sheet>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,14 @@ import { format, parse, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -46,10 +54,11 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { type Card } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
-import { Card as UICard, CardContent, CardFooter } from '../ui/card';
 
 const formSchema = z.object({
-  cardId: z.string().min(1, { message: text.payBillForm.validation.cardRequired }),
+  cardId: z
+    .string()
+    .min(1, { message: text.payBillForm.validation.cardRequired }),
   amount: z.coerce
     .number({
       required_error: text.payBillForm.validation.amountRequired,
@@ -59,23 +68,41 @@ const formSchema = z.object({
   date: z.date({ required_error: 'A data é obrigatória.' }),
 });
 
-export default function PayBillForm() {
+type PayBillFormProps = {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+};
+
+export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
-  const [dateInput, setDateInput] = useState(format(new Date(), 'dd/MM/yyyy'));
+  const [dateInput, setDateInput] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      cardId: '',
-      amount: undefined,
-      date: new Date(),
-    },
   });
 
-  const { isSubmitting, watch, setValue, control } = form;
+  const {
+    isSubmitting,
+    watch,
+    setValue,
+    control,
+    reset,
+  } = form;
+
+  useEffect(() => {
+    if (isOpen) {
+      const initialDate = new Date();
+      reset({
+        cardId: '',
+        amount: undefined,
+        date: initialDate,
+      });
+      setDateInput(format(initialDate, 'dd/MM/yyyy'));
+    }
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -135,12 +162,7 @@ export default function PayBillForm() {
         title: text.common.success,
         description: text.payBillForm.addSuccess,
       });
-      form.reset({
-        cardId: '',
-        amount: undefined,
-        date: new Date(),
-      });
-      setDateInput(format(new Date(), 'dd/MM/yyyy'));
+      onOpenChange(false);
     } catch (error) {
       console.error('Error writing document to Firestore: ', error);
       toast({
@@ -158,11 +180,31 @@ export default function PayBillForm() {
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!isSubmitting) {
+      onOpenChange(open);
+    }
+  };
+
   return (
-    <UICard>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4 pt-6">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onInteractOutside={(e) => {
+          if (isSubmitting) {
+            e.preventDefault();
+          }
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>{text.payBillForm.title}</DialogTitle>
+          <DialogDescription>{text.payBillForm.description}</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 py-4"
+          >
             <FormField
               control={control}
               name="cardId"
@@ -264,17 +306,18 @@ export default function PayBillForm() {
                 )}
               />
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              {text.payBillForm.submitButton}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </UICard>
+
+            <DialogFooter>
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {text.payBillForm.submitButton}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

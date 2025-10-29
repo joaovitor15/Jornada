@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import AppLayout from '@/components/layout/AppLayout';
 import { AddExpenseModalProvider } from '@/contexts/AddExpenseModalContext';
 import { AddIncomeModalProvider } from '@/contexts/AddIncomeModalContext';
+import { AddPayBillModalProvider } from '@/contexts/AddPayBillModalContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ProfileProvider>
         <AddExpenseModalProvider>
           <AddIncomeModalProvider>
-            <AppLayout>{children}</AppLayout>
+            <AddPayBillModalProvider>
+              <AppLayout>{children}</AppLayout>
+            </AddPayBillModalProvider>
           </AddIncomeModalProvider>
         </AddExpenseModalProvider>
         <Toaster />

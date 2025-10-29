@@ -8,7 +8,6 @@ import {
   BarChart,
   CreditCard,
   TrendingUp,
-  Landmark,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -46,11 +45,6 @@ export default function SidebarNav() {
       href: '/lancamentos',
       label: text.sidebar.releases,
       icon: List,
-    },
-    {
-      href: '/pagar-fatura',
-      label: text.sidebar.payBill,
-      icon: Landmark,
     },
   ];
 

@@ -18,6 +18,7 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
+  Landmark,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import FinancialChart from '@/components/dashboard/FinancialChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
+import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -49,6 +51,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isIncomeFormOpen, setIsIncomeFormOpen] = useState(false);
   const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
+  const { setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -207,7 +210,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
+             <Button
               onClick={() => setIsExpenseFormOpen(true)}
               size="icon"
               className="h-10 w-10 rounded-full bg-red-500 text-white hover:bg-red-600"
@@ -220,6 +223,13 @@ export default function DashboardPage() {
               className="h-10 w-10 rounded-full bg-green-500 text-white hover:bg-green-600"
             >
               <ArrowUpRight className="h-5 w-5" />
+            </Button>
+            <Button
+              onClick={() => setIsPayBillFormOpen(true)}
+              size="icon"
+              className="h-10 w-10 rounded-full bg-blue-500 text-white hover:bg-blue-600"
+            >
+              <Landmark className="h-5 w-5" />
             </Button>
           </div>
         </div>
