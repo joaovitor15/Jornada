@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -95,7 +96,7 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
         </Button>
       </div>
       {loading ? (
-        <p>Carregando cartões...</p>
+        <p>{text.cards.loading}</p>
       ) : cards.length > 0 ? (
         <div className="space-y-4">
           {cards.map((card) => (
@@ -109,7 +110,7 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
         </div>
       ) : (
         <div className="text-center py-10 border-2 border-dashed rounded-lg">
-          <p>Nenhum cartão cadastrado ainda.</p>
+          <p>{text.cards.noCards}</p>
         </div>
       )}
       <CardForm
@@ -120,3 +121,5 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -40,15 +41,16 @@ import { CurrencyInput } from '../ui/currency-input';
 import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
+import { text } from '@/lib/strings';
 
 const formSchema = z.object({
-  parcelas: z.array(z.string()).min(1, 'Selecione pelo menos uma parcela para antecipar.'),
+  parcelas: z.array(z.string()).min(1, text.anticipateInstallments.validation.atLeastOne),
   novoValor: z.coerce
     .number({
-      required_error: 'O novo valor é obrigatório.',
-      invalid_type_error: 'O novo valor é obrigatório.',
+      required_error: text.anticipateInstallments.validation.newValueRequired,
+      invalid_type_error: text.anticipateInstallments.validation.newValueRequired,
     })
-    .positive('O novo valor deve ser positivo.'),
+    .positive(text.anticipateInstallments.validation.newValuePositive),
 });
 
 interface AnteciparParcelasFormProps {
@@ -102,8 +104,8 @@ export default function AnteciparParcelasForm({
         console.error('Error fetching future installments:', error);
         toast({
           variant: 'destructive',
-          title: 'Erro',
-          description: 'Não foi possível buscar as parcelas futuras.',
+          title: text.common.error,
+          description: text.anticipateInstallments.errorFetching,
         });
       } finally {
         setLoading(false);
@@ -153,7 +155,7 @@ export default function AnteciparParcelasForm({
       userId: user.uid,
       profile: activeProfile,
       amount: values.novoValor,
-      description: `Antecipação: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
+      description: `${text.anticipateInstallments.title}: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
       date: expense.date, // Use a data da parcela atual
       mainCategory: expense.mainCategory,
       subcategory: expense.subcategory,
@@ -164,16 +166,16 @@ export default function AnteciparParcelasForm({
     try {
       await batch.commit();
       toast({
-        title: 'Sucesso!',
-        description: 'Parcelas antecipadas com sucesso.',
+        title: text.common.success,
+        description: text.anticipateInstallments.success,
       });
       onOpenChange(false);
     } catch (error) {
       console.error('Error anticipating installments:', error);
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível antecipar as parcelas.',
+        title: text.common.error,
+        description: text.anticipateInstallments.error,
       });
     }
   };
@@ -182,9 +184,9 @@ export default function AnteciparParcelasForm({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Antecipar Parcelas</DialogTitle>
+          <DialogTitle>{text.anticipateInstallments.title}</DialogTitle>
           <DialogDescription>
-            Selecione as parcelas futuras que deseja antecipar para a fatura atual.
+            {text.anticipateInstallments.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -196,7 +198,7 @@ export default function AnteciparParcelasForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-                <h4 className="font-medium">Parcelas Futuras</h4>
+                <h4 className="font-medium">{text.anticipateInstallments.futureInstallments}</h4>
                 <ScrollArea className="h-40 rounded-md border p-4">
                     <FormField
                         control={control}
@@ -226,7 +228,7 @@ export default function AnteciparParcelasForm({
                                         />
                                       </FormControl>
                                       <Label htmlFor={installment.id} className="flex justify-between w-full cursor-pointer font-normal">
-                                        <span>{`Parcela ${installment.currentInstallment}/${installment.installments} - ${format(installment.date.toDate(), 'dd/MM/yyyy')}`}</span>
+                                        <span>{text.anticipateInstallments.installmentLabel(installment.currentInstallment!, installment.installments!, format(installment.date.toDate(), 'dd/MM/yyyy'))}</span>
                                         <span>{installment.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>
                                       </Label>
                                     </FormItem>
@@ -243,11 +245,11 @@ export default function AnteciparParcelasForm({
             
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <Label>Valor Original Selecionado</Label>
+                    <Label>{text.anticipateInstallments.originalValue}</Label>
                     <p className="font-bold text-lg">{originalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
                 </div>
                  <div className="space-y-1">
-                    <Label>Desconto Obtido</Label>
+                    <Label>{text.anticipateInstallments.discount}</Label>
                     <p className="font-bold text-lg text-green-600">{discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
                 </div>
             </div>
@@ -257,7 +259,7 @@ export default function AnteciparParcelasForm({
               name="novoValor"
               render={({ field }) => (
                  <FormItem>
-                  <FormLabel htmlFor="novo-valor">Novo Valor Total (com desconto)</FormLabel>
+                  <FormLabel htmlFor="novo-valor">{text.anticipateInstallments.newValue}</FormLabel>
                    <FormControl>
                      <CurrencyInput
                       id="novo-valor"
@@ -274,11 +276,11 @@ export default function AnteciparParcelasForm({
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-                Cancelar
+                {text.common.cancel}
               </Button>
               <Button type="submit" disabled={isSubmitting || (selectedParcelasIds?.length || 0) === 0}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Antecipar e Salvar
+                {text.anticipateInstallments.submit}
               </Button>
             </DialogFooter>
           </form>
@@ -288,3 +290,5 @@ export default function AnteciparParcelasForm({
     </Dialog>
   );
 }
+
+    

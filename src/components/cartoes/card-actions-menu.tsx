@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { type Card } from '@/lib/types';
+import { text } from '@/lib/strings';
 
 interface CardActionsMenuProps {
   card: Card;
@@ -39,14 +41,14 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
     try {
       await deleteDoc(doc(db, 'cards', card.id));
       toast({
-        title: 'Sucesso',
-        description: 'Cartão excluído com sucesso.',
+        title: text.common.success,
+        description: text.incomesList.deleteSuccess,
       });
     } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Ocorreu um erro ao excluir o cartão. Tente novamente.',
+        title: text.common.error,
+        description: text.incomesList.deleteError,
       });
       console.error('Error deleting card: ', error);
     }
@@ -58,14 +60,14 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
-            <span className="sr-only">Abrir menu</span>
+            <span className="sr-only">{text.cards.openMenu}</span>
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onEdit}>
             <Pencil className="mr-2 h-4 w-4" />
-            <span>Editar</span>
+            <span>{text.common.rename}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -73,7 +75,7 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
             className="text-red-600"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            <span>Excluir</span>
+            <span>{text.common.delete}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -84,18 +86,19 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>{text.common.delete}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação não pode ser desfeita. Isso excluirá permanentemente seu
-              cartão e todos os dados associados a ele.
+              {text.cards.deleteCardConfirmation}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Continuar</AlertDialogAction>
+            <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{text.common.continue}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
+
+    

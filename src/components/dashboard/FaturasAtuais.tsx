@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -207,7 +208,7 @@ export default function FaturasAtuais() {
             dueDate,
             pagamentos,
             parcelasFuturas,
-            faturaLabel: isCurrentFatura ? 'Fatura Atual' : status,
+            faturaLabel: isCurrentFatura ? text.payBillForm.currentBill : status,
           };
         });
       });
@@ -253,7 +254,7 @@ export default function FaturasAtuais() {
 
   return (
     <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-4">Faturas Atuais</h2>
+      <h2 className="text-xl font-semibold mb-4">{text.dashboard.currentInvoices}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {faturas.map((faturaInfo) => {
           const {
@@ -281,7 +282,7 @@ export default function FaturasAtuais() {
                   onClick={() => setIsPayBillFormOpen(true)}
                 >
                   <Landmark className="mr-2 h-4 w-4" />
-                  Pagar
+                  {text.sidebar.payBill}
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -296,7 +297,7 @@ export default function FaturasAtuais() {
                   </div>
                   <div className="flex justify-between items-baseline mt-1">
                     <span className="text-sm text-muted-foreground">
-                      Limite Disponível
+                      {text.cards.cardDetails.limit}
                     </span>
                     <span className="text-sm font-semibold text-green-600">
                       {formatCurrency(limiteDisponivel)}
@@ -320,10 +321,10 @@ export default function FaturasAtuais() {
 
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>
-                    Fechamento:{' '}
+                    {text.payBillForm.closing}:{' '}
                     {format(closingDate, 'dd MMM', { locale: ptBR })}
                   </span>
-                  <span>Limite: {formatCurrency(card.limit)}</span>
+                  <span>{text.cards.cardDetails.limit}: {formatCurrency(card.limit)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -333,3 +334,5 @@ export default function FaturasAtuais() {
     </div>
   );
 }
+
+    

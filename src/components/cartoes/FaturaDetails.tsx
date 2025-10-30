@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -31,6 +32,7 @@ import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { text } from '@/lib/strings';
 
 interface FaturaDetailsProps {
   card: CardType;
@@ -165,16 +167,16 @@ export default function FaturaDetails({
     try {
       await deleteDoc(doc(db, 'expenses', expenseToDelete.id));
       toast({
-        title: 'Sucesso',
-        description: 'Despesa excluída com sucesso.',
+        title: text.common.success,
+        description: text.expensesList.deleteSuccess,
       });
       setIsDeleteDialogOpen(false);
       setExpenseToDelete(null);
     } catch (error) {
        toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Ocorreu um erro ao excluir a despesa.',
+        title: text.common.error,
+        description: text.expensesList.deleteError,
       });
     }
   };
@@ -204,23 +206,23 @@ export default function FaturaDetails({
               })}
             </p>
             <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-1">
-              {fechamento && <span>Fechamento: {format(fechamento, 'dd/MM/yyyy')}</span>}
-              {vencimento && <span>Vencimento: {format(vencimento, 'dd/MM/yyyy')}</span>}
+              {fechamento && <span>{text.payBillForm.closing}: {format(fechamento, 'dd/MM/yyyy')}</span>}
+              {vencimento && <span>{text.payBillForm.due}: {format(vencimento, 'dd/MM/yyyy')}</span>}
             </div>
           </div>
 
           <div className="flex-1 overflow-auto">
-            <h3 className="text-md font-semibold mb-2">Movimentações da Fatura</h3>
+            <h3 className="text-md font-semibold mb-2">{text.payBillForm.transactions}</h3>
             {transactions.length === 0 ? (
-                <div className="text-center text-muted-foreground py-10">Nenhuma movimentação nesta fatura.</div>
+                <div className="text-center text-muted-foreground py-10">{text.payBillForm.noTransactions}</div>
             ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                   <TableHead className="text-center">Ações</TableHead>
+                  <TableHead>{text.common.date}</TableHead>
+                  <TableHead>{text.common.description}</TableHead>
+                  <TableHead className="text-right">{text.common.amount}</TableHead>
+                   <TableHead className="text-center">{text.common.actions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,8 +232,8 @@ export default function FaturaDetails({
                     const isRefund = tx.transactionType === 'refund';
 
                     let description = '';
-                    if(isPayment) description = 'Pagamento da Fatura';
-                    else if(isRefund) description = 'Estorno Recebido';
+                    if(isPayment) description = text.payBillForm.title;
+                    else if(isRefund) description = text.payBillForm.refundTitle;
                     else description = tx.description;
                     
                     const expense = tx as Expense;
@@ -270,12 +272,12 @@ export default function FaturaDetails({
                                     <DropdownMenuContent align="end">
                                       {isInstallment && (
                                         <DropdownMenuItem onClick={() => onAnticipateExpense(expense)}>
-                                          Antecipar Parcelas
+                                          {text.anticipateInstallments.title}
                                         </DropdownMenuItem>
                                       )}
                                       <DropdownMenuItem onClick={() => onEditExpense(expense)}>
                                         <Pencil className="mr-2 h-4 w-4" />
-                                        Editar
+                                        {text.common.rename}
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onClick={() => {
@@ -285,7 +287,7 @@ export default function FaturaDetails({
                                         className="text-red-500"
                                       >
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Excluir
+                                        {text.common.delete}
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -301,14 +303,14 @@ export default function FaturaDetails({
            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogTitle>{text.expensesList.deleteConfirmTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a despesa.
+                    {text.expensesList.deleteConfirmDescription}
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteExpense}>Continuar</AlertDialogAction>
+                <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteExpense}>{text.common.continue}</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
             </AlertDialog>
@@ -317,3 +319,5 @@ export default function FaturaDetails({
     </div>
   );
 }
+
+    

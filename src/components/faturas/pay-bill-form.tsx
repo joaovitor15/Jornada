@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -68,7 +69,7 @@ const formSchema = z.object({
     .positive({ message: text.payBillForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   type: z.enum(['payment', 'refund'], {
-    required_error: 'Selecione o tipo de transação.',
+    required_error: text.payBillForm.validation.typeRequired,
   }),
 });
 
@@ -171,7 +172,7 @@ export default function PayBillForm({
         description:
           values.type === 'payment'
             ? text.payBillForm.addSuccess
-            : 'Estorno registrado com sucesso.',
+            : text.payBillForm.refundSuccess,
       });
       onOpenChange(false);
     } catch (error) {
@@ -210,11 +211,11 @@ export default function PayBillForm({
         <DialogHeader>
           <DialogTitle>
             {transactionType === 'payment'
-              ? 'Pagamento de Fatura'
-              : 'Registrar Estorno'}
+              ? text.payBillForm.title
+              : text.payBillForm.refundTitle}
           </DialogTitle>
           <DialogDescription>
-            Registre um pagamento ou um estorno recebido na fatura do seu cartão.
+            {text.payBillForm.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -227,7 +228,7 @@ export default function PayBillForm({
               name="type"
               render={({ field }) => (
                 <FormItem className="space-y-3">
-                  <FormLabel>Tipo de Transação</FormLabel>
+                  <FormLabel>{text.payBillForm.transactionType}</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -238,13 +239,13 @@ export default function PayBillForm({
                         <FormControl>
                           <RadioGroupItem value="payment" />
                         </FormControl>
-                        <FormLabel className="font-normal">Pagamento</FormLabel>
+                        <FormLabel className="font-normal">{text.payBillForm.payment}</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="refund" />
                         </FormControl>
-                        <FormLabel className="font-normal">Estorno</FormLabel>
+                        <FormLabel className="font-normal">{text.payBillForm.refund}</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -290,7 +291,7 @@ export default function PayBillForm({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{transactionType === 'payment' ? 'Valor Pago' : 'Valor do Estorno'}</FormLabel>
+                    <FormLabel>{transactionType === 'payment' ? text.payBillForm.amountLabel : text.payBillForm.refundAmountLabel}</FormLabel>
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
@@ -311,7 +312,7 @@ export default function PayBillForm({
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>{transactionType === 'payment' ? 'Data do Pagamento' : 'Data do Estorno'}</FormLabel>
+                    <FormLabel>{transactionType === 'payment' ? text.payBillForm.paymentDateLabel : text.payBillForm.refundDateLabel}</FormLabel>
                     <Popover>
                       <div className="flex items-center gap-2">
                         <FormControl>
@@ -332,7 +333,7 @@ export default function PayBillForm({
                             disabled={isSubmitting}
                           >
                             <CalendarIcon className="h-4 w-4" />
-                            <span className="sr-only">Abrir calendário</span>
+                            <span className="sr-only">{text.addExpenseForm.pickDate}</span>
                           </Button>
                         </PopoverTrigger>
                       </div>
@@ -360,7 +361,7 @@ export default function PayBillForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {transactionType === 'payment' ? 'Registrar Pagamento' : 'Registrar Estorno'}
+                {transactionType === 'payment' ? text.payBillForm.submitButton : text.payBillForm.refundSubmitButton}
               </Button>
             </DialogFooter>
           </form>
@@ -369,3 +370,5 @@ export default function PayBillForm({
     </Dialog>
   );
 }
+
+    

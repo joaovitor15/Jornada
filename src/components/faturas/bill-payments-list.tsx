@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -199,7 +200,7 @@ export default function BillPaymentsList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          Tipo
+                          {text.billPaymentsList.type}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.payBillForm.cardLabel}
@@ -225,7 +226,7 @@ export default function BillPaymentsList() {
                           )}
                         >
                           <TableCell className={`py-2 px-2 align-middle font-medium ${payment.type === 'refund' ? 'text-green-500' : ''}`}>
-                            {payment.type === 'payment' ? 'Pagamento' : 'Estorno'}
+                            {payment.type === 'payment' ? text.billPaymentsList.payment : text.billPaymentsList.refund}
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle font-medium">
                             {cards.get(payment.cardId) || 'Cartão não encontrado'}
@@ -337,3 +338,5 @@ export default function BillPaymentsList() {
     </>
   );
 }
+
+    

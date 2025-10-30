@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -94,7 +95,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: 'Você precisa estar logado e ter um perfil ativo.',
+        description: text.addCardForm.notLoggedIn,
       });
       return;
     }
@@ -105,7 +106,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
         await updateDoc(cardRef, values);
         toast({
           title: text.common.success,
-          description: 'Cartão atualizado com sucesso!',
+          description: text.addCardForm.updateSuccess,
         });
       } else {
         await addDoc(collection(db, 'cards'), {
@@ -116,7 +117,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
         });
         toast({
           title: text.common.success,
-          description: 'Cartão adicionado com sucesso!',
+          description: text.addCardForm.addSuccess,
         });
       }
       onOpenChange(false);
@@ -125,7 +126,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: `Erro ao ${isEditMode ? 'atualizar' : 'adicionar'} o cartão. Tente novamente.`,
+        description: text.addCardForm.saveError(isEditMode),
       });
     }
   };
@@ -134,10 +135,10 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar Cartão' : text.addCardForm.title}</DialogTitle>
+          <DialogTitle>{isEditMode ? text.addCardForm.editTitle : text.addCardForm.title}</DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? 'Atualize as informações do seu cartão.'
+              ? text.addCardForm.editDescription
               : text.addCardForm.description}
           </DialogDescription>
         </DialogHeader>
@@ -232,7 +233,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isEditMode ? 'Salvar Alterações' : text.addCardForm.addCard}
+                {isEditMode ? text.addCardForm.saveChanges : text.addCardForm.addCard}
               </Button>
             </DialogFooter>
           </form>
@@ -241,3 +242,5 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
     </Dialog>
   );
 }
+
+    

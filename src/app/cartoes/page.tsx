@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -58,9 +59,9 @@ export default function CardsPage() {
         <div className="lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Minhas Faturas</h1>
+              <h1 className="text-2xl font-bold">{text.cards.myInvoices}</h1>
               <p className="text-muted-foreground">
-                Selecione um cartão para ver os detalhes da fatura.
+                {text.cards.selectCardToSeeInvoice}
               </p>
             </div>
           </div>
@@ -75,7 +76,7 @@ export default function CardsPage() {
           ) : (
             <div className="flex-1 flex items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg">
               <p className="text-muted-foreground">
-                Selecione um cartão ao lado para começar.
+                {text.cards.selectCardToStart}
               </p>
             </div>
           )}
@@ -87,7 +88,7 @@ export default function CardsPage() {
             <div>
               <h1 className="text-2xl font-bold">{text.sidebar.cards}</h1>
               <p className="text-muted-foreground">
-                Gerencie seus cartões.
+                {text.cards.manageYourCards}
               </p>
             </div>
           </div>
@@ -127,3 +128,5 @@ export default function CardsPage() {
     </div>
   );
 }
+
+    

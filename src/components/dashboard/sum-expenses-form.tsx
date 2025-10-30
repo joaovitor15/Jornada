@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -40,7 +41,7 @@ import { Textarea } from '../ui/textarea';
 import { text } from '@/lib/strings';
 
 const formSchema = z.object({
-  values: z.string().min(1, 'Pelo menos um valor é necessário.'),
+  values: z.string().min(1, text.sumExpensesForm.validation.atLeastOne),
   date: z.date({ required_error: 'A data é obrigatória.' }),
 });
 
@@ -109,8 +110,8 @@ export default function SumExpensesForm({
     if (total <= 0) {
       toast({
         variant: 'destructive',
-        title: 'Valor inválido',
-        description: 'A soma dos valores deve ser maior que zero.',
+        title: text.common.error,
+        description: text.sumExpensesForm.validation.invalidValue,
       });
       return;
     }
@@ -127,16 +128,16 @@ export default function SumExpensesForm({
         date: Timestamp.fromDate(data.date),
       });
       toast({
-        title: 'Sucesso!',
-        description: 'Despesa somada e lançada com sucesso.',
+        title: text.common.success,
+        description: text.sumExpensesForm.success,
       });
       onOpenChange(false);
     } catch (error) {
       console.error('Error adding summed expense:', error);
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Não foi possível lançar a despesa.',
+        title: text.common.error,
+        description: text.sumExpensesForm.error,
       });
     }
   }
@@ -159,10 +160,9 @@ export default function SumExpensesForm({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Somar Despesas de Alimentação</DialogTitle>
+          <DialogTitle>{text.sumExpensesForm.title}</DialogTitle>
           <DialogDescription>
-            Digite os valores das notas fiscais separados por espaço. O total
-            será lançado como uma única despesa de "Alimentação / Comida".
+            {text.sumExpensesForm.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -172,10 +172,10 @@ export default function SumExpensesForm({
               name="values"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valores</FormLabel>
+                  <FormLabel>{text.sumExpensesForm.valuesLabel}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="12,50 8,75 114,20 ..."
+                      placeholder={text.sumExpensesForm.valuesPlaceholder}
                       className="min-h-[100px] resize-y"
                       {...field}
                       disabled={isSubmitting}
@@ -187,7 +187,7 @@ export default function SumExpensesForm({
             />
             
             <div className="text-right font-bold text-lg">
-                Total Calculado: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+                {text.sumExpensesForm.total}: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
             </div>
 
             <FormField
@@ -195,7 +195,7 @@ export default function SumExpensesForm({
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Data da Compra</FormLabel>
+                  <FormLabel>{text.sumExpensesForm.dateLabel}</FormLabel>
                   <Popover>
                     <div className="flex items-center gap-2">
                        <FormControl>
@@ -216,7 +216,7 @@ export default function SumExpensesForm({
                           disabled={isSubmitting}
                         >
                           <CalendarIcon className="h-4 w-4" />
-                          <span className="sr-only">Abrir calendário</span>
+                          <span className="sr-only">{text.addExpenseForm.pickDate}</span>
                         </Button>
                       </PopoverTrigger>
                     </div>
@@ -240,7 +240,7 @@ export default function SumExpensesForm({
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Lançar Despesa Total
+                {text.sumExpensesForm.submit}
               </Button>
             </DialogFooter>
           </form>
@@ -249,3 +249,5 @@ export default function SumExpensesForm({
     </Dialog>
   );
 }
+
+    

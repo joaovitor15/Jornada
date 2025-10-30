@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -503,7 +504,7 @@ export default function AddExpenseForm({
                 name="installments"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parcelas</FormLabel>
+                    <FormLabel>{text.addExpenseForm.installments}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -545,7 +546,7 @@ export default function AddExpenseForm({
                           disabled={isSubmitting}
                         >
                           <CalendarIcon className="h-4 w-4" />
-                          <span className="sr-only">Abrir calendário</span>
+                          <span className="sr-only">{text.addExpenseForm.pickDate}</span>
                         </Button>
                       </PopoverTrigger>
                     </div>
@@ -590,3 +591,5 @@ export default function AddExpenseForm({
     </Dialog>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -349,7 +350,7 @@ export default function DashboardPage() {
               <Card className="mt-6">
                  <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    Vendas PFPB
+                    {text.dashboard.salesPFPB}
                      <span className="text-xs font-normal text-muted-foreground">
                         ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
                         {selectedYear})
@@ -366,7 +367,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">
-                                Total de Vendas
+                                {text.dashboard.totalSales}
                             </p>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(totalVendasPFPB)}
@@ -381,7 +382,7 @@ export default function DashboardPage() {
               <Card className="mt-6">
                  <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    Alimentação
+                    {text.dashboard.food}
                      <span className="text-xs font-normal text-muted-foreground">
                         ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
                         {selectedYear})
@@ -398,7 +399,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">
-                                Total em Alimentação
+                                {text.dashboard.totalFood}
                             </p>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(totalAlimentacao)}
@@ -432,3 +433,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

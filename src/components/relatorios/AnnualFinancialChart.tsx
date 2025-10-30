@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -32,6 +33,7 @@ import {
   Area,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
+import { text } from '@/lib/strings';
 
 interface ChartData {
   month: string;
@@ -51,7 +53,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-background border border-border p-2 rounded-lg shadow-lg">
         <p className="label font-bold">{`${label}`}</p>
         {payload[0] && (
-          <p className="intro text-green-500">{`Receita: ${new Intl.NumberFormat(
+          <p className="intro text-green-500">{`${text.summary.income}: ${new Intl.NumberFormat(
             'pt-BR',
             {
               style: 'currency',
@@ -60,7 +62,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           ).format(payload[0].value)}`}</p>
         )}
         {payload[1] && (
-          <p className="intro text-red-500">{`Despesa: ${new Intl.NumberFormat(
+          <p className="intro text-red-500">{`${text.summary.expenses}: ${new Intl.NumberFormat(
             'pt-BR',
             {
               style: 'currency',
@@ -162,7 +164,7 @@ export default function AnnualFinancialChart({
         setChartData(sortedData);
       } catch (err) {
         console.error(err);
-        setError('Falha ao processar os dados do gráfico.');
+        setError(text.reports.chartError);
       } finally {
         setLoading(false);
       }
@@ -179,7 +181,7 @@ export default function AnnualFinancialChart({
             },
             (err) => {
               console.error(err);
-              setError('Falha ao buscar pagamentos de fatura.');
+              setError(text.billPaymentsList.fetchError);
               setLoading(false);
             }
           );
@@ -187,14 +189,14 @@ export default function AnnualFinancialChart({
         },
         (err) => {
           console.error(err);
-          setError('Falha ao buscar despesas.');
+          setError(text.expensesList.fetchError);
           setLoading(false);
         }
       );
       return () => unsubscribeExpenses();
     }, (err) => {
       console.error(err);
-      setError('Falha ao buscar receitas.');
+      setError(text.incomesList.fetchError);
       setLoading(false);
     });
 
@@ -226,7 +228,7 @@ export default function AnnualFinancialChart({
   const noData = chartData.every(d => d.income === 0 && d.expense === 0);
 
   if (noData) {
-    return <div className="flex justify-center items-center h-full min-h-[400px] text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
+    return <div className="flex justify-center items-center h-full min-h-[400px] text-muted-foreground">{text.reports.noData}</div>;
   }
 
   return (
@@ -281,7 +283,7 @@ export default function AnnualFinancialChart({
           dataKey="income"
           stroke="hsl(var(--chart-2))"
           fill="url(#colorIncomeAnnual)"
-          name="Receita"
+          name={text.summary.income}
           strokeWidth={2}
           activeDot={{ r: 6 }}
         />
@@ -290,7 +292,7 @@ export default function AnnualFinancialChart({
           dataKey="expense"
           stroke="hsl(var(--chart-1))"
           fill="url(#colorExpenseAnnual)"
-          name="Despesa"
+          name={text.summary.expenses}
           strokeWidth={2}
            activeDot={{ r: 6 }}
         />
@@ -298,3 +300,5 @@ export default function AnnualFinancialChart({
     </ResponsiveContainer>
   );
 }
+
+    

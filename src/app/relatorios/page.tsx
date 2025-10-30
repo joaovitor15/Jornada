@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -85,7 +86,7 @@ export default function ReportsPage() {
         <div>
             <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
             <p className="text-muted-foreground">
-                Visualize o resumo financeiro anual de seus perfis.
+                {text.reports.description}
             </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -130,7 +131,7 @@ export default function ReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Resumo Financeiro de {selectedYear}</CardTitle>
+          <CardTitle>{text.reports.financialSummary(selectedYear)}</CardTitle>
         </CardHeader>
         <CardContent>
           <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
@@ -141,3 +142,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    

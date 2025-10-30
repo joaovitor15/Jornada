@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -32,10 +33,13 @@ import {
   isAfter,
 } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
+import { text } from '@/lib/strings';
 
 const months = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  text.dashboard.months.january, text.dashboard.months.february, text.dashboard.months.march, 
+  text.dashboard.months.april, text.dashboard.months.may, text.dashboard.months.june,
+  text.dashboard.months.july, text.dashboard.months.august, text.dashboard.months.september,
+  text.dashboard.months.october, text.dashboard.months.november, text.dashboard.months.december,
 ];
 
 interface Fatura {
@@ -180,9 +184,9 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Selecione uma fatura</DialogTitle>
+          <DialogTitle>{text.payBillForm.selectInvoice}</DialogTitle>
           <DialogDescription>
-            Escolha um mês para visualizar os detalhes da fatura do cartão {card.name}.
+            {text.payBillForm.selectInvoiceDescription(card.name)}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col space-y-2 py-4 max-h-[60vh] overflow-y-auto">
@@ -219,10 +223,12 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
               </button>
             ))
           ) : (
-            <div className="text-center text-muted-foreground py-10">Nenhuma fatura encontrada para este cartão.</div>
+            <div className="text-center text-muted-foreground py-10">{text.payBillForm.noInvoices}</div>
           )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
