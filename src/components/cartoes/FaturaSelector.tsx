@@ -22,7 +22,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, getMonth, getYear, addMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { subMonths, getMonth, getYear, addMonths } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -63,6 +63,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
           where('userId', '==', user.uid),
           where('profile', '==', activeProfile),
           where('paymentMethod', '==', `Cartão: ${card.name}`),
+          where('installments', '>', 1),
           orderBy('installments', 'desc'),
           limit(1)
         );
@@ -72,12 +73,13 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         if (!longestInstallmentSnap.empty) {
           maxInstallments = longestInstallmentSnap.docs[0].data().installments || 1;
         }
-
-        const today = new Date();
-        const futureMonthsToShow = Math.max(12, maxInstallments); 
         
+        const today = new Date();
+        const futureMonthsToShow = Math.max(12, maxInstallments);
+        
+        // Gera a lista de meses para buscar, do mais futuro para o mais passado
         const monthsToFetch = Array.from({ length: 12 + futureMonthsToShow }).map((_, i) => {
-            const date = subMonths(addMonths(today, futureMonthsToShow), i);
+            const date = subMonths(addMonths(today, futureMonthsToShow -1), i);
             return { month: getMonth(date), year: getYear(date) };
         });
 
@@ -97,7 +99,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
                 where('date', '<=', Timestamp.fromDate(endDate))
             );
             
-            const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
+            const nextFaturaPeriod = getFaturaPeriod(addMonths(closingDate, 1).getFullYear(), addMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
             const paymentsQuery = query(
                 collection(db, 'billPayments'),
                 where('userId', '==', user.uid),
@@ -110,16 +112,39 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             const [expensesSnap, paymentsSnap] = await Promise.all([getDocs(expensesQuery), getDocs(paymentsQuery)]);
 
             const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-            
-            // Do not filter out invoices with zero expenses, to show future installments
             const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
             const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
 
             return { month, year, status, value: totalExpenses };
         });
 
-        const resolvedFaturas = (await Promise.all(faturasDataPromises))
-            .filter(f => f.value > 0 || (f.year > today.getFullYear() || (f.year === today.getFullYear() && f.month >= today.getMonth()))) as Fatura[];
+        let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
+
+        // Filtra para mostrar apenas faturas com valor ou faturas futuras (a partir do mês atual)
+        const firstExpenseQuery = query(
+          collection(db, 'expenses'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('paymentMethod', '==', `Cartão: ${card.name}`),
+          orderBy('date', 'asc'),
+          limit(1)
+        );
+        const firstExpenseSnap = await getDocs(firstExpenseQuery);
+        let firstExpenseDate: Date | null = null;
+        if (!firstExpenseSnap.empty) {
+          firstExpenseDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
+        }
+
+        if (firstExpenseDate) {
+          resolvedFaturas = resolvedFaturas.filter(f => {
+            const faturaDate = new Date(f.year, f.month);
+            // Mostra faturas com valor OU faturas futuras até o limite de parcelas
+            // E não mostra faturas antes da primeira despesa
+            return faturaDate >= firstExpenseDate || f.value > 0;
+          });
+        } else {
+           resolvedFaturas = resolvedFaturas.filter(f => f.value > 0);
+        }
 
         resolvedFaturas.sort((a, b) => {
             if (a.year !== b.year) return b.year - a.year;
