@@ -8,6 +8,13 @@ import { Wallet, Briefcase, Home, User, Circle } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { type Profile } from '@/lib/types';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
 
 function ProfileIcon({ profile, className }: { profile: string; className?: string }) {
   switch (profile) {
@@ -39,7 +46,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {user && menuTrigger}
 
           <Link
@@ -51,27 +58,32 @@ export default function Header({ menuTrigger }: HeaderProps) {
               {text.header.appName}
             </span>
           </Link>
+          
+           {user && (
+            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+              <TooltipProvider delayDuration={0}>
+              {profiles.map((profile) => (
+                 <Tooltip key={profile.id}>
+                    <TooltipTrigger asChild>
+                       <Button
+                        variant={activeProfile === profile.id ? "secondary" : "ghost"}
+                        size="icon"
+                        onClick={() => setActiveProfile(profile.id)}
+                        className="h-8 w-8 rounded-full"
+                      >
+                        <ProfileIcon profile={profile.id} />
+                        <span className="sr-only">{profile.label}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{profile.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+              ))}
+              </TooltipProvider>
+            </div>
+          )}
         </div>
-
-        {user && (
-          <div className="flex items-center gap-2 rounded-lg bg-muted p-1">
-            {profiles.map((profile) => (
-               <Button
-                key={profile.id}
-                variant={activeProfile === profile.id ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setActiveProfile(profile.id)}
-                className={cn(
-                  "flex items-center gap-2",
-                  activeProfile === profile.id && "shadow-sm"
-                )}
-              >
-                <ProfileIcon profile={profile.id} />
-                <span className="hidden sm:inline">{profile.label}</span>
-              </Button>
-            ))}
-          </div>
-        )}
       </div>
     </header>
   );
