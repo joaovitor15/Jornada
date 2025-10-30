@@ -29,8 +29,9 @@ import {
   addMonths,
   startOfMonth,
   isBefore,
+  isAfter,
 } from 'date-fns';
-import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
+import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 
 const months = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -80,20 +81,24 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             getDocs(lastExpenseQuery),
         ]);
 
-        let startDate = startOfMonth(subMonths(new Date(), 1)); // Default start
+        const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
+
+        let startDate = startOfMonth(new Date(currentFaturaYear, currentFaturaMonth));
         if (!firstExpenseSnap.empty) {
             startDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
         }
 
-        let endDate = addMonths(new Date(), 1); // Default end
+        let endDate = addMonths(new Date(currentFaturaYear, currentFaturaMonth), 1);
         if (!lastExpenseSnap.empty) {
-            endDate = (lastExpenseSnap.docs[0].data().date as Timestamp).toDate();
+            const lastDate = (lastExpenseSnap.docs[0].data().date as Timestamp).toDate();
+            if (isAfter(lastDate, endDate)) {
+                endDate = lastDate;
+            }
         }
-
+        
         const monthsToFetch: { month: number, year: number }[] = [];
         let loopDate = startOfMonth(startDate);
         
-        // Ensure the loop does not go too far back or forward, but includes start and end
         while (isBefore(loopDate, addMonths(endDate, 1))) {
             monthsToFetch.push({ month: getMonth(loopDate), year: getYear(loopDate) });
             loopDate = addMonths(loopDate, 1);
@@ -137,11 +142,11 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
         const today = new Date();
         const currentMonthStart = startOfMonth(new Date(today.getFullYear(), today.getMonth()));
-
-        // Filter to show only invoices with value OR future invoices
+        
         resolvedFaturas = resolvedFaturas.filter(f => {
             const faturaDate = startOfMonth(new Date(f.year, f.month));
-            return f.value > 0 || faturaDate >= currentMonthStart;
+            // Show if it has value OR if it's the current month or a future month
+            return f.value > 0 || !isBefore(faturaDate, currentMonthStart);
         });
 
         resolvedFaturas.sort((a, b) => {
