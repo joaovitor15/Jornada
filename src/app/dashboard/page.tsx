@@ -136,6 +136,7 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
+            .filter(income => income.mainCategory !== 'Vendas') // Ignora a categoria "Vendas"
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyNonCardExpenses = expenses
