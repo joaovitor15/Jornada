@@ -22,7 +22,14 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, getMonth, getYear, addMonths, startOfMonth } from 'date-fns';
+import {
+  subMonths,
+  getMonth,
+  getYear,
+  addMonths,
+  startOfMonth,
+  isBefore,
+} from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -58,53 +65,36 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
       setLoading(true);
 
       try {
-        // 1. Find the longest installment to determine future months
-        const longestInstallmentQuery = query(
+        const expensesBaseQuery = query(
           collection(db, 'expenses'),
           where('userId', '==', user.uid),
           where('profile', '==', activeProfile),
-          where('paymentMethod', '==', `Cartão: ${card.name}`),
-          orderBy('installments', 'desc'),
-          limit(1)
+          where('paymentMethod', '==', `Cartão: ${card.name}`)
         );
 
-        // 2. Find the very first expense to determine past months
-        const firstExpenseQuery = query(
-          collection(db, 'expenses'),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('paymentMethod', '==', `Cartão: ${card.name}`),
-          orderBy('date', 'asc'),
-          limit(1)
-        );
-
-        const [longestInstallmentSnap, firstExpenseSnap] = await Promise.all([
-          getDocs(longestInstallmentQuery),
-          getDocs(firstExpenseQuery)
+        const firstExpenseQuery = query(expensesBaseQuery, orderBy('date', 'asc'), limit(1));
+        const lastExpenseQuery = query(expensesBaseQuery, orderBy('date', 'desc'), limit(1));
+        
+        const [firstExpenseSnap, lastExpenseSnap] = await Promise.all([
+            getDocs(firstExpenseQuery),
+            getDocs(lastExpenseQuery),
         ]);
 
-        let maxInstallments = 0;
-        if (!longestInstallmentSnap.empty) {
-            const firstDocData = longestInstallmentSnap.docs[0].data();
-            const installments = firstDocData.installments || 1;
-            const currentInstallment = firstDocData.currentInstallment || 1;
-            maxInstallments = installments - currentInstallment;
-        }
-
-        let firstExpenseDate: Date | null = null;
+        let startDate = startOfMonth(subMonths(new Date(), 1)); // Default start
         if (!firstExpenseSnap.empty) {
-          firstExpenseDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
+            startDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
         }
 
-        const today = new Date();
-        const futureMonthsToShow = Math.max(12, maxInstallments + 1);
-        
-        // Generate month list from the first expense until future installments
-        const monthsToFetch: { month: number, year: number }[] = [];
-        const endDateForLoop = addMonths(today, futureMonthsToShow);
-        let loopDate = firstExpenseDate ? startOfMonth(firstExpenseDate) : startOfMonth(subMonths(today, 12));
+        let endDate = addMonths(new Date(), 1); // Default end
+        if (!lastExpenseSnap.empty) {
+            endDate = (lastExpenseSnap.docs[0].data().date as Timestamp).toDate();
+        }
 
-        while (loopDate <= endDateForLoop) {
+        const monthsToFetch: { month: number, year: number }[] = [];
+        let loopDate = startOfMonth(startDate);
+        
+        // Ensure the loop does not go too far back or forward, but includes start and end
+        while (isBefore(loopDate, addMonths(endDate, 1))) {
             monthsToFetch.push({ month: getMonth(loopDate), year: getYear(loopDate) });
             loopDate = addMonths(loopDate, 1);
         }
@@ -145,7 +135,8 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         });
 
         let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
-        const currentMonthStart = startOfMonth(today);
+        const today = new Date();
+        const currentMonthStart = startOfMonth(new Date(today.getFullYear(), today.getMonth()));
 
         // Filter to show only invoices with value OR future invoices
         resolvedFaturas = resolvedFaturas.filter(f => {
