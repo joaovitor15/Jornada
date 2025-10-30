@@ -134,7 +134,12 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
 
             const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
             const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
-            const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
+            
+            const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
+            const isCurrentFatura = month === currentFaturaMonth && year === currentFaturaYear;
+            const isFutureFatura = new Date(year, month) > new Date(currentFaturaYear, currentFaturaMonth);
+            
+            const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
 
             return { month, year, status, value: totalExpenses };
         });
@@ -199,7 +204,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
               >
                 <div>
                   <p className="font-semibold">{months[fatura.month]} de {fatura.year}</p>
-                  <p className={`text-sm ${fatura.status.includes('Paga') ? 'text-green-500' : (fatura.status.includes('Vencida') ? 'text-red-500' : 'text-blue-500')}`}>
+                  <p className={`text-sm ${fatura.status.includes('Paga') ? 'text-green-500' : (fatura.status.includes('Vencida') ? 'text-red-500' : (fatura.status.includes('Fechada') ? 'text-orange-500' : (fatura.status.includes('Futura') ? 'text-purple-500' : 'text-blue-500')))}`}>
                     {fatura.status}
                   </p>
                 </div>

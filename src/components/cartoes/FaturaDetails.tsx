@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, getMonth, getYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import {
@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
+import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 
 interface FaturaDetailsProps {
   card: CardType;
@@ -97,7 +97,11 @@ export default function FaturaDetails({
       setTransactions(allTransactions);
 
       const totalPayments = localPayments.reduce((acc, tx) => acc + tx.amount, 0);
-      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
+      const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
+      const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
+      const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
+      
+      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
       setStatus(faturaStatus);
       
       setLoading(false); 
@@ -114,7 +118,11 @@ export default function FaturaDetails({
       setTransactions(allTransactions);
 
       const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
-      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate);
+      const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
+      const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
+      const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
+
+      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
       setStatus(faturaStatus);
     }, (error) => {
       console.error("Error fetching payments: ", error);

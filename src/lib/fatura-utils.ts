@@ -98,19 +98,26 @@ export function getCurrentFaturaMonthAndYear(today: Date, closingDay: number) {
  * @param totalFatura O valor total das compras na fatura.
  * @param totalPago O valor total pago para essa fatura.
  * @param vencimento A data de vencimento da fatura.
+ * @param fechamento A data de fechamento da fatura.
+ * @param isCurrentFatura Se esta é a fatura atualmente aberta para compras.
+ * @param isFutureFatura Se esta é uma fatura de um mês futuro.
  * @returns O status da fatura como uma string.
  */
 export function getFaturaStatus(
   totalFatura: number,
   totalPago: number,
-  vencimento: Date
+  vencimento: Date,
+  fechamento: Date,
+  isCurrentFatura: boolean,
+  isFutureFatura: boolean,
 ) {
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);
+  hoje.setHours(0, 0, 0, 0);
   const valorRestante = totalFatura - totalPago;
   const BRL = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  // 1. Fatura Paga (total ou parcial com crédito)
   if (totalFatura > 0 && totalPago >= totalFatura) {
     if (totalPago > totalFatura) {
       return {
@@ -121,22 +128,41 @@ export function getFaturaStatus(
     return { status: text.payBillForm.billPaid, color: 'text-green-500' };
   }
 
-  // Fatura ainda não foi paga integralmente
-  if (isBefore(hoje, vencimento) || isEqual(hoje, vencimento)) {
-    // Fatura está em aberto e dentro do prazo
-    if (totalPago > 0) {
-      return {
-        status: text.payBillForm.billToPay(BRL(valorRestante)),
-        color: 'text-blue-500',
-      };
-    }
-    return { status: 'Fatura em aberto', color: 'text-blue-500' };
-  }
-
-  // Fatura está vencida
-  if(totalFatura > 0) {
+  // 2. Fatura Vencida
+  if (isAfter(hoje, vencimento) && valorRestante > 0) {
     return { status: text.payBillForm.billOverdue, color: 'text-red-500' };
   }
+  
+  // 3. Fatura Fechada (após o fechamento e antes do vencimento)
+  if (isAfter(hoje, fechamento) && (isBefore(hoje, vencimento) || isEqual(hoje, vencimento))) {
+     if (valorRestante > 0) {
+       return { status: text.payBillForm.closedBillToPay(BRL(valorRestante)), color: 'text-orange-500' };
+     }
+     return { status: text.payBillForm.billClosed, color: 'text-orange-500' };
+  }
+  
+  // 4. Fatura Atual
+  if (isCurrentFatura) {
+      return { status: text.payBillForm.currentBill, color: 'text-blue-500' };
+  }
 
-  return { status: "Sem lançamentos", color: 'text-muted-foreground' };
+  // 5. Fatura Futura
+  if(isFutureFatura) {
+      return { status: text.payBillForm.futureBill, color: 'text-purple-500' };
+  }
+
+  // 6. Fatura em Aberto (padrão para faturas passadas que não se encaixam nos outros critérios)
+  if (totalPago > 0) {
+    return {
+      status: text.payBillForm.billToPay(BRL(valorRestante)),
+      color: 'text-blue-500',
+    };
+  }
+  
+  // 7. Sem lançamentos
+  if (totalFatura === 0) {
+    return { status: "Sem lançamentos", color: 'text-muted-foreground' };
+  }
+  
+  return { status: 'Fatura em aberto', color: 'text-blue-500' };
 }
