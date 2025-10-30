@@ -22,7 +22,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { subMonths, getMonth, getYear, addMonths } from 'date-fns';
+import { subMonths, getMonth, getYear, addMonths, startOfMonth } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus } from '@/lib/fatura-utils';
 
 const months = [
@@ -58,31 +58,57 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
       setLoading(true);
 
       try {
+        // 1. Find the longest installment to determine future months
         const longestInstallmentQuery = query(
           collection(db, 'expenses'),
           where('userId', '==', user.uid),
           where('profile', '==', activeProfile),
           where('paymentMethod', '==', `Cartão: ${card.name}`),
-          where('installments', '>', 1),
           orderBy('installments', 'desc'),
           limit(1)
         );
 
-        const longestInstallmentSnap = await getDocs(longestInstallmentQuery);
+        // 2. Find the very first expense to determine past months
+        const firstExpenseQuery = query(
+          collection(db, 'expenses'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('paymentMethod', '==', `Cartão: ${card.name}`),
+          orderBy('date', 'asc'),
+          limit(1)
+        );
+
+        const [longestInstallmentSnap, firstExpenseSnap] = await Promise.all([
+          getDocs(longestInstallmentQuery),
+          getDocs(firstExpenseQuery)
+        ]);
+
         let maxInstallments = 0;
         if (!longestInstallmentSnap.empty) {
-          maxInstallments = longestInstallmentSnap.docs[0].data().installments || 1;
+            const firstDocData = longestInstallmentSnap.docs[0].data();
+            const installments = firstDocData.installments || 1;
+            const currentInstallment = firstDocData.currentInstallment || 1;
+            maxInstallments = installments - currentInstallment;
+        }
+
+        let firstExpenseDate: Date | null = null;
+        if (!firstExpenseSnap.empty) {
+          firstExpenseDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
+        }
+
+        const today = new Date();
+        const futureMonthsToShow = Math.max(12, maxInstallments + 1);
+        
+        // Generate month list from the first expense until future installments
+        const monthsToFetch: { month: number, year: number }[] = [];
+        const endDateForLoop = addMonths(today, futureMonthsToShow);
+        let loopDate = firstExpenseDate ? startOfMonth(firstExpenseDate) : startOfMonth(subMonths(today, 12));
+
+        while (loopDate <= endDateForLoop) {
+            monthsToFetch.push({ month: getMonth(loopDate), year: getYear(loopDate) });
+            loopDate = addMonths(loopDate, 1);
         }
         
-        const today = new Date();
-        const futureMonthsToShow = Math.max(12, maxInstallments);
-        
-        // Gera a lista de meses para buscar, do mais futuro para o mais passado
-        const monthsToFetch = Array.from({ length: 12 + futureMonthsToShow }).map((_, i) => {
-            const date = subMonths(addMonths(today, futureMonthsToShow -1), i);
-            return { month: getMonth(date), year: getYear(date) };
-        });
-
         const uniqueMonths = monthsToFetch.filter(
           (f, i, self) => i === self.findIndex(t => t.month === f.month && t.year === f.year)
         );
@@ -119,32 +145,13 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         });
 
         let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
+        const currentMonthStart = startOfMonth(today);
 
-        // Filtra para mostrar apenas faturas com valor ou faturas futuras (a partir do mês atual)
-        const firstExpenseQuery = query(
-          collection(db, 'expenses'),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('paymentMethod', '==', `Cartão: ${card.name}`),
-          orderBy('date', 'asc'),
-          limit(1)
-        );
-        const firstExpenseSnap = await getDocs(firstExpenseQuery);
-        let firstExpenseDate: Date | null = null;
-        if (!firstExpenseSnap.empty) {
-          firstExpenseDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
-        }
-
-        if (firstExpenseDate) {
-          resolvedFaturas = resolvedFaturas.filter(f => {
-            const faturaDate = new Date(f.year, f.month);
-            // Mostra faturas com valor OU faturas futuras até o limite de parcelas
-            // E não mostra faturas antes da primeira despesa
-            return faturaDate >= firstExpenseDate || f.value > 0;
-          });
-        } else {
-           resolvedFaturas = resolvedFaturas.filter(f => f.value > 0);
-        }
+        // Filter to show only invoices with value OR future invoices
+        resolvedFaturas = resolvedFaturas.filter(f => {
+            const faturaDate = startOfMonth(new Date(f.year, f.month));
+            return f.value > 0 || faturaDate >= currentMonthStart;
+        });
 
         resolvedFaturas.sort((a, b) => {
             if (a.year !== b.year) return b.year - a.year;
