@@ -11,7 +11,6 @@ import {
   getDocs,
   writeBatch,
   doc,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -25,6 +24,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -71,7 +78,7 @@ export default function AnteciparParcelasForm({
     },
   });
 
-  const { isSubmitting, watch, setValue, control } = form;
+  const { isSubmitting, watch, control, formState: { errors } } = form;
   const selectedParcelasIds = watch('parcelas');
 
   useEffect(() => {
@@ -129,7 +136,8 @@ export default function AnteciparParcelasForm({
 
     const batch = writeBatch(db);
 
-    // 1. Delete the current installment
+    // 1. Delete the current installment to avoid duplication if it's included in logic, but here we only anticipate future ones.
+    // The current expense is being replaced by the new anticipated one. So we delete it.
     const currentInstallmentRef = doc(db, 'expenses', expense.id);
     batch.delete(currentInstallmentRef);
     
@@ -190,33 +198,44 @@ export default function AnteciparParcelasForm({
             <div className="space-y-2">
                 <h4 className="font-medium">Parcelas Futuras</h4>
                 <ScrollArea className="h-40 rounded-md border p-4">
-                    <Controller
+                    <FormField
                         control={control}
                         name="parcelas"
                         render={({ field }) => (
+                           <FormItem>
                             <div className="space-y-2">
                             {futureInstallments.map((installment) => (
-                                <div key={installment.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={installment.id}
-                                    checked={field.value?.includes(installment.id)}
-                                    onCheckedChange={(checked) => {
-                                        return checked
-                                        ? field.onChange([...(field.value || []), installment.id])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                                (value) => value !== installment.id
-                                            )
-                                            );
-                                    }}
+                                <FormField
+                                  key={installment.id}
+                                  control={control}
+                                  name="parcelas"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(installment.id)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...field.value, installment.id])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== installment.id
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <Label htmlFor={installment.id} className="flex justify-between w-full cursor-pointer font-normal">
+                                        <span>{`Parcela ${installment.currentInstallment}/${installment.installments} - ${format(installment.date.toDate(), 'dd/MM/yyyy')}`}</span>
+                                        <span>{installment.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>
+                                      </Label>
+                                    </FormItem>
+                                  )}
                                 />
-                                <Label htmlFor={installment.id} className="flex justify-between w-full cursor-pointer">
-                                    <span>{`Parcela ${installment.currentInstallment}/${installment.installments} - ${format(installment.date.toDate(), 'dd/MM/yyyy')}`}</span>
-                                    <span>{installment.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</span>
-                                </Label>
-                                </div>
                             ))}
                             </div>
+                             <FormMessage className="pt-2"/>
+                            </FormItem>
                         )}
                     />
                 </ScrollArea>
@@ -237,16 +256,19 @@ export default function AnteciparParcelasForm({
               control={control}
               name="novoValor"
               render={({ field }) => (
-                <div>
-                  <Label htmlFor="novo-valor">Novo Valor Total (com desconto)</Label>
-                   <CurrencyInput
-                    id="novo-valor"
-                    placeholder="0,00"
-                    disabled={isSubmitting}
-                    value={field.value}
-                    onValueChange={(values) => field.onChange(values?.floatValue)}
-                  />
-                </div>
+                 <FormItem>
+                  <FormLabel htmlFor="novo-valor">Novo Valor Total (com desconto)</FormLabel>
+                   <FormControl>
+                     <CurrencyInput
+                      id="novo-valor"
+                      placeholder="0,00"
+                      disabled={isSubmitting}
+                      value={field.value}
+                      onValueChange={(values) => field.onChange(values?.floatValue)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
@@ -254,7 +276,7 @@ export default function AnteciparParcelasForm({
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting || selectedParcelasIds.length === 0}>
+              <Button type="submit" disabled={isSubmitting || (selectedParcelasIds?.length || 0) === 0}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Antecipar e Salvar
               </Button>
