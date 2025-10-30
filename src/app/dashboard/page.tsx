@@ -61,7 +61,7 @@ export default function DashboardPage() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [totalVendasPFPB, setTotalVendasPFPB] = useState(0);
+  const [totalVendas, setTotalVendas] = useState(0);
   const [totalAlimentacao, setTotalAlimentacao] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory !== 'Vendas')
+            .filter(income => income.mainCategory !== 'Vendas (Receitas)')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
-          const monthlyVendasPFPB = incomes
+          const monthlyVendas = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory === 'Vendas')
+            .filter(income => income.mainCategory === 'Vendas (Receitas)')
             .reduce((acc, curr) => acc + curr.amount, 0);
           
           const monthlyAlimentacao = expenses
@@ -170,7 +170,7 @@ export default function DashboardPage() {
 
           setTotalIncomes(monthlyIncomes);
           setTotalExpenses(totalMonthlyExpenses);
-          setTotalVendasPFPB(monthlyVendasPFPB);
+          setTotalVendas(monthlyVendas);
           setTotalAlimentacao(monthlyAlimentacao);
           setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
           setLoadingBalance(false);
@@ -350,7 +350,7 @@ export default function DashboardPage() {
               <Card className="mt-6">
                  <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {text.dashboard.salesPFPB}
+                    {text.dashboard.sales}
                      <span className="text-xs font-normal text-muted-foreground">
                         ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
                         {selectedYear})
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                                 {text.dashboard.totalSales}
                             </p>
                             <p className="text-lg font-semibold">
-                                {formatCurrency(totalVendasPFPB)}
+                                {formatCurrency(totalVendas)}
                             </p>
                         </div>
                     </div>

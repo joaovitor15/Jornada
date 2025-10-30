@@ -42,7 +42,7 @@ export const text = {
       december: 'Dezembro',
     },
     currentInvoices: 'Faturas Atuais',
-    salesPFPB: 'Vendas PFPB',
+    sales: 'Vendas',
     totalSales: 'Total de Vendas',
     food: 'Alimentação',
     totalFood: 'Total em Alimentação',
@@ -205,6 +205,7 @@ export const text = {
     type: 'Tipo',
     payment: 'Pagamento',
     refund: 'Estorno',
+    billPayments: 'Pagamentos de Fatura',
   },
   lists: {
     expenses: 'Despesas',

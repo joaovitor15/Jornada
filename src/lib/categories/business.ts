@@ -5,7 +5,7 @@ export const businessExpenseCategories = {
   "Sistema": ["BrPhonia", "Trier Sistemas", "SKY TEF"],
   "PBM": ["Portal Drogaria", "Funcional", "Portal E-pharma"],
   "Agafarma": ["Mensalidade", "Cartão"],
-  "Maketing": ["Rádio", "ACI", "Outros"],
+  "Marketing": ["Rádio", "ACI", "Outros"],
   "Escritorio": ["Lider", "Serplamed", "Certificado Digital"],
   "Impostos": ["FGTS", "Receitas (INSS + IRPF)", "Simples Nacional"],
   "Fiscalização": ["CRF/RS", "Certidão Simplificada", "ARL (Lixos)"],
@@ -13,7 +13,8 @@ export const businessExpenseCategories = {
 };
 
 export const businessIncomeCategories = {
-  "Vendas": ["Farmacia Popular (gov)"],
-  "Recebimentos": ["Dinheiro", "Pagamento Farmacia Popular"],
+  "Vendas (Receitas)": ["Governo (Farmácia Popular)", "Vendas (Dinheiro/Cartão)"],
   "Ajustes": ["Entrada (Transferência)"],
 };
+
+    
