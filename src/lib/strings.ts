@@ -42,8 +42,8 @@ export const text = {
       december: 'Dezembro',
     },
     currentInvoices: 'Faturas Atuais',
-    sales: 'Vendas',
-    totalSales: 'Total de Vendas',
+    credits: 'Créditos do Mês',
+    totalCredits: 'Total de Créditos Gerados',
     food: 'Alimentação',
     totalFood: 'Total em Alimentação',
   },
@@ -316,5 +316,3 @@ export const text = {
     },
   },
 };
-
-    

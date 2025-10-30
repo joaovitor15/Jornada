@@ -13,8 +13,8 @@ export const businessExpenseCategories = {
 };
 
 export const businessIncomeCategories = {
-  "Vendas (Receitas)": ["Governo (Farmácia Popular)", "Vendas (Dinheiro/Cartão)"],
+  "Vendas (Créditos)": ["Crédito (Farmácia Popular)"],
+  "Vendas (Receitas)": ["Vendas (Dinheiro/Cartão)"],
+  "Recebimentos": ["Recebimento (Farmácia Popular)"],
   "Ajustes": ["Entrada (Transferência)"],
 };
-
-    

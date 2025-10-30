@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory !== 'Vendas (Receitas)')
+            .filter(income => income.mainCategory !== 'Vendas (Créditos)')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyVendas = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory === 'Vendas (Receitas)')
+            .filter(income => income.mainCategory === 'Vendas (Créditos)')
             .reduce((acc, curr) => acc + curr.amount, 0);
           
           const monthlyAlimentacao = expenses
@@ -350,7 +350,7 @@ export default function DashboardPage() {
               <Card className="mt-6">
                  <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {text.dashboard.sales}
+                    {text.dashboard.credits}
                      <span className="text-xs font-normal text-muted-foreground">
                         ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
                         {selectedYear})
@@ -367,7 +367,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">
-                                {text.dashboard.totalSales}
+                                {text.dashboard.totalCredits}
                             </p>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(totalVendas)}
@@ -433,5 +433,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

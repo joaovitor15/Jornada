@@ -139,7 +139,7 @@ export default function AnnualFinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
-                      if((transaction as Transaction).mainCategory !== 'Vendas (Receitas)'){
+                      if((transaction as Transaction).mainCategory !== 'Vendas (Créditos)'){
                         entry.income += transaction.amount;
                       }
                     } else if (type === 'expense') {
@@ -300,5 +300,3 @@ export default function AnnualFinancialChart({
     </ResponsiveContainer>
   );
 }
-
-    
