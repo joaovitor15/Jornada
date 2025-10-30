@@ -38,6 +38,8 @@ import { Transaction } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
 import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
 import { BillPayment } from '@/lib/types';
+import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
+
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -325,6 +327,9 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
+
+        <FaturasAtuais />
+
       </div>
       <AddIncomeForm
         isOpen={isIncomeFormOpen}
