@@ -4,28 +4,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Wallet, Briefcase, Home, User, Circle } from 'lucide-react';
 import { text } from '@/lib/strings';
+import { cn } from '@/lib/utils';
+import { type Profile } from '@/lib/types';
 
-function ProfileIcon({ profile }: { profile: string }) {
+function ProfileIcon({ profile, className }: { profile: string; className?: string }) {
   switch (profile) {
     case text.header.profileTypes.personal:
-      return <User className="h-5 w-5 text-primary" />;
+      return <User className={cn("h-4 w-4", className)} />;
     case text.header.profileTypes.home:
-      return <Home className="h-5 w-5 text-primary" />;
+      return <Home className={cn("h-4 w-4", className)} />;
     case text.header.profileTypes.business:
-      return <Briefcase className="h-5 w-5 text-primary" />;
+      return <Briefcase className={cn("h-4 w-4", className)} />;
     default:
-      return <Circle className="h-5 w-5 text-primary" />;
+      return <Circle className={cn("h-4 w-4", className)} />;
   }
 }
 
@@ -36,10 +29,16 @@ interface HeaderProps {
 export default function Header({ menuTrigger }: HeaderProps) {
   const { user } = useAuth();
   const { activeProfile, setActiveProfile } = useProfile();
+  
+  const profiles: { id: Profile, label: string }[] = [
+    { id: text.header.profileTypes.personal as Profile, label: text.header.personal },
+    { id: text.header.profileTypes.business as Profile, label: text.header.business },
+    { id: text.header.profileTypes.home as Profile, label: text.header.home },
+  ];
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+      <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center gap-2">
           {user && menuTrigger}
 
@@ -52,37 +51,27 @@ export default function Header({ menuTrigger }: HeaderProps) {
               {text.header.appName}
             </span>
           </Link>
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full">
-                  <ProfileIcon profile={activeProfile} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuLabel>{text.header.profiles}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup
-                  value={activeProfile}
-                  onValueChange={setActiveProfile}
-                >
-                  <DropdownMenuRadioItem value={text.header.profileTypes.personal}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>{text.header.personal}</span>
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value={text.header.profileTypes.home}>
-                    <Home className="mr-2 h-4 w-4" />
-                    <span>{text.header.home}</span>
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value={text.header.profileTypes.business}>
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    <span>{text.header.business}</span>
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </div>
+
+        {user && (
+          <div className="flex items-center gap-2 rounded-lg bg-muted p-1">
+            {profiles.map((profile) => (
+               <Button
+                key={profile.id}
+                variant={activeProfile === profile.id ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setActiveProfile(profile.id)}
+                className={cn(
+                  "flex items-center gap-2",
+                  activeProfile === profile.id && "shadow-sm"
+                )}
+              >
+                <ProfileIcon profile={profile.id} />
+                <span className="hidden sm:inline">{profile.label}</span>
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
     </header>
   );
