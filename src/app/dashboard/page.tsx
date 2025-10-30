@@ -18,6 +18,7 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
+  Receipt,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalVendasPFPB, setTotalVendasPFPB] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
@@ -139,6 +141,11 @@ export default function DashboardPage() {
             .filter(income => income.mainCategory !== 'Vendas') // Ignora a categoria "Vendas"
             .reduce((acc, curr) => acc + curr.amount, 0);
 
+          const monthlyVendasPFPB = incomes
+            .filter(filterByMonthAndYear)
+            .filter(income => income.mainCategory === 'Vendas') // Apenas a categoria "Vendas"
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
           const monthlyNonCardExpenses = expenses
             .filter(filterByMonthAndYear)
             .filter(e => !e.paymentMethod.startsWith('Cartão:'))
@@ -152,6 +159,7 @@ export default function DashboardPage() {
 
           setTotalIncomes(monthlyIncomes);
           setTotalExpenses(totalMonthlyExpenses);
+          setTotalVendasPFPB(monthlyVendasPFPB);
           setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
           setLoadingBalance(false);
         });
@@ -316,6 +324,38 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+             {activeProfile === 'Business' && (
+              <Card className="mt-6">
+                 <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Vendas PFPB
+                     <span className="text-xs font-normal text-muted-foreground">
+                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                        {selectedYear})
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                   {loadingBalance ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                            <Receipt className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">
+                                Total de Vendas
+                            </p>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(totalVendasPFPB)}
+                            </p>
+                        </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
