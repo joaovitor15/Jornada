@@ -42,6 +42,7 @@ interface ChartData {
 
 interface AnnualFinancialChartProps {
   year: number;
+  onMonthSelect?: (month: number) => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -75,6 +76,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function AnnualFinancialChart({
   year,
+  onMonthSelect,
 }: AnnualFinancialChartProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -135,7 +137,9 @@ export default function AnnualFinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
+                      if((transaction as Transaction).mainCategory !== 'Vendas'){
                         entry.income += transaction.amount;
+                      }
                     } else if (type === 'expense') {
                       if (!(transaction as Transaction).paymentMethod.startsWith('Cartão:')) {
                         entry.expense += transaction.amount;
@@ -198,10 +202,18 @@ export default function AnnualFinancialChart({
       unsubscribeIncomes();
     };
   }, [user, activeProfile, year]);
+  
+  const handleChartClick = (data: any) => {
+    if (onMonthSelect && data && data.activePayload && data.activePayload.length > 0) {
+      const monthKey = data.activePayload[0].payload.monthKey; // "yyyy-MM"
+      const monthIndex = parseInt(monthKey.split('-')[1], 10) - 1;
+      onMonthSelect(monthIndex);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-[280px]">
+      <div className="flex justify-center items-center h-full min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -214,23 +226,24 @@ export default function AnnualFinancialChart({
   const noData = chartData.every(d => d.income === 0 && d.expense === 0);
 
   if (noData) {
-    return <div className="flex justify-center items-center h-full min-h-[280px] text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
+    return <div className="flex justify-center items-center h-full min-h-[400px] text-muted-foreground">Nenhum dado encontrado para o ano selecionado.</div>;
   }
 
   return (
-    <ResponsiveContainer width="100%" height={280} key={animationKey}>
+    <ResponsiveContainer width="100%" height={400} key={animationKey}>
       <AreaChart
         data={chartData}
-        margin={{ top: 20, right: 20, left: -10, bottom: 20 }}
+        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+        onClick={handleChartClick}
       >
         <defs>
-          <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#4CAF50" stopOpacity={0} />
+          <linearGradient id="colorIncomeAnnual" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
           </linearGradient>
-          <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#FF7300" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#FF7300" stopOpacity={0} />
+          <linearGradient id="colorExpenseAnnual" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
@@ -252,7 +265,7 @@ export default function AnnualFinancialChart({
             }).format(value)
           }
           tick={{ fontSize: 12 }}
-          tickCount={6}
+          tickCount={8}
           axisLine={false}
           tickLine={false}
         />
@@ -266,18 +279,20 @@ export default function AnnualFinancialChart({
         <Area
           type="monotone"
           dataKey="income"
-          stroke="#4CAF50"
-          fill="url(#colorIncome)"
+          stroke="hsl(var(--chart-2))"
+          fill="url(#colorIncomeAnnual)"
           name="Receita"
           strokeWidth={2}
+          activeDot={{ r: 6 }}
         />
         <Area
           type="monotone"
           dataKey="expense"
-          stroke="#FF7300"
-          fill="url(#colorExpense)"
+          stroke="hsl(var(--chart-1))"
+          fill="url(#colorExpenseAnnual)"
           name="Despesa"
           strokeWidth={2}
+           activeDot={{ r: 6 }}
         />
       </AreaChart>
     </ResponsiveContainer>
