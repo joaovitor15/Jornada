@@ -7,13 +7,12 @@ import {
   where,
   onSnapshot,
   Timestamp,
-  orderBy,
   getDocs,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { Card as CardType, Expense } from '@/lib/types';
+import { Card as CardType } from '@/lib/types';
 import {
   getCurrentFaturaMonthAndYear,
   getFaturaPeriod,
@@ -22,9 +21,10 @@ import {
 import { format, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Landmark } from 'lucide-react';
 import { text } from '@/lib/strings';
+import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
 
 interface FaturaInfo {
   card: CardType;
@@ -49,6 +49,7 @@ export default function FaturasAtuais() {
   const { activeProfile } = useProfile();
   const [faturas, setFaturas] = useState<FaturaInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const { setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -145,7 +146,7 @@ export default function FaturasAtuais() {
         const isCurrentFatura = true;
         const isFutureFatura = false;
         
-        const { status, color } = getFaturaStatus(
+        const { status } = getFaturaStatus(
           faturaValue,
           pagamentos,
           dueDate,
@@ -210,8 +211,18 @@ export default function FaturasAtuais() {
 
           return (
             <Card key={card.id}>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">{card.name}</CardTitle>
+                 {isFaturaFechada && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsPayBillFormOpen(true)}
+                  >
+                    <Landmark className="mr-2 h-4 w-4" />
+                    Pagar
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
