@@ -119,11 +119,11 @@ export default function SumExpensesForm({
       await addDoc(collection(db, 'expenses'), {
         userId: user.uid,
         profile: activeProfile,
-        description: `Soma de Compras: ${data.values}`,
+        description: 'Alimentos',
         amount: total,
         mainCategory: 'Alimentação',
         subcategory: 'Comida',
-        paymentMethod: 'Débito',
+        paymentMethod: 'Dinheiro',
         date: Timestamp.fromDate(data.date),
       });
       toast({
