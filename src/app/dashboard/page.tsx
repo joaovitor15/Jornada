@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory !== 'Vendas (Créditos)')
+            .filter(income => income.mainCategory !== 'Vendas (Créditos)' && income.mainCategory !== 'Recebimentos')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyVendas = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory === 'Vendas (Créditos)')
+            .filter(income => income.mainCategory === 'Recebimentos' && income.subcategory === 'Recebimento PFPB')
             .reduce((acc, curr) => acc + curr.amount, 0);
           
           const monthlyAlimentacao = expenses
@@ -350,7 +350,7 @@ export default function DashboardPage() {
               <Card className="mt-6">
                  <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {text.dashboard.credits}
+                    {text.dashboard.pfpbProgram}
                      <span className="text-xs font-normal text-muted-foreground">
                         ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
                         {selectedYear})
