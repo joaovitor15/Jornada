@@ -54,6 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { type Card } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
   cardId: z
@@ -66,6 +67,9 @@ const formSchema = z.object({
     })
     .positive({ message: text.payBillForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
+  type: z.enum(['payment', 'refund'], {
+    required_error: 'Selecione o tipo de transação.',
+  }),
 });
 
 type PayBillFormProps = {
@@ -73,7 +77,10 @@ type PayBillFormProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
-export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) {
+export default function PayBillForm({
+  isOpen,
+  onOpenChange,
+}: PayBillFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
@@ -82,15 +89,14 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      type: 'payment',
+    },
   });
 
-  const {
-    isSubmitting,
-    watch,
-    setValue,
-    control,
-    reset,
-  } = form;
+  const { isSubmitting, watch, setValue, control, reset } = form;
+
+  const transactionType = watch('type');
 
   useEffect(() => {
     if (isOpen) {
@@ -99,6 +105,7 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
         cardId: '',
         amount: undefined,
         date: initialDate,
+        type: 'payment',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
@@ -156,11 +163,15 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
         cardId: values.cardId,
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
+        type: values.type,
       });
 
       toast({
         title: text.common.success,
-        description: text.payBillForm.addSuccess,
+        description:
+          values.type === 'payment'
+            ? text.payBillForm.addSuccess
+            : 'Estorno registrado com sucesso.',
       });
       onOpenChange(false);
     } catch (error) {
@@ -197,14 +208,51 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.payBillForm.title}</DialogTitle>
-          <DialogDescription>{text.payBillForm.description}</DialogDescription>
+          <DialogTitle>
+            {transactionType === 'payment'
+              ? 'Pagamento de Fatura'
+              : 'Registrar Estorno'}
+          </DialogTitle>
+          <DialogDescription>
+            Registre um pagamento ou um estorno recebido na fatura do seu cartão.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
+            <FormField
+              control={control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Transação</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="payment" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Pagamento</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="refund" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Estorno</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={control}
               name="cardId"
@@ -242,7 +290,7 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{text.payBillForm.amountLabel}</FormLabel>
+                    <FormLabel>{transactionType === 'payment' ? 'Valor Pago' : 'Valor do Estorno'}</FormLabel>
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
@@ -263,7 +311,7 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>{text.payBillForm.paymentDateLabel}</FormLabel>
+                    <FormLabel>{transactionType === 'payment' ? 'Data do Pagamento' : 'Data do Estorno'}</FormLabel>
                     <Popover>
                       <div className="flex items-center gap-2">
                         <FormControl>
@@ -312,7 +360,7 @@ export default function PayBillForm({ isOpen, onOpenChange }: PayBillFormProps) 
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {text.payBillForm.submitButton}
+                {transactionType === 'payment' ? 'Registrar Pagamento' : 'Registrar Estorno'}
               </Button>
             </DialogFooter>
           </form>

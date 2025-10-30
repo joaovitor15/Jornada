@@ -48,6 +48,7 @@ export type BillPayment = {
   cardId: string;
   amount: number;
   date: Timestamp;
+  type: 'payment' | 'refund';
 };
 
 export type Transaction = Expense | BillPayment;

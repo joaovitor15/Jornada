@@ -33,7 +33,7 @@ interface FaturaDetailsProps {
   onFaturaSelect: () => void;
 }
 
-type FaturaTransaction = (Expense | BillPayment) & { type: 'expense' | 'payment' };
+type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' };
 
 export default function FaturaDetails({
   card,
@@ -89,19 +89,27 @@ export default function FaturaDetails({
     let localPayments: FaturaTransaction[] = [];
 
     const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-      localExpenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'expense' } as FaturaTransaction));
+      localExpenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'expense' } as FaturaTransaction));
+      
       const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
-      setTotal(totalExpenses);
+      const totalPaymentsAndRefunds = localPayments.reduce((acc, tx) => {
+        if(tx.type === 'refund') return acc + tx.amount; // Refund adds to payment total
+        if(tx.type === 'payment') return acc + tx.amount;
+        return acc;
+      }, 0);
+
+      const faturaValue = totalExpenses - localPayments.filter(p => p.type === 'refund').reduce((acc, p) => acc + p.amount, 0);
+
+      setTotal(faturaValue < 0 ? 0 : faturaValue);
 
       const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
       setTransactions(allTransactions);
 
-      const totalPayments = localPayments.reduce((acc, tx) => acc + tx.amount, 0);
       const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
       const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
       const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
       
-      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+      const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaymentsAndRefunds, dueDate, closingDate, isCurrentFatura, isFutureFatura);
       setStatus(faturaStatus);
       
       setLoading(false); 
@@ -111,18 +119,23 @@ export default function FaturaDetails({
     });
 
     const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
-      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, type: 'payment' } as FaturaTransaction));
-      const totalPayments = localPayments.reduce((acc, tx) => acc + tx.amount, 0);
+      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: doc.data().type } as FaturaTransaction));
       
+      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
+      const totalPayments = localPayments.filter(p => p.type === 'payment').reduce((acc, p) => acc + p.amount, 0);
+      const totalRefunds = localPayments.filter(p => p.type === 'refund').reduce((acc, p) => acc + p.amount, 0);
+
+      const faturaValue = totalExpenses - totalRefunds;
+      const totalPaid = totalPayments;
+
       const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
       setTransactions(allTransactions);
 
-      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
       const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
       const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
       const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
 
-      const { status: faturaStatus } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+      const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaid, dueDate, closingDate, isCurrentFatura, isFutureFatura);
       setStatus(faturaStatus);
     }, (error) => {
       console.error("Error fetching payments: ", error);
@@ -179,23 +192,32 @@ export default function FaturaDetails({
               </TableHeader>
               <TableBody>
                 {transactions.map((tx) => {
-                    const isPayment = tx.type === 'payment';
+                    const isExpense = tx.transactionType === 'expense';
+                    const isPayment = tx.transactionType === 'payment';
+                    const isRefund = tx.transactionType === 'refund';
+
+                    let description = '';
+                    if(isPayment) description = 'Pagamento da Fatura';
+                    else if(isRefund) description = 'Estorno Recebido';
+                    else description = tx.description;
+
                     return (
                         <TableRow key={tx.id}>
                             <TableCell className="text-xs text-muted-foreground">{tx.date.toDate().toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>
                             <TableCell className="font-medium flex items-center gap-2">
-                            {isPayment ? (
-                                <TrendingUp className="h-4 w-4 text-green-500" />
-                            ) : (
+                            {isExpense ? (
                                 <TrendingDown className="h-4 w-4 text-red-500" />
+                            ) : (
+                                <TrendingUp className="h-4 w-4 text-green-500" />
                             )}
-                            {isPayment ? 'Pagamento da Fatura' : tx.description}
+                            {description}
                             </TableCell>
                             <TableCell
                             className={`text-right font-semibold ${
-                                isPayment ? 'text-green-500' : 'text-foreground'
+                                isExpense ? 'text-foreground' : 'text-green-500'
                             }`}
                             >
+                            {isExpense ? '' : '+'}
                             {tx.amount.toLocaleString('pt-BR', {
                                 style: 'currency',
                                 currency: 'BRL',

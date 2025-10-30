@@ -17,5 +17,7 @@ export const personalIncomeCategories = {
     "Agafarma": ["Produtos", "Informatica"],
     "Mari Lucia": ["Salario", "Luci"],
     "Casa": ["TV", "Eletrônico", "Roupa", "Compras", "Outros"],
+    "Cashback": ["Nubank+", "Inter", "Livelo"],
+    "Devolução": ["Estorno"],
     "Outros Ganhos": ["Rendimentos", "Proventos", "Rendimento Mercado Pago", "Ajuste Saldo (+)"],
 };

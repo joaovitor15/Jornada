@@ -199,6 +199,9 @@ export default function BillPaymentsList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Tipo
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.payBillForm.cardLabel}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
@@ -221,6 +224,9 @@ export default function BillPaymentsList() {
                             index % 2 === 0 ? 'bg-muted/25' : ''
                           )}
                         >
+                          <TableCell className={`py-2 px-2 align-middle font-medium ${payment.type === 'refund' ? 'text-green-500' : ''}`}>
+                            {payment.type === 'payment' ? 'Pagamento' : 'Estorno'}
+                          </TableCell>
                           <TableCell className="py-2 px-2 align-middle font-medium">
                             {cards.get(payment.cardId) || 'Cartão não encontrado'}
                           </TableCell>
