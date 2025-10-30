@@ -20,6 +20,7 @@ import {
   Wallet,
   Receipt,
   Calculator,
+  Beef,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalVendasPFPB, setTotalVendasPFPB] = useState(0);
+  const [totalAlimentacao, setTotalAlimentacao] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
@@ -141,12 +143,17 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory !== 'Vendas') // Ignora a categoria "Vendas"
+            .filter(income => income.mainCategory !== 'Vendas')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyVendasPFPB = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory === 'Vendas') // Apenas a categoria "Vendas"
+            .filter(income => income.mainCategory === 'Vendas')
+            .reduce((acc, curr) => acc + curr.amount, 0);
+          
+          const monthlyAlimentacao = expenses
+            .filter(filterByMonthAndYear)
+            .filter(expense => expense.mainCategory === 'Alimentação')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyNonCardExpenses = expenses
@@ -163,6 +170,7 @@ export default function DashboardPage() {
           setTotalIncomes(monthlyIncomes);
           setTotalExpenses(totalMonthlyExpenses);
           setTotalVendasPFPB(monthlyVendasPFPB);
+          setTotalAlimentacao(monthlyAlimentacao);
           setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
           setLoadingBalance(false);
         });
@@ -362,6 +370,38 @@ export default function DashboardPage() {
                             </p>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(totalVendasPFPB)}
+                            </p>
+                        </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+             {activeProfile === 'Home' && (
+              <Card className="mt-6">
+                 <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Alimentação
+                     <span className="text-xs font-normal text-muted-foreground">
+                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                        {selectedYear})
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                   {loadingBalance ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+                            <Beef className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">
+                                Total em Alimentação
+                            </p>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(totalAlimentacao)}
                             </p>
                         </div>
                     </div>
