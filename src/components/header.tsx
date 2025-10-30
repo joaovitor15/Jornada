@@ -60,7 +60,7 @@ export default function Header({ menuTrigger }: HeaderProps) {
           </Link>
           
            {user && (
-            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+            <div className="flex items-center gap-1 rounded-lg p-1">
               <TooltipProvider delayDuration={0}>
               {profiles.map((profile) => (
                  <Tooltip key={profile.id}>
