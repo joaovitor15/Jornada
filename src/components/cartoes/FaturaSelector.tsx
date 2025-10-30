@@ -140,8 +140,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         });
 
         let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
-        const today = new Date();
-        const currentMonthStart = startOfMonth(new Date(today.getFullYear(), today.getMonth()));
+        const currentMonthStart = startOfMonth(new Date(currentFaturaYear, currentFaturaMonth));
         
         resolvedFaturas = resolvedFaturas.filter(f => {
             const faturaDate = startOfMonth(new Date(f.year, f.month));
