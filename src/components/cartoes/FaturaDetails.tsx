@@ -11,12 +11,14 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
+  doc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format, getMonth, getYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Loader2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -26,11 +28,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
 interface FaturaDetailsProps {
   card: CardType;
   selectedFatura: { month: number; year: number };
   onFaturaSelect: () => void;
+  onEditExpense: (expense: Expense) => void;
+  onAnticipateExpense: (expense: Expense) => void;
 }
 
 type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' };
@@ -39,6 +46,8 @@ export default function FaturaDetails({
   card,
   selectedFatura,
   onFaturaSelect,
+  onEditExpense,
+  onAnticipateExpense
 }: FaturaDetailsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -48,6 +57,10 @@ export default function FaturaDetails({
   const [status, setStatus] = useState('');
   const [fechamento, setFechamento] = useState<Date | null>(null);
   const [vencimento, setVencimento] = useState<Date | null>(null);
+  const { toast } = useToast();
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
 
   useEffect(() => {
     if (!user || !activeProfile || !card) return;
@@ -147,6 +160,25 @@ export default function FaturaDetails({
     };
   }, [user, activeProfile, card, selectedFatura]);
 
+  const handleDeleteExpense = async () => {
+    if (!expenseToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'expenses', expenseToDelete.id));
+      toast({
+        title: 'Sucesso',
+        description: 'Despesa excluída com sucesso.',
+      });
+      setIsDeleteDialogOpen(false);
+      setExpenseToDelete(null);
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Ocorreu um erro ao excluir a despesa.',
+      });
+    }
+  };
+
   const faturaDate = new Date(selectedFatura.year, selectedFatura.month);
   const formattedFatura =
     format(faturaDate, 'MMMM', { locale: ptBR }) +
@@ -188,6 +220,7 @@ export default function FaturaDetails({
                   <TableHead>Data</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
+                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,6 +233,9 @@ export default function FaturaDetails({
                     if(isPayment) description = 'Pagamento da Fatura';
                     else if(isRefund) description = 'Estorno Recebido';
                     else description = tx.description;
+                    
+                    const expense = tx as Expense;
+                    const isInstallment = isExpense && expense.installments && expense.installments > 1;
 
                     return (
                         <TableRow key={tx.id}>
@@ -223,6 +259,38 @@ export default function FaturaDetails({
                                 currency: 'BRL',
                             })}
                             </TableCell>
+                             <TableCell className="text-center">
+                                {isExpense && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      {isInstallment && (
+                                        <DropdownMenuItem onClick={() => onAnticipateExpense(expense)}>
+                                          Antecipar Parcelas
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuItem onClick={() => onEditExpense(expense)}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setExpenseToDelete(expense);
+                                          setIsDeleteDialogOpen(true);
+                                        }}
+                                        className="text-red-500"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </TableCell>
                         </TableRow>
                     );
                 })}
@@ -230,6 +298,20 @@ export default function FaturaDetails({
             </Table>
             )}
           </div>
+           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a despesa.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteExpense}>Continuar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+            </AlertDialog>
         </>
       )}
     </div>
