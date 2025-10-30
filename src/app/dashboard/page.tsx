@@ -19,6 +19,7 @@ import {
   TrendingDown,
   Wallet,
   Receipt,
+  Calculator,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import { Transaction } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
 import { BillPayment } from '@/lib/types';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
+import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
@@ -53,6 +55,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isIncomeFormOpen, setIsIncomeFormOpen] = useState(false);
   const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
+  const [isSumFormOpen, setIsSumFormOpen] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -234,6 +237,16 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex gap-2">
+             {activeProfile === 'Home' && (
+              <Button
+                onClick={() => setIsSumFormOpen(true)}
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 rounded-full"
+              >
+                <Calculator className="h-5 w-5" />
+              </Button>
+            )}
              <Button
               onClick={() => setIsExpenseFormOpen(true)}
               size="icon"
@@ -370,6 +383,12 @@ export default function DashboardPage() {
         isOpen={isExpenseFormOpen}
         onOpenChange={setIsExpenseFormOpen}
       />
+      {activeProfile === 'Home' && (
+        <SumExpensesForm
+          isOpen={isSumFormOpen}
+          onOpenChange={setIsSumFormOpen}
+        />
+      )}
     </>
   );
 }
