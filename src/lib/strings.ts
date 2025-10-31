@@ -285,7 +285,7 @@ export const text = {
     noData: 'Nenhum dado encontrado para o ano selecionado.',
     chartError: 'Falha ao processar os dados do gráfico.',
     grossProfit: 'Lucro Bruto',
-    grossProfitTooltip: 'Mede a rentabilidade após subtrair os custos para adquirir os produtos vendidos.\nCálculo: Vendas - Pagamentos a Fornecedores.',
+    grossProfitTooltip: 'Indica o lucro da atividade principal, antes de descontar despesas\nCálculo: Vendas - Pagamentos a Fornecedores.',
     monthly: 'Mensal',
     annual: 'Anual',
   },
