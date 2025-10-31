@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -12,7 +11,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { Transaction, BillPayment } from '@/lib/types';
+import { Transaction, BillPayment, Income } from '@/lib/types';
 import {
   format,
   getYear,
@@ -139,7 +138,10 @@ export default function FinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
+                      const income = transaction as Income;
+                      if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
                         entry.income += transaction.amount;
+                      }
                     } else if (type === 'expense') {
                       if (!(transaction as Transaction).paymentMethod.startsWith('Cartão:')) {
                         entry.expense += transaction.amount;
@@ -296,5 +298,3 @@ export default function FinancialChart({
     </ResponsiveContainer>
   );
 }
-
-    
