@@ -26,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, TrendingUp } from 'lucide-react';
 import {
   collection,
   query,
@@ -123,15 +123,18 @@ export default function ReportsPage() {
       });
       setNetRevenue(totalRevenue);
       setLoadingNetRevenue(false);
+    }, () => {
+      setLoadingNetRevenue(false);
     });
 
     return () => unsubscribe();
   }, [user, activeProfile, selectedYear, selectedMonth, viewModeNetRevenue]);
 
-  // Effect for Gross Profit
+  // Effect for Gross Profit and Gross Margin
   useEffect(() => {
-    if (!user || activeProfile !== 'Business') {
+    if (!user || activeProfile !== 'Business' || loadingNetRevenue) {
       setGrossProfit(0);
+      setGrossMargin(0);
       setLoadingGrossProfit(false);
       return;
     }
@@ -142,17 +145,10 @@ export default function ReportsPage() {
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
 
+    // Use the same period as net revenue for consistency
     const startDate =
-      viewModeGrossProfit === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = viewModeGrossProfit === 'mensal' ? endOfMonth : endOfYear;
-
-    const incomesQuery = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid),
-      where('profile', '==', 'Business'),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
-    );
+      viewModeNetRevenue === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = viewModeNetRevenue === 'mensal' ? endOfMonth : endOfYear;
 
     const expensesQuery = query(
       collection(db, 'expenses'),
@@ -163,41 +159,33 @@ export default function ReportsPage() {
       where('date', '<=', Timestamp.fromDate(endDate))
     );
 
-    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
-      let totalRevenue = 0;
-      incomesSnap.forEach((doc) => {
-        const income = doc.data();
-        if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-          totalRevenue += income.amount;
-        }
+    const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+      let supplierCosts = 0;
+      expensesSnap.forEach((doc) => {
+        supplierCosts += doc.data().amount;
       });
 
-      const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
-        let supplierCosts = 0;
-        expensesSnap.forEach((doc) => {
-          supplierCosts += doc.data().amount;
-        });
+      const calculatedGrossProfit = netRevenue - supplierCosts;
+      setGrossProfit(calculatedGrossProfit);
 
-        const calculatedGrossProfit = totalRevenue - supplierCosts;
-        setGrossProfit(calculatedGrossProfit);
-        
-        // Calculate Gross Margin
-        const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
-        setGrossMargin(calculatedGrossMargin);
+      const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
+      setGrossMargin(calculatedGrossMargin);
 
+      setLoadingGrossProfit(false);
+    }, () => {
         setLoadingGrossProfit(false);
-      });
-      return () => unsubExpenses();
     });
+    
+    return () => unsubExpenses();
 
-    return () => unsubIncomes();
   }, [
     user,
     activeProfile,
     selectedYear,
     selectedMonth,
     viewModeGrossProfit,
-    netRevenue, // Dependency for margin calculation
+    netRevenue,
+    loadingNetRevenue
   ]);
 
   // Effect for Net Profit
@@ -255,9 +243,13 @@ export default function ReportsPage() {
         const calculatedNetProfit = totalRevenue - totalExpenses;
         setNetProfit(calculatedNetProfit);
         setLoadingNetProfit(false);
+      }, () => {
+          setLoadingNetProfit(false);
       });
 
       return () => unsubExpenses();
+    }, () => {
+        setLoadingNetProfit(false);
     });
 
     return () => unsubIncomes();
@@ -397,45 +389,33 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
+                  <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
+                   <Tabs
+                    value={viewModeGrossProfit}
+                    onValueChange={setViewModeGrossProfit}
+                    className="w-auto"
+                  >
+                    <TabsList className="h-8">
+                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                        {text.reports.monthly}
+                      </TabsTrigger>
+                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                        {text.reports.annual}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
+                 <p className="text-xs text-muted-foreground">
+                  ({viewModeGrossProfit === 'mensal' ? periodLabel : selectedYear})
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                  {loadingGrossProfit ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <div className="flex justify-center items-center h-24">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
                  ) : (
                     <>
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">Lucro Bruto</h3>
-                                <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                    <div style={{ whiteSpace: 'pre-line' }}>
-                                        {text.reports.grossProfitTooltip}
-                                    </div>
-                                    </TooltipContent>
-                                </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                            <Tabs
-                                value={viewModeGrossProfit}
-                                onValueChange={setViewModeGrossProfit}
-                                className="w-auto"
-                            >
-                                <TabsList className="h-8">
-                                <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                                    {text.reports.monthly}
-                                </TabsTrigger>
-                                <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                                    {text.reports.annual}
-                                </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
                                 <CircleDollarSign className="h-6 w-6 text-green-500" />
@@ -446,20 +426,22 @@ export default function ReportsPage() {
                         </div>
                         
                         <div className="border-t pt-4">
-                             <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-semibold">Margem Bruta</h3>
-                                 <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                    <div style={{ whiteSpace: 'pre-line' }}>
-                                        {text.reports.grossMarginTooltip}
-                                    </div>
-                                    </TooltipContent>
-                                </Tooltip>
-                                </TooltipProvider>
+                             <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold">{text.reports.grossMargin}</h3>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <div style={{ whiteSpace: 'pre-line' }}>
+                                                    {text.reports.grossMarginTooltip}
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             </div>
                             <div className="flex items-center gap-4">
                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
@@ -546,3 +528,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
