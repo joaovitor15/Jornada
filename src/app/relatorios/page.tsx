@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -17,7 +18,7 @@ import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { Transaction, Income } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
-import { CircleDollarSign, HelpCircle, Loader2 } from 'lucide-react';
+import { CircleDollarSign, HelpCircle, Loader2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -43,10 +44,15 @@ export default function ReportsPage() {
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+  const [viewModeGrossProfit, setViewModeGrossProfit] = useState<ViewMode>('monthly');
+  const [viewModeNetProfit, setViewModeNetProfit] = useState<ViewMode>('monthly');
+
 
   const [grossProfit, setGrossProfit] = useState(0);
   const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
+  const [netProfit, setNetProfit] = useState(0);
+  const [loadingNetProfit, setLoadingNetProfit] = useState(false);
+
 
  useEffect(() => {
     if (!user || !activeProfile) {
@@ -112,7 +118,7 @@ export default function ReportsPage() {
 
     const filterByPeriod = (t: Income | Transaction) => {
         const date = (t.date as unknown as Timestamp).toDate();
-        if (viewMode === 'annual') {
+        if (viewModeGrossProfit === 'annual') {
             return getYear(date) === selectedYear;
         }
         return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
@@ -145,7 +151,7 @@ export default function ReportsPage() {
 
     return () => unsubIncomes();
 
-  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
+  }, [user, activeProfile, selectedYear, selectedMonth, viewModeGrossProfit]);
 
 
   const formatCurrency = (amount: number) =>
@@ -217,6 +223,7 @@ export default function ReportsPage() {
         </div>
         <div className="lg:col-span-1 space-y-6">
           {activeProfile === 'Business' && (
+            <>
             <Card>
               <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between">
@@ -237,7 +244,7 @@ export default function ReportsPage() {
                         </Tooltip>
                       </TooltipProvider>
                      </div>
-                     <Tabs defaultValue="monthly" value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-auto">
+                     <Tabs defaultValue="monthly" value={viewModeGrossProfit} onValueChange={(value) => setViewModeGrossProfit(value as ViewMode)} className="w-auto">
                         <TabsList className="h-7">
                           <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
                           <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
@@ -246,7 +253,7 @@ export default function ReportsPage() {
                   </CardTitle>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">
-                      {viewMode === 'monthly'
+                      {viewModeGrossProfit === 'monthly'
                         ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
                         : `(${selectedYear})`}
                     </p>
@@ -269,6 +276,60 @@ export default function ReportsPage() {
                  )}
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between">
+                     <div className='flex items-center gap-2'>
+                      {text.reports.netProfit}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.netProfitTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                     </div>
+                     <Tabs defaultValue="monthly" value={viewModeNetProfit} onValueChange={(value) => setViewModeNetProfit(value as ViewMode)} className="w-auto">
+                        <TabsList className="h-7">
+                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
+                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                  </CardTitle>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {viewModeNetProfit === 'monthly'
+                        ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
+                        : `(${selectedYear})`}
+                    </p>
+                  </div>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                 {loadingNetProfit ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                            <DollarSign className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(netProfit)}
+                            </p>
+                        </div>
+                    </div>
+                 )}
+              </CardContent>
+            </Card>
+            </>
           )}
         </div>
       </div>
