@@ -287,7 +287,7 @@ export const text = {
     grossProfit: 'Lucro Bruto',
     grossProfitTooltip: 'Indica o lucro da atividade principal, antes de descontar despesas.\nCálculo: Vendas - Pagamentos a Fornecedores.',
     netProfit: 'Lucro Líquido',
-    netProfitTooltip: 'O lucro final após descontar todas as despesas da empresa.\nCálculo: (Todas as Receitas) - (Todas as Despesas)',
+    netProfitTooltip: 'Mede o quanto a empresa realmente ganhou, sendo o valor que resta após pagar absolutamente todas as obrigações\nCálculo: (Todas as Receitas) - (Despesas Operacional)',
     monthly: 'Mensal',
     annual: 'Anual',
   },
