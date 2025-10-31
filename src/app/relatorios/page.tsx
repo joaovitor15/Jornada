@@ -15,9 +15,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Transaction } from '@/lib/types';
-import { getYear } from 'date-fns';
-import { CircleDollarSign, HelpCircle } from 'lucide-react';
+import { Transaction, Income } from '@/lib/types';
+import { getYear, getMonth } from 'date-fns';
+import { CircleDollarSign, HelpCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -44,6 +44,9 @@ export default function ReportsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
+
+  const [grossProfit, setGrossProfit] = useState(0);
+  const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
 
  useEffect(() => {
     if (!user || !activeProfile) {
@@ -90,6 +93,60 @@ export default function ReportsPage() {
     return () => unsubIncomes();
 
   }, [user, activeProfile, selectedYear]);
+
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+      setGrossProfit(0);
+      setLoadingGrossProfit(false);
+      return;
+    }
+    
+    setLoadingGrossProfit(true);
+
+    const baseQuery = (collectionName: string) =>
+      query(
+        collection(db, collectionName),
+        where('userId', '==', user.uid),
+        where('profile', '==', 'Business')
+      );
+
+    const filterByPeriod = (t: Income | Transaction) => {
+        const date = (t.date as unknown as Timestamp).toDate();
+        if (viewMode === 'annual') {
+            return getYear(date) === selectedYear;
+        }
+        return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+    }
+
+    const unsubIncomes = onSnapshot(
+        query(baseQuery('incomes'), where('mainCategory', '==', 'Vendas (Receitas)')), 
+        (incomesSnap) => {
+            const unsubExpenses = onSnapshot(
+                query(baseQuery('expenses'), where('mainCategory', '==', 'Fornecedores')),
+                (expensesSnap) => {
+                    const sales = incomesSnap.docs
+                        .map(doc => doc.data() as Income)
+                        .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+                        .filter(filterByPeriod)
+                        .reduce((acc, curr) => acc + curr.amount, 0);
+
+                    const supplierPayments = expensesSnap.docs
+                        .map(doc => doc.data() as Transaction)
+                        .filter(filterByPeriod)
+                        .reduce((acc, curr) => acc + curr.amount, 0);
+                    
+                    setGrossProfit(sales - supplierPayments);
+                    setLoadingGrossProfit(false);
+                }
+            );
+            return () => unsubExpenses();
+        }
+    );
+
+    return () => unsubIncomes();
+
+  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
+
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -194,16 +251,20 @@ export default function ReportsPage() {
                   </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                 <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                        <CircleDollarSign className="h-6 w-6 text-green-500" />
+                 {loadingGrossProfit ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                            <CircleDollarSign className="h-6 w-6 text-green-500" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(grossProfit)}
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-lg font-semibold">
-                            {formatCurrency(0)}
-                        </p>
-                    </div>
-                </div>
+                 )}
               </CardContent>
             </Card>
           )}
