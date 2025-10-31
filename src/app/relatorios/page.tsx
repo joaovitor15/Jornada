@@ -403,57 +403,81 @@ export default function ReportsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between">
-                     <div className='flex items-center gap-2'>
-                      {text.reports.grossProfit}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
-                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div style={{ whiteSpace: 'pre-line' }}>
-                              {text.reports.grossProfitTooltip}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                     </div>
-                     <Tabs defaultValue="monthly" value={viewModeGrossProfit} onValueChange={(value) => setViewModeGrossProfit(value as ViewMode)} className="w-auto">
+                <CardTitle className="flex items-center justify-between">
+                    <div className='flex items-center gap-2'>
+                        {text.reports.grossProfit}
+                    </div>
+                    <Tabs defaultValue="monthly" value={viewModeGrossProfit} onValueChange={(value) => setViewModeGrossProfit(value as ViewMode)} className="w-auto">
                         <TabsList className="h-7">
-                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
-                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
+                            <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
+                            <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
                         </TabsList>
-                      </Tabs>
-                  </CardTitle>
-                   <div className="text-right">
+                    </Tabs>
+                </CardTitle>
+                <div className="text-right">
                     <p className="text-xs text-muted-foreground">
-                      {viewModeGrossProfit === 'monthly'
+                    {viewModeGrossProfit === 'monthly'
                         ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
                         : `(${selectedYear})`}
                     </p>
-                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center gap-4 py-6">
+              <CardContent className="flex flex-col gap-4 py-6">
                  {loadingGrossProfit ? (
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="flex justify-center items-center h-24">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
                  ) : (
-                    <div className="w-full space-y-4">
-                        <div className="flex items-center justify-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                                <CircleDollarSign className="h-6 w-6 text-green-500" />
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <h3 className='font-semibold'>{text.reports.grossProfit}</h3>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <div style={{ whiteSpace: 'pre-line' }}>
+                                                {text.reports.grossProfitTooltip}
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
-                            <p className="text-lg font-semibold">
-                                {formatCurrency(grossProfit)}
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                                    <CircleDollarSign className="h-5 w-5 text-green-500" />
+                                </div>
+                                <p className="text-lg font-semibold">
+                                    {formatCurrency(grossProfit)}
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex items-center justify-center gap-4 pt-2">
-                             <h3 className='font-semibold'>{text.reports.grossMargin}</h3>
+
+                        <div className="flex items-center justify-between">
                              <div className="flex items-center gap-2">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
-                                    <Percent className="h-6 w-6 text-orange-500" />
+                                <h3 className='font-semibold'>{text.reports.grossMargin}</h3>
+                                 <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <div style={{ whiteSpace: 'pre-line' }}>
+                                                {text.reports.grossMarginTooltip}
+                                            </div>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+                                    <Percent className="h-5 w-5 text-orange-500" />
                                 </div>
                                 <p className="text-lg font-semibold">
                                     {formatPercent(grossMargin)}

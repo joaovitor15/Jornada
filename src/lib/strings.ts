@@ -293,6 +293,7 @@ export const text = {
     monthly: 'Mensal',
     annual: 'Anual',
     grossMargin: 'Margem Bruta',
+    grossMarginTooltip: "Mostra a porcentagem de lucro em relação à receita.\nCálculo: (Lucro Bruto / Receita Líquida) * 100",
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
