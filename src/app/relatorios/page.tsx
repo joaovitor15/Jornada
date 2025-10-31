@@ -161,7 +161,7 @@ export default function ReportsPage() {
         <div className="lg:col-span-1 space-y-6">
           {activeProfile === 'Business' && (
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between">
                      <div className='flex items-center gap-2'>
                       {text.reports.grossProfit}
@@ -185,6 +185,13 @@ export default function ReportsPage() {
                         </TabsList>
                       </Tabs>
                   </CardTitle>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {viewMode === 'monthly'
+                        ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
+                        : `(${selectedYear})`}
+                    </p>
+                  </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
                  <div className="flex items-center gap-4">
@@ -192,12 +199,6 @@ export default function ReportsPage() {
                         <CircleDollarSign className="h-6 w-6 text-green-500" />
                     </div>
                     <div>
-                        <p className="text-sm text-muted-foreground">
-                            {viewMode === 'monthly' 
-                              ? `${text.reports.grossProfit} (${months.find((m) => m.value === selectedMonth)?.label})`
-                              : `${text.reports.grossProfit} (${selectedYear})`
-                            }
-                        </p>
                         <p className="text-lg font-semibold">
                             {formatCurrency(0)}
                         </p>
