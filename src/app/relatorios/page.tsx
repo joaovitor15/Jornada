@@ -132,7 +132,7 @@ export default function ReportsPage() {
 
   // Effect for Gross Profit and Gross Margin
   useEffect(() => {
-    if (!user || activeProfile !== 'Business' || loadingNetRevenue) {
+    if (!user || activeProfile !== 'Business') {
       setGrossProfit(0);
       setGrossMargin(0);
       setLoadingGrossProfit(false);
@@ -145,10 +145,16 @@ export default function ReportsPage() {
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
 
-    // Use the same period as net revenue for consistency
-    const startDate =
-      viewModeNetRevenue === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = viewModeNetRevenue === 'mensal' ? endOfMonth : endOfYear;
+    const startDate = viewModeGrossProfit === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = viewModeGrossProfit === 'mensal' ? endOfMonth : endOfYear;
+    
+    const incomesQuery = query(
+      collection(db, 'incomes'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
@@ -159,33 +165,46 @@ export default function ReportsPage() {
       where('date', '<=', Timestamp.fromDate(endDate))
     );
 
-    const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
-      let supplierCosts = 0;
-      expensesSnap.forEach((doc) => {
-        supplierCosts += doc.data().amount;
-      });
+    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
+        let currentNetRevenue = 0;
+        incomesSnap.forEach((doc) => {
+            const income = doc.data();
+            if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+                currentNetRevenue += income.amount;
+            }
+        });
+    
+        const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+            let supplierCosts = 0;
+            expensesSnap.forEach((doc) => {
+                supplierCosts += doc.data().amount;
+            });
 
-      const calculatedGrossProfit = netRevenue - supplierCosts;
-      setGrossProfit(calculatedGrossProfit);
+            const calculatedGrossProfit = currentNetRevenue - supplierCosts;
+            setGrossProfit(calculatedGrossProfit);
 
-      const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
-      setGrossMargin(calculatedGrossMargin);
+            const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
+            setGrossMargin(calculatedGrossMargin);
 
-      setLoadingGrossProfit(false);
+            setLoadingGrossProfit(false);
+        }, () => {
+            setLoadingGrossProfit(false);
+        });
+
+        return () => unsubExpenses();
+
     }, () => {
-        setLoadingGrossProfit(false);
+      setLoadingGrossProfit(false);
     });
     
-    return () => unsubExpenses();
+    return () => unsubIncomes();
 
   }, [
     user,
     activeProfile,
     selectedYear,
     selectedMonth,
-    viewModeGrossProfit,
-    netRevenue,
-    loadingNetRevenue
+    viewModeGrossProfit
   ]);
 
   // Effect for Net Profit
@@ -240,7 +259,17 @@ export default function ReportsPage() {
           }
         });
 
-        const calculatedNetProfit = totalRevenue - totalExpenses;
+        // O lucro bruto (receita - custos de fornecedores) já foi calculado em outro effect.
+        // Lucro líquido é Lucro Bruto - Outras Despesas.
+        // Mas para simplificar aqui: (Receita - CustoFornecedores) - OutrasDespesas = Receita - (CustoFornecedores+OutrasDespesas)
+        // Onde (CustoFornecedores+OutrasDespesas) é o total de despesas.
+        // Vamos recalcular o total de despesas aqui para ter certeza.
+        let totalAllExpenses = 0;
+        expensesSnap.forEach((doc) => {
+            totalAllExpenses += doc.data().amount;
+        });
+        
+        const calculatedNetProfit = totalRevenue - totalAllExpenses;
         setNetProfit(calculatedNetProfit);
         setLoadingNetProfit(false);
       }, () => {
@@ -389,7 +418,21 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <div style={{ whiteSpace: 'pre-line' }}>
+                                    {text.reports.grossProfitTooltip}
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                  </div>
                    <Tabs
                     value={viewModeGrossProfit}
                     onValueChange={setViewModeGrossProfit}
@@ -425,8 +468,8 @@ export default function ReportsPage() {
                             </span>
                         </div>
                         
-                        <div className="border-t pt-4">
-                             <div className="flex justify-between items-center mb-2">
+                        <div className="space-y-2">
+                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-semibold">{text.reports.grossMargin}</h3>
                                     <TooltipProvider>
