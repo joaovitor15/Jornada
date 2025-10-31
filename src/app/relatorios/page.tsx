@@ -104,17 +104,10 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
           <p className="text-muted-foreground">{text.reports.description}</p>
         </div>
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full sm:w-auto">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="monthly">{text.reports.monthly}</TabsTrigger>
-            <TabsTrigger value="annual">{text.reports.annual}</TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       <div className="flex flex-wrap justify-end items-center gap-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-           {viewMode === 'monthly' && (
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{text.dashboard.monthLabel}</label>
               <Select
@@ -133,7 +126,6 @@ export default function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-          )}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">{text.dashboard.yearLabel}</label>
             <Select
@@ -186,12 +178,12 @@ export default function ReportsPage() {
                         </Tooltip>
                       </TooltipProvider>
                      </div>
-                      <span className="text-xs font-normal text-muted-foreground">
-                        {viewMode === 'monthly' 
-                          ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
-                          : `(${selectedYear})`
-                        }
-                      </span>
+                     <Tabs defaultValue="monthly" value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-auto">
+                        <TabsList className="h-7">
+                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
+                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
                   </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
@@ -201,7 +193,10 @@ export default function ReportsPage() {
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground">
-                            {text.reports.grossProfit}
+                            {viewMode === 'monthly' 
+                              ? `${text.reports.grossProfit} (${months.find((m) => m.value === selectedMonth)?.label})`
+                              : `${text.reports.grossProfit} (${selectedYear})`
+                            }
                         </p>
                         <p className="text-lg font-semibold">
                             {formatCurrency(0)}
