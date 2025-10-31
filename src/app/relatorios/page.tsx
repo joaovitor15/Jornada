@@ -337,59 +337,6 @@ export default function ReportsPage() {
               <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between">
                      <div className='flex items-center gap-2'>
-                      {text.reports.grossProfit}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
-                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div style={{ whiteSpace: 'pre-line' }}>
-                              {text.reports.grossProfitTooltip}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                     </div>
-                     <Tabs defaultValue="monthly" value={viewModeGrossProfit} onValueChange={(value) => setViewModeGrossProfit(value as ViewMode)} className="w-auto">
-                        <TabsList className="h-7">
-                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
-                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                  </CardTitle>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">
-                      {viewModeGrossProfit === 'monthly'
-                        ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
-                        : `(${selectedYear})`}
-                    </p>
-                  </div>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                 {loadingGrossProfit ? (
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                 ) : (
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                            <CircleDollarSign className="h-6 w-6 text-green-500" />
-                        </div>
-                        <div>
-                            <p className="text-lg font-semibold">
-                                {formatCurrency(grossProfit)}
-                            </p>
-                        </div>
-                    </div>
-                 )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between">
-                     <div className='flex items-center gap-2'>
                       {text.reports.netRevenue}
                       <TooltipProvider>
                         <Tooltip>
@@ -432,6 +379,59 @@ export default function ReportsPage() {
                         <div>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(netRevenue)}
+                            </p>
+                        </div>
+                    </div>
+                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between">
+                     <div className='flex items-center gap-2'>
+                      {text.reports.grossProfit}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.grossProfitTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                     </div>
+                     <Tabs defaultValue="monthly" value={viewModeGrossProfit} onValueChange={(value) => setViewModeGrossProfit(value as ViewMode)} className="w-auto">
+                        <TabsList className="h-7">
+                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
+                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                  </CardTitle>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {viewModeGrossProfit === 'monthly'
+                        ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
+                        : `(${selectedYear})`}
+                    </p>
+                  </div>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                 {loadingGrossProfit ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                            <CircleDollarSign className="h-6 w-6 text-green-500" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(grossProfit)}
                             </p>
                         </div>
                     </div>
