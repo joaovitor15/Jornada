@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory !== 'Vendas (Créditos)' && income.mainCategory !== 'Recebimentos')
+            .filter(income => income.subcategory !== 'Vendas Farmacia Popular')
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyVendas = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.mainCategory === 'Recebimentos' && income.subcategory === 'Recebimento PFPB')
+            .filter(income => income.subcategory === 'Vendas Farmacia Popular')
             .reduce((acc, curr) => acc + curr.amount, 0);
           
           const monthlyAlimentacao = expenses

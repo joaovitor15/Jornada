@@ -12,7 +12,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { Transaction, BillPayment } from '@/lib/types';
+import { Transaction, BillPayment, Income } from '@/lib/types';
 import {
   format,
   getYear,
@@ -139,7 +139,7 @@ export default function AnnualFinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
-                      if((transaction as Transaction).mainCategory !== 'Vendas (Créditos)'){
+                      if((transaction as Income).subcategory !== 'Vendas Farmacia Popular'){
                         entry.income += transaction.amount;
                       }
                     } else if (type === 'expense') {
