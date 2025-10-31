@@ -25,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -33,6 +34,8 @@ const months = Object.entries(text.dashboard.months).map(([key, label], index) =
 
 const currentYear = new Date().getFullYear();
 
+type ViewMode = 'monthly' | 'annual';
+
 export default function ReportsPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -40,6 +43,7 @@ export default function ReportsPage() {
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
 
  useEffect(() => {
     if (!user || !activeProfile) {
@@ -95,39 +99,48 @@ export default function ReportsPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
+       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
-            <p className="text-muted-foreground">
-                {text.reports.description}
-            </p>
+          <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
+          <p className="text-muted-foreground">{text.reports.description}</p>
         </div>
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as ViewMode)} className="w-full sm:w-auto">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="monthly">{text.reports.monthly}</TabsTrigger>
+            <TabsTrigger value="annual">{text.reports.annual}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <div className="flex flex-wrap justify-end items-center gap-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">{text.dashboard.monthLabel}</label>
-            <Select
-              value={String(selectedMonth)}
-              onValueChange={(value) => setSelectedMonth(Number(value))}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={String(month.value)}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+           {viewMode === 'monthly' && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{text.dashboard.monthLabel}</label>
+              <Select
+                value={String(selectedMonth)}
+                onValueChange={(value) => setSelectedMonth(Number(value))}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={String(month.value)}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">{text.dashboard.yearLabel}</label>
             <Select
               value={String(selectedYear)}
               onValueChange={(value) => setSelectedYear(Number(value))}
             >
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-full sm:w-[120px]">
                 <SelectValue placeholder={text.dashboard.selectPlaceholder} />
               </SelectTrigger>
               <SelectContent>
@@ -173,10 +186,12 @@ export default function ReportsPage() {
                         </Tooltip>
                       </TooltipProvider>
                      </div>
-                     <span className="text-xs font-normal text-muted-foreground">
-                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
-                        {selectedYear})
-                    </span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {viewMode === 'monthly' 
+                          ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
+                          : `(${selectedYear})`
+                        }
+                      </span>
                   </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
