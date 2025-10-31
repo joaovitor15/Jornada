@@ -18,7 +18,7 @@ import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { Transaction, Income, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
-import { CircleDollarSign, HelpCircle, Loader2, DollarSign, TrendingUp } from 'lucide-react';
+import { CircleDollarSign, HelpCircle, Loader2, DollarSign, TrendingUp, Percent, Separator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -55,6 +55,7 @@ export default function ReportsPage() {
   const [loadingNetProfit, setLoadingNetProfit] = useState(true);
   const [netRevenue, setNetRevenue] = useState(0);
   const [loadingNetRevenue, setLoadingNetRevenue] = useState(true);
+  const [grossMargin, setGrossMargin] = useState(0);
 
 
  useEffect(() => {
@@ -144,7 +145,16 @@ export default function ReportsPage() {
                         .filter(filterByPeriod)
                         .reduce((acc, curr) => acc + curr.amount, 0);
                     
-                    setGrossProfit(sales - supplierPayments);
+                    const calculatedGrossProfit = sales - supplierPayments;
+                    setGrossProfit(calculatedGrossProfit);
+
+                    // Re-use sales for netRevenue calculation to avoid re-querying
+                    if (netRevenue > 0) {
+                      setGrossMargin((calculatedGrossProfit / netRevenue) * 100);
+                    } else {
+                      setGrossMargin(0);
+                    }
+                    
                     setLoadingGrossProfit(false);
                 }
             );
@@ -154,7 +164,7 @@ export default function ReportsPage() {
 
     return () => unsubIncomes();
 
-  }, [user, activeProfile, selectedYear, selectedMonth, viewModeGrossProfit]);
+  }, [user, activeProfile, selectedYear, selectedMonth, viewModeGrossProfit, netRevenue]);
 
   useEffect(() => {
     if (!user || activeProfile !== 'Business') {
@@ -268,6 +278,11 @@ export default function ReportsPage() {
       style: 'currency',
       currency: 'BRL',
     }).format(amount);
+  
+  const formatPercent = (value: number) => {
+      return `${value.toFixed(2)}%`.replace('.', ',');
+  }
+
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 space-y-6">
@@ -413,7 +428,7 @@ export default function ReportsPage() {
                         </TabsList>
                       </Tabs>
                   </CardTitle>
-                  <div className="text-right">
+                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">
                       {viewModeGrossProfit === 'monthly'
                         ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
@@ -421,18 +436,32 @@ export default function ReportsPage() {
                     </p>
                   </div>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-6">
                  {loadingGrossProfit ? (
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                  ) : (
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                            <CircleDollarSign className="h-6 w-6 text-green-500" />
+                    <div className="w-full space-y-4">
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                                <CircleDollarSign className="h-6 w-6 text-green-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">{text.reports.grossProfit}</p>
+                                <p className="text-lg font-semibold">
+                                    {formatCurrency(grossProfit)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-lg font-semibold">
-                                {formatCurrency(grossProfit)}
-                            </p>
+                        <div className="flex items-center justify-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+                                <Percent className="h-6 w-6 text-orange-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">{text.reports.grossMargin}</p>
+                                <p className="text-lg font-semibold">
+                                    {formatPercent(grossMargin)}
+                                </p>
+                            </div>
                         </div>
                     </div>
                  )}
