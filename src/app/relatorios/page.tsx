@@ -445,23 +445,20 @@ export default function ReportsPage() {
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
                                 <CircleDollarSign className="h-6 w-6 text-green-500" />
                             </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">{text.reports.grossProfit}</p>
-                                <p className="text-lg font-semibold">
-                                    {formatCurrency(grossProfit)}
-                                </p>
-                            </div>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(grossProfit)}
+                            </p>
                         </div>
-                        <div className="flex items-center justify-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
-                                <Percent className="h-6 w-6 text-orange-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">{text.reports.grossMargin}</p>
+                        <div className="flex items-center justify-center gap-4 pt-2">
+                             <h3 className='font-semibold'>{text.reports.grossMargin}</h3>
+                             <div className="flex items-center gap-2">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+                                    <Percent className="h-6 w-6 text-orange-500" />
+                                </div>
                                 <p className="text-lg font-semibold">
                                     {formatPercent(grossMargin)}
                                 </p>
-                            </div>
+                             </div>
                         </div>
                     </div>
                  )}
