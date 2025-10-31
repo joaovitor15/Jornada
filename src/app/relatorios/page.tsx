@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Transaction, Income } from '@/lib/types';
+import { Transaction, Income, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
 import { CircleDollarSign, HelpCircle, Loader2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export default function ReportsPage() {
   const [grossProfit, setGrossProfit] = useState(0);
   const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
   const [netProfit, setNetProfit] = useState(0);
-  const [loadingNetProfit, setLoadingNetProfit] = useState(false);
+  const [loadingNetProfit, setLoadingNetProfit] = useState(true);
 
 
  useEffect(() => {
@@ -152,6 +152,70 @@ export default function ReportsPage() {
     return () => unsubIncomes();
 
   }, [user, activeProfile, selectedYear, selectedMonth, viewModeGrossProfit]);
+
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+        setNetProfit(0);
+        setLoadingNetProfit(false);
+        return;
+    }
+
+    setLoadingNetProfit(true);
+
+    const baseQuery = (collectionName: string) =>
+      query(
+        collection(db, collectionName),
+        where('userId', '==', user.uid),
+        where('profile', '==', 'Business')
+      );
+
+    const filterByPeriod = (t: Income | Transaction | BillPayment) => {
+        const date = (t.date as unknown as Timestamp).toDate();
+        if (viewModeNetProfit === 'annual') {
+            return getYear(date) === selectedYear;
+        }
+        return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+    }
+
+    const incomesQuery = baseQuery('incomes');
+    const expensesQuery = baseQuery('expenses');
+    const billPaymentsQuery = baseQuery('billPayments');
+
+    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
+        const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+            const unsubBillPayments = onSnapshot(billPaymentsQuery, (billPaymentsSnap) => {
+
+                const totalIncomes = incomesSnap.docs
+                    .map(doc => doc.data() as Income)
+                    .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+                    .filter(filterByPeriod)
+                    .reduce((acc, curr) => acc + curr.amount, 0);
+
+                const totalNonSupplierExpenses = expensesSnap.docs
+                    .map(doc => doc.data() as Transaction)
+                    .filter(expense => expense.mainCategory !== 'Fornecedores')
+                    .filter(expense => !expense.paymentMethod.startsWith('Cartão:'))
+                    .filter(filterByPeriod)
+                    .reduce((acc, curr) => acc + curr.amount, 0);
+
+                const totalBillPayments = billPaymentsSnap.docs
+                    .map(doc => doc.data() as BillPayment)
+                    .filter(filterByPeriod)
+                    .reduce((acc, curr) => acc + curr.amount, 0);
+                
+                const totalExpenses = totalNonSupplierExpenses + totalBillPayments;
+
+                setNetProfit(totalIncomes - totalExpenses);
+                setLoadingNetProfit(false);
+            });
+            return () => unsubBillPayments();
+        });
+        return () => unsubExpenses();
+    });
+
+    return () => unsubIncomes();
+
+  },[user, activeProfile, selectedYear, selectedMonth, viewModeNetProfit]);
 
 
   const formatCurrency = (amount: number) =>
