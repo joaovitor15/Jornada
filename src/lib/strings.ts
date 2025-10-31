@@ -284,6 +284,8 @@ export const text = {
     financialSummary: (year: number) => `Resumo Financeiro de ${year}`,
     noData: 'Nenhum dado encontrado para o ano selecionado.',
     chartError: 'Falha ao processar os dados do gráfico.',
+    grossProfit: 'Lucro Bruto',
+    grossProfitTooltip: 'Este é o lucro bruto, calculado a partir das vendas menos o custo dos produtos vendidos.',
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',

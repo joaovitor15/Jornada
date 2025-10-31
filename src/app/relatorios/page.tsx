@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,6 +17,14 @@ import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { Transaction } from '@/lib/types';
 import { getYear } from 'date-fns';
+import { CircleDollarSign, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -80,6 +87,12 @@ export default function ReportsPage() {
 
   }, [user, activeProfile, selectedYear]);
 
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(amount);
+
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-4">
@@ -141,7 +154,48 @@ export default function ReportsPage() {
           </Card>
         </div>
         <div className="lg:col-span-1 space-y-6">
-          {/* Futuros cards de relatório específico por perfil serão adicionados aqui */}
+          {activeProfile === 'Business' && (
+            <Card>
+              <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                     <div className='flex items-center gap-2'>
+                      {text.reports.grossProfit}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{text.reports.grossProfitTooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                     </div>
+                     <span className="text-xs font-normal text-muted-foreground">
+                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                        {selectedYear})
+                    </span>
+                  </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                 <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                        <CircleDollarSign className="h-6 w-6 text-green-500" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-muted-foreground">
+                            {text.reports.grossProfit}
+                        </p>
+                        <p className="text-lg font-semibold">
+                            {formatCurrency(0)}
+                        </p>
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
