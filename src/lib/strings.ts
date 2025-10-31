@@ -212,6 +212,9 @@ export const text = {
     income: 'Receitas',
     billPayments: 'Pagamentos de Fatura',
   },
+  businessCategories: {
+    pfpbSubcategory: 'Vendas Farmacia Popular',
+  },
   common: {
     description: 'Descrição',
     amount: 'Valor',

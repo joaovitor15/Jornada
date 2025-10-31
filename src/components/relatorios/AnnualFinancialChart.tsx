@@ -139,7 +139,7 @@ export default function AnnualFinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
-                      if((transaction as Income).subcategory !== 'Vendas Farmacia Popular'){
+                      if((transaction as Income).subcategory !== text.businessCategories.pfpbSubcategory){
                         entry.income += transaction.amount;
                       }
                     } else if (type === 'expense') {

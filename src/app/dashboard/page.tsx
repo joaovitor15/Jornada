@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
           const monthlyIncomes = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.subcategory !== 'Vendas Farmacia Popular')
+            .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
             .reduce((acc, curr) => acc + curr.amount, 0);
 
           const monthlyVendas = incomes
             .filter(filterByMonthAndYear)
-            .filter(income => income.subcategory === 'Vendas Farmacia Popular')
+            .filter(income => income.subcategory === text.businessCategories.pfpbSubcategory)
             .reduce((acc, curr) => acc + curr.amount, 0);
           
           const monthlyAlimentacao = expenses
