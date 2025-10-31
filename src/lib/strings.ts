@@ -285,7 +285,7 @@ export const text = {
     noData: 'Nenhum dado encontrado para o ano selecionado.',
     chartError: 'Falha ao processar os dados do gráfico.',
     grossProfit: 'Lucro Bruto',
-    grossProfitTooltip: 'Lucro Bruto = (Vendas em Dinheiro/Cartão) - (Pagamentos a Fornecedores). As vendas do programa Farmácia Popular não são incluídas.',
+    grossProfitTooltip: 'Mede a rentabilidade após subtrair os custos para adquirir os produtos vendidos. \nCálculo: Vendas - Pagamentos a Fornecedores.',
     monthly: 'Mensal',
     annual: 'Anual',
   },
