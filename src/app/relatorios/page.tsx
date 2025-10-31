@@ -230,7 +230,9 @@ export default function ReportsPage() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{text.reports.grossProfitTooltip}</p>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.grossProfitTooltip}
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
