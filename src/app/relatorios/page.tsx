@@ -18,7 +18,7 @@ import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firest
 import { db } from '@/lib/firebase';
 import { Transaction, Income, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
-import { CircleDollarSign, HelpCircle, Loader2, DollarSign } from 'lucide-react';
+import { CircleDollarSign, HelpCircle, Loader2, DollarSign, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -46,12 +46,15 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewModeGrossProfit, setViewModeGrossProfit] = useState<ViewMode>('monthly');
   const [viewModeNetProfit, setViewModeNetProfit] = useState<ViewMode>('monthly');
+  const [viewModeNetRevenue, setViewModeNetRevenue] = useState<ViewMode>('monthly');
 
 
   const [grossProfit, setGrossProfit] = useState(0);
   const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
   const [netProfit, setNetProfit] = useState(0);
   const [loadingNetProfit, setLoadingNetProfit] = useState(true);
+  const [netRevenue, setNetRevenue] = useState(0);
+  const [loadingNetRevenue, setLoadingNetRevenue] = useState(true);
 
 
  useEffect(() => {
@@ -152,6 +155,48 @@ export default function ReportsPage() {
     return () => unsubIncomes();
 
   }, [user, activeProfile, selectedYear, selectedMonth, viewModeGrossProfit]);
+
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+      setNetRevenue(0);
+      setLoadingNetRevenue(false);
+      return;
+    }
+    
+    setLoadingNetRevenue(true);
+
+    const baseQuery = (collectionName: string) =>
+      query(
+        collection(db, collectionName),
+        where('userId', '==', user.uid),
+        where('profile', '==', 'Business')
+      );
+
+    const filterByPeriod = (t: Income) => {
+        const date = (t.date as unknown as Timestamp).toDate();
+        if (viewModeNetRevenue === 'annual') {
+            return getYear(date) === selectedYear;
+        }
+        return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+    }
+
+    const unsubIncomes = onSnapshot(
+        query(baseQuery('incomes'), where('mainCategory', '==', 'Vendas (Receitas)')), 
+        (incomesSnap) => {
+            const sales = incomesSnap.docs
+                .map(doc => doc.data() as Income)
+                .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+                .filter(filterByPeriod)
+                .reduce((acc, curr) => acc + curr.amount, 0);
+            
+            setNetRevenue(sales);
+            setLoadingNetRevenue(false);
+        }
+    );
+
+    return () => unsubIncomes();
+
+  }, [user, activeProfile, selectedYear, selectedMonth, viewModeNetRevenue]);
 
   useEffect(() => {
     if (!user || activeProfile !== 'Business') {
@@ -334,6 +379,59 @@ export default function ReportsPage() {
                         <div>
                             <p className="text-lg font-semibold">
                                 {formatCurrency(grossProfit)}
+                            </p>
+                        </div>
+                    </div>
+                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between">
+                     <div className='flex items-center gap-2'>
+                      {text.reports.netRevenue}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full cursor-help">
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.netRevenueTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                     </div>
+                     <Tabs defaultValue="monthly" value={viewModeNetRevenue} onValueChange={(value) => setViewModeNetRevenue(value as ViewMode)} className="w-auto">
+                        <TabsList className="h-7">
+                          <TabsTrigger value="monthly" className="text-xs px-2 py-1">{text.reports.monthly}</TabsTrigger>
+                          <TabsTrigger value="annual" className="text-xs px-2 py-1">{text.reports.annual}</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                  </CardTitle>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {viewModeNetRevenue === 'monthly'
+                        ? `(${months.find((m) => m.value === selectedMonth)?.label} de ${selectedYear})`
+                        : `(${selectedYear})`}
+                    </p>
+                  </div>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
+                 {loadingNetRevenue ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 ) : (
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
+                            <TrendingUp className="h-6 w-6 text-indigo-500" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-semibold">
+                                {formatCurrency(netRevenue)}
                             </p>
                         </div>
                     </div>

@@ -288,6 +288,8 @@ export const text = {
     grossProfitTooltip: 'Indica o lucro da atividade principal, antes de descontar despesas.\nCálculo: Vendas - Pagamentos a Fornecedores.',
     netProfit: 'Lucro Líquido',
     netProfitTooltip: 'Mede o quanto a empresa realmente ganhou, sendo o valor que resta após pagar absolutamente todas as obrigações\nCálculo: (Todas as Receitas) - (Despesas Operacional)',
+    netRevenue: 'Receita Líquida',
+    netRevenueTooltip: 'Representa o total de vendas realizadas, desconsiderando as vendas do programa Farmácia Popular.\nCálculo: Total de Vendas - Vendas PFPB',
     monthly: 'Mensal',
     annual: 'Anual',
   },
