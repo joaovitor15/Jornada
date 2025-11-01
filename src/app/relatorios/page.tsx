@@ -35,7 +35,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { getMonth, getYear } from 'date-fns';
 import type { Income, Expense } from '@/lib/types';
 
 
@@ -65,12 +64,20 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(
     new Date().getMonth()
   );
-  const [viewMode, setViewMode] = useState('mensal');
+  
+  const [netRevenueViewMode, setNetRevenueViewMode] = useState('mensal');
+  const [grossProfitViewMode, setGrossProfitViewMode] = useState('mensal');
+  const [netProfitViewMode, setNetProfitViewMode] = useState('mensal');
 
-  const [loading, setLoading] = useState(true);
+
+  const [loadingNetRevenue, setLoadingNetRevenue] = useState(true);
   const [netRevenue, setNetRevenue] = useState(0);
+
+  const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
   const [grossProfit, setGrossProfit] = useState(0);
   const [grossMargin, setGrossMargin] = useState(0);
+
+  const [loadingNetProfit, setLoadingNetProfit] = useState(true);
   const [netProfit, setNetProfit] = useState(0);
   const [netMargin, setNetMargin] = useState(0);
 
@@ -86,25 +93,128 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
 
+  // Effect for Net Revenue
   useEffect(() => {
     if (!user || activeProfile !== 'Business') {
       setNetRevenue(0);
-      setGrossProfit(0);
-      setGrossMargin(0);
-      setNetProfit(0);
-      setNetMargin(0);
-      setLoading(false);
+      setLoadingNetRevenue(false);
       return;
     }
-    setLoading(true);
+    setLoadingNetRevenue(true);
 
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
 
-    const startDate = viewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = viewMode === 'mensal' ? endOfMonth : endOfYear;
+    const startDate = netRevenueViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
+
+    const incomesQuery = query(
+      collection(db, 'incomes'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
+
+    const unsubscribe = onSnapshot(incomesQuery, (incomesSnap) => {
+      let calculatedNetRevenue = 0;
+      incomesSnap.forEach((doc) => {
+        const income = doc.data() as Income;
+        if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+          calculatedNetRevenue += income.amount;
+        }
+      });
+      setNetRevenue(calculatedNetRevenue);
+      setLoadingNetRevenue(false);
+    }, () => {
+      setLoadingNetRevenue(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, activeProfile, selectedYear, selectedMonth, netRevenueViewMode]);
+
+  // Effect for Gross Profit and Gross Margin
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+      setGrossProfit(0);
+      setGrossMargin(0);
+      setLoadingGrossProfit(false);
+      return;
+    }
+    setLoadingGrossProfit(true);
+
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startDate = grossProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
+    
+    const incomesQuery = query(
+      collection(db, 'incomes'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
+
+    const expensesQuery = query(
+      collection(db, 'expenses'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate)),
+      where('mainCategory', '==', 'Fornecedores')
+    );
+
+    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
+      let currentNetRevenue = 0;
+      incomesSnap.forEach(doc => {
+        const income = doc.data() as Income;
+        if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+          currentNetRevenue += income.amount;
+        }
+      });
+
+      const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+        let supplierCosts = 0;
+        expensesSnap.forEach((doc) => {
+          supplierCosts += doc.data().amount;
+        });
+        
+        const calculatedGrossProfit = currentNetRevenue - supplierCosts;
+        const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
+
+        setGrossProfit(calculatedGrossProfit);
+        setGrossMargin(calculatedGrossMargin);
+        setLoadingGrossProfit(false);
+      }, () => setLoadingGrossProfit(false));
+      return () => unsubExpenses();
+    }, () => setLoadingGrossProfit(false));
+
+    return () => unsubIncomes();
+  }, [user, activeProfile, selectedYear, selectedMonth, grossProfitViewMode]);
+
+  // Effect for Net Profit and Net Margin
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+      setNetProfit(0);
+      setNetMargin(0);
+      setLoadingNetProfit(false);
+      return;
+    }
+    setLoadingNetProfit(true);
+
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const incomesQuery = query(
       collection(db, 'incomes'),
@@ -123,43 +233,32 @@ export default function ReportsPage() {
     );
 
     const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
-      const unsubExpenses = onSnapshot(expensesSnap, (expensesSnap) => {
-        let calculatedNetRevenue = 0;
-        incomesSnap.forEach((doc) => {
+      let currentNetRevenue = 0;
+      incomesSnap.forEach(doc => {
           const income = doc.data() as Income;
           if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-            calculatedNetRevenue += income.amount;
+              currentNetRevenue += income.amount;
           }
-        });
-
-        let supplierCosts = 0;
+      });
+      
+      const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
         let totalExpenses = 0;
         expensesSnap.forEach((doc) => {
-          const expense = doc.data() as Expense;
-          totalExpenses += expense.amount;
-          if (expense.mainCategory === 'Fornecedores') {
-            supplierCosts += expense.amount;
-          }
+          totalExpenses += doc.data().amount;
         });
-        
-        const calculatedGrossProfit = calculatedNetRevenue - supplierCosts;
-        const calculatedGrossMargin = calculatedNetRevenue > 0 ? (calculatedGrossProfit / calculatedNetRevenue) * 100 : 0;
-        const calculatedNetProfit = calculatedNetRevenue - totalExpenses;
-        const calculatedNetMargin = calculatedNetRevenue > 0 ? (calculatedNetProfit / calculatedNetRevenue) * 100 : 0;
 
-        setNetRevenue(calculatedNetRevenue);
-        setGrossProfit(calculatedGrossProfit);
-        setGrossMargin(calculatedGrossMargin);
+        const calculatedNetProfit = currentNetRevenue - totalExpenses;
+        const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
+        
         setNetProfit(calculatedNetProfit);
         setNetMargin(calculatedNetMargin);
-        setLoading(false);
-      }, () => setLoading(false));
-
+        setLoadingNetProfit(false);
+      }, () => setLoadingNetProfit(false));
       return () => unsubExpenses();
-    }, () => setLoading(false));
-
+    }, () => setLoadingNetProfit(false));
+    
     return () => unsubIncomes();
-  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
+  }, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
 
 
   const periodLabel = useMemo(() => {
@@ -253,31 +352,33 @@ export default function ReportsPage() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <Tabs
-                    value={viewMode}
-                    onValueChange={setViewMode}
-                    className="w-auto"
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                        {text.reports.monthly}
-                      </TabsTrigger>
-                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                        {text.reports.annual}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  <div>
+                    <Tabs
+                      value={netRevenueViewMode}
+                      onValueChange={setNetRevenueViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      (
+                      {netRevenueViewMode === 'mensal'
+                        ? periodLabel
+                        : selectedYear}
+                      )
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  (
-                  {viewMode === 'mensal'
-                    ? periodLabel
-                    : selectedYear}
-                  )
-                </p>
               </CardHeader>
               <CardContent>
-                {loading ? (
+                {loadingNetRevenue ? (
                   <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
                   <div className="flex items-center gap-4">
@@ -310,27 +411,29 @@ export default function ReportsPage() {
                         </Tooltip>
                     </TooltipProvider>
                   </div>
-                   <Tabs
-                    value={viewMode}
-                    onValueChange={setViewMode}
-                    className="w-auto"
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                        {text.reports.monthly}
-                      </TabsTrigger>
-                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                        {text.reports.annual}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                   <div>
+                    <Tabs
+                      value={grossProfitViewMode}
+                      onValueChange={setGrossProfitViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                     <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({grossProfitViewMode === 'mensal' ? periodLabel : selectedYear})
+                    </p>
+                  </div>
                 </div>
-                 <p className="text-xs text-muted-foreground">
-                  ({viewMode === 'mensal' ? periodLabel : selectedYear})
-                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                 {loading ? (
+                 {loadingGrossProfit ? (
                     <div className="flex justify-center items-center h-24">
                         <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
@@ -395,27 +498,29 @@ export default function ReportsPage() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                   <Tabs
-                    value={viewMode}
-                    onValueChange={setViewMode}
-                    className="w-auto"
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                        {text.reports.monthly}
-                      </TabsTrigger>
-                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                        {text.reports.annual}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                   <div>
+                    <Tabs
+                      value={netProfitViewMode}
+                      onValueChange={setNetProfitViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                     <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({netProfitViewMode === 'mensal' ? periodLabel : selectedYear})
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  ({viewMode === 'mensal' ? periodLabel : selectedYear})
-                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {loading ? (
+                {loadingNetProfit ? (
                   <div className="flex justify-center items-center h-24">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
