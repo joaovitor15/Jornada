@@ -6,22 +6,24 @@
  * - getVerse: Fetches a specific chapter or verse.
  */
 
-import { z } from 'zod';
 import { type BibleBook, type Verse } from '@/lib/types';
 
 const BIBLE_API_URL = 'https://www.abibliadigital.com.br/api';
 const BIBLE_VERSION = 'nvi';
 
-const GetVerseInputSchema = z.object({
-  book: z.string().describe('The abbreviation of the book (e.g., "gn").'),
-  chapter: z.number().describe('The chapter number.'),
-  verse: z.number().optional().describe('The verse number (optional).'),
-});
-type GetVerseInput = z.infer<typeof GetVerseInputSchema>;
+interface GetVerseInput {
+  book: string;
+  chapter: number;
+}
 
 // Helper function to make requests
 async function fetchFromBibleAPI(endpoint: string) {
-  const response = await fetch(`${BIBLE_API_URL}${endpoint}`);
+  const response = await fetch(`${BIBLE_API_URL}${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
   if (!response.ok) {
     throw new Error(

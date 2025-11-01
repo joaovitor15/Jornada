@@ -16,10 +16,7 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, BookOpenCheck } from 'lucide-react';
@@ -37,6 +34,8 @@ export default function BibliaPage() {
 
   useEffect(() => {
     async function fetchBooks() {
+      setIsLoadingBooks(true);
+      setError(null);
       try {
         const fetchedBooks = await getBooks();
         setBooks(fetchedBooks);
@@ -100,7 +99,7 @@ export default function BibliaPage() {
                 disabled={isLoadingBooks}
               >
                 <SelectTrigger id="book-select">
-                  <SelectValue placeholder={text.bible.selectBook} />
+                  <SelectValue placeholder={isLoadingBooks ? text.bible.loading : text.bible.selectBook} />
                 </SelectTrigger>
                 <SelectContent>
                   {books.map((book) => (
