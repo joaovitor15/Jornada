@@ -168,7 +168,7 @@ export default function ReportsPage() {
 
   // Effect for Personal Profile Total Income
   useEffect(() => {
-    if (activeProfile !== 'Personal') return;
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
     setLoadingPersonalTotalIncome(true);
     
     const startOfYear = new Date(selectedYear, 0, 1);
