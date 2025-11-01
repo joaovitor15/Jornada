@@ -62,6 +62,9 @@ export type BibleBook = {
 };
 
 export type Verse = {
-  number: number;
+  book: string;
+  chapter: number;
+  verse: number;
   text: string;
 };
+

@@ -18,13 +18,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 
 const versions = [
-  { id: 'acf', name: 'Almeida Corrigida Fiel' },
   { id: 'nvi', name: 'Nova Versão Internacional' },
+  { id: 'almeida', name: 'Almeida Corrigida Fiel' },
   { id: 'ra', name: 'Almeida Revista e Atualizada' },
 ];
 
 export default function BibliaPage() {
-  const [selectedVersion, setSelectedVersion] = useState('acf');
+  const [selectedVersion, setSelectedVersion] = useState('nvi');
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(
     bibleBooks[0]
   );
@@ -41,12 +41,7 @@ export default function BibliaPage() {
 
     try {
       const response = await fetch(
-        `https://www.abibliadigital.com.br/api/verses/${selectedVersion}/${selectedBook.abbrev.pt}/${selectedChapter}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_BIBLE_API_TOKEN}`,
-          },
-        }
+        `https://bible-api.com/${selectedBook.abbrev.en}+${selectedChapter}?translation=${selectedVersion}`
       );
 
       if (!response.ok) {
@@ -153,9 +148,9 @@ export default function BibliaPage() {
                   {selectedBook?.name} {selectedChapter}
               </h2>
               {verses.map((verse) => (
-                <p key={verse.number} className="mb-2">
+                <p key={verse.verse} className="mb-2">
                   <span className="font-bold text-primary mr-2">
-                    {verse.number}
+                    {verse.verse}
                   </span>
                   {verse.text}
                 </p>
@@ -171,3 +166,4 @@ export default function BibliaPage() {
     </div>
   );
 }
+
