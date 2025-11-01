@@ -32,6 +32,7 @@ import {
   where,
   onSnapshot,
   Timestamp,
+  getDocs,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -169,17 +170,22 @@ export default function ReportsPage() {
       where('date', '<=', Timestamp.fromDate(endDate)),
       where('mainCategory', '==', 'Fornecedores')
     );
+    
+    const calculateGrossProfit = async () => {
+      try {
+        const [incomesSnap, expensesSnap] = await Promise.all([
+          getDocs(incomesQuery),
+          getDocs(expensesQuery)
+        ]);
 
-    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
-      let currentNetRevenue = 0;
-      incomesSnap.forEach(doc => {
-        const income = doc.data() as Income;
-        if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-          currentNetRevenue += income.amount;
-        }
-      });
+        let currentNetRevenue = 0;
+        incomesSnap.forEach(doc => {
+          const income = doc.data() as Income;
+          if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+            currentNetRevenue += income.amount;
+          }
+        });
 
-      const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
         let supplierCosts = 0;
         expensesSnap.forEach((doc) => {
           supplierCosts += doc.data().amount;
@@ -190,12 +196,15 @@ export default function ReportsPage() {
 
         setGrossProfit(calculatedGrossProfit);
         setGrossMargin(calculatedGrossMargin);
+      } catch (error) {
+        console.error("Error calculating gross profit:", error);
+      } finally {
         setLoadingGrossProfit(false);
-      }, () => setLoadingGrossProfit(false));
-      return () => unsubExpenses();
-    }, () => setLoadingGrossProfit(false));
+      }
+    };
 
-    return () => unsubIncomes();
+    calculateGrossProfit();
+
   }, [user, activeProfile, selectedYear, selectedMonth, grossProfitViewMode]);
 
   // Effect for Net Profit and Net Margin
@@ -232,16 +241,21 @@ export default function ReportsPage() {
         where('date', '<=', Timestamp.fromDate(endDate))
     );
 
-    const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
-        let currentNetRevenue = 0;
-        incomesSnap.forEach(doc => {
-            const income = doc.data() as Income;
-            if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-                currentNetRevenue += income.amount;
-            }
-        });
+    const calculateNetProfit = async () => {
+        try {
+            const [incomesSnap, expensesSnap] = await Promise.all([
+                getDocs(incomesQuery),
+                getDocs(expensesQuery)
+            ]);
+            
+            let currentNetRevenue = 0;
+            incomesSnap.forEach(doc => {
+                const income = doc.data() as Income;
+                if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+                    currentNetRevenue += income.amount;
+                }
+            });
 
-        const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
             let totalExpenses = 0;
             expensesSnap.forEach((doc) => {
                 totalExpenses += doc.data().amount;
@@ -252,12 +266,16 @@ export default function ReportsPage() {
             
             setNetProfit(calculatedNetProfit);
             setNetMargin(calculatedNetMargin);
+
+        } catch (error) {
+            console.error("Error calculating net profit:", error);
+        } finally {
             setLoadingNetProfit(false);
-        }, () => setLoadingNetProfit(false));
-        return () => unsubExpenses();
-    }, () => setLoadingNetProfit(false));
+        }
+    };
     
-    return () => unsubIncomes();
+    calculateNetProfit();
+
 }, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
 
 
@@ -581,3 +599,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
