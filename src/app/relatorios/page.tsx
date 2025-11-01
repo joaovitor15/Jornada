@@ -201,10 +201,10 @@ export default function ReportsPage() {
   // Effect for Net Profit and Net Margin
   useEffect(() => {
     if (!user || activeProfile !== 'Business') {
-      setNetProfit(0);
-      setNetMargin(0);
-      setLoadingNetProfit(false);
-      return;
+        setNetProfit(0);
+        setNetMargin(0);
+        setLoadingNetProfit(false);
+        return;
     }
     setLoadingNetProfit(true);
 
@@ -217,48 +217,48 @@ export default function ReportsPage() {
     const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const incomesQuery = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid),
-      where('profile', '==', 'Business'),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
+        collection(db, 'incomes'),
+        where('userId', '==', user.uid),
+        where('profile', '==', 'Business'),
+        where('date', '>=', Timestamp.fromDate(startDate)),
+        where('date', '<=', Timestamp.fromDate(endDate))
     );
 
     const expensesQuery = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid),
-      where('profile', '==', 'Business'),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
+        collection(db, 'expenses'),
+        where('userId', '==', user.uid),
+        where('profile', '==', 'Business'),
+        where('date', '>=', Timestamp.fromDate(startDate)),
+        where('date', '<=', Timestamp.fromDate(endDate))
     );
 
     const unsubIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
-      let currentNetRevenue = 0;
-      incomesSnap.forEach(doc => {
-          const income = doc.data() as Income;
-          if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-              currentNetRevenue += income.amount;
-          }
-      });
-      
-      const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
-        let totalExpenses = 0;
-        expensesSnap.forEach((doc) => {
-          totalExpenses += doc.data().amount;
+        let currentNetRevenue = 0;
+        incomesSnap.forEach(doc => {
+            const income = doc.data() as Income;
+            if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+                currentNetRevenue += income.amount;
+            }
         });
 
-        const calculatedNetProfit = currentNetRevenue - totalExpenses;
-        const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
-        
-        setNetProfit(calculatedNetProfit);
-        setNetMargin(calculatedNetMargin);
-        setLoadingNetProfit(false);
-      }, () => setLoadingNetProfit(false));
-      return () => unsubExpenses();
+        const unsubExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+            let totalExpenses = 0;
+            expensesSnap.forEach((doc) => {
+                totalExpenses += doc.data().amount;
+            });
+
+            const calculatedNetProfit = currentNetRevenue - totalExpenses;
+            const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
+            
+            setNetProfit(calculatedNetProfit);
+            setNetMargin(calculatedNetMargin);
+            setLoadingNetProfit(false);
+        }, () => setLoadingNetProfit(false));
+        return () => unsubExpenses();
     }, () => setLoadingNetProfit(false));
     
     return () => unsubIncomes();
-  }, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
+}, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
 
 
   const periodLabel = useMemo(() => {
