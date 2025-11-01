@@ -308,6 +308,10 @@ export const text = {
     impostosTooltip: "Soma de todas as despesas com a categoria 'Impostos'.",
     impostosMargin: 'Margem de Impostos',
     impostosMarginTooltip: "Mostra quanto do faturamento é consumido por impostos.\nCálculo: (Total de Impostos / Receita Líquida) * 100",
+    sistema: 'Sistema',
+    sistemaTooltip: "Soma de todas as despesas com a categoria 'Sistema'.",
+    sistemaMargin: 'Margem de Sistema',
+    sistemaMarginTooltip: "Mostra quanto do faturamento é consumido por custos de sistema.\nCálculo: (Total de Sistema / Receita Líquida) * 100",
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
