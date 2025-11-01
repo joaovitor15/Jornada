@@ -52,28 +52,3 @@ export type BillPayment = {
 };
 
 export type Transaction = Expense | BillPayment;
-
-export interface BibleBook {
-  abbrev: {
-    pt: string;
-    en: string;
-  };
-  author: string;
-  chapters: number;
-  group: string;
-  name: string;
-  testament: string;
-}
-
-export interface Verse {
-  book: {
-    abbrev: { pt: string; en: string };
-    name: string;
-    author: string;
-    group: string;
-    version: string;
-  };
-  chapter: number;
-  number: number;
-  text: string;
-}

@@ -351,17 +351,4 @@ export const text = {
       invalidValue: 'A soma dos valores deve ser maior que zero.',
     },
   },
-   bible: {
-    title: 'Bíblia Sagrada',
-    description: 'Leia e explore as escrituras sagradas.',
-    book: 'Livro',
-    selectBook: 'Selecione um livro',
-    chapter: 'Capítulo',
-    selectChapter: 'Selecione um capítulo',
-    search: 'Buscar',
-    loading: 'Carregando...',
-    error: 'Erro ao buscar os dados. Tente novamente.',
-    noResults: 'Nenhum resultado encontrado.',
-    chapterTitle: (book: string, chapter: number) => `${book} ${chapter}`,
-  },
 };
