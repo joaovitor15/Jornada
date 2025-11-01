@@ -352,13 +352,4 @@ export const text = {
       invalidValue: 'A soma dos valores deve ser maior que zero.',
     },
   },
-  bible: {
-    title: 'Bíblia Sagrada',
-    selectVersion: 'Selecione uma versão',
-    selectBook: 'Selecione um livro',
-    selectChapter: 'Selecione um capítulo',
-    search: 'Buscar',
-    error: 'Falha ao buscar o capítulo. Verifique a versão e o livro.',
-    loading: 'Carregando...',
-  },
 };

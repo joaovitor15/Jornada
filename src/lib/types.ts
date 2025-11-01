@@ -53,17 +53,3 @@ export type BillPayment = {
 };
 
 export type Transaction = Expense | BillPayment;
-
-export type BibleBook = {
-  name: string;
-  abbrev: { pt: string; en: string };
-  chapters: number;
-  testament: 'VT' | 'NT';
-};
-
-export type Verse = {
-  book: string;
-  chapter: number;
-  verse: number;
-  text: string;
-};
