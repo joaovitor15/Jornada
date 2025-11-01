@@ -6,7 +6,6 @@
  * - getVerse: Fetches a specific chapter or verse.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { type BibleBook, type Verse } from '@/lib/types';
 
@@ -38,18 +37,8 @@ async function fetchFromBibleAPI(endpoint: string) {
  * @returns A promise that resolves to an array of BibleBook objects.
  */
 export async function getBooks(): Promise<BibleBook[]> {
-  return getBooksFlow();
+  return await fetchFromBibleAPI('/books');
 }
-
-const getBooksFlow = ai.defineFlow(
-  {
-    name: 'getBooksFlow',
-    outputSchema: z.array(z.any()),
-  },
-  async () => {
-    return await fetchFromBibleAPI('/books');
-  }
-);
 
 /**
  * Fetches verses from a specific chapter of a book.
@@ -57,21 +46,10 @@ const getBooksFlow = ai.defineFlow(
  * @returns A promise that resolves to an array of Verse objects.
  */
 export async function getVerse(input: GetVerseInput): Promise<Verse[]> {
-  return getVerseFlow(input);
+  const endpoint = `/verses/${BIBLE_VERSION}/${input.book}/${input.chapter}`;
+  const result = await fetchFromBibleAPI(endpoint);
+
+  // The API returns an object with book, chapter, and verses properties.
+  // We only need to return the verses array.
+  return result.verses;
 }
-
-const getVerseFlow = ai.defineFlow(
-  {
-    name: 'getVerseFlow',
-    inputSchema: GetVerseInputSchema,
-    outputSchema: z.array(z.any()),
-  },
-  async (input) => {
-    const endpoint = `/verses/${BIBLE_VERSION}/${input.book}/${input.chapter}`;
-    const result = await fetchFromBibleAPI(endpoint);
-
-    // The API returns an object with book, chapter, and verses properties.
-    // We only need to return the verses array.
-    return result.verses;
-  }
-);
