@@ -1,10 +1,8 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { text } from '@/lib/strings';
 import { type BibleBook, type Verse } from '@/lib/types';
-import { getBooks, getVerse } from '@/ai/flows/bible-flow';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -21,6 +19,34 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, BookOpenCheck } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+const BIBLE_API_URL = 'https://www.abibliadigital.com.br/api';
+const BIBLE_VERSION = 'nvi';
+
+interface GetVerseInput {
+  book: string;
+  chapter: number;
+}
+
+async function getBooks(): Promise<BibleBook[]> {
+  const response = await fetch(`${BIBLE_API_URL}/books`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch books');
+  }
+  return response.json();
+}
+
+async function getVerse(input: GetVerseInput): Promise<Verse[]> {
+  const response = await fetch(
+    `${BIBLE_API_URL}/verses/${BIBLE_VERSION}/${input.book}/${input.chapter}`
+  );
+  if (!response.ok) {
+    throw new Error('Failed to fetch verses');
+  }
+  const data = await response.json();
+  return data.verses;
+}
+
 
 export default function BibliaPage() {
   const [books, setBooks] = useState<BibleBook[]>([]);
