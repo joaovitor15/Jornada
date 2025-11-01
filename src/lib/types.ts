@@ -67,4 +67,3 @@ export type Verse = {
   verse: number;
   text: string;
 };
-

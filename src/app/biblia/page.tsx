@@ -16,15 +16,10 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
+import { getBookData } from '@/lib/bible/loader';
 
-const versions = [
-  { id: 'nvi', name: 'Nova Versão Internacional' },
-  { id: 'almeida', name: 'Almeida Corrigida Fiel' },
-  { id: 'ra', name: 'Almeida Revista e Atualizada' },
-];
 
 export default function BibliaPage() {
-  const [selectedVersion, setSelectedVersion] = useState('nvi');
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(
     bibleBooks[0]
   );
@@ -34,21 +29,23 @@ export default function BibliaPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchChapter = async () => {
-    if (!selectedBook || !selectedChapter || !selectedVersion) return;
+    if (!selectedBook) return;
     setIsLoading(true);
     setError(null);
     setVerses([]);
 
     try {
-      const response = await fetch(
-        `https://bible-api.com/${selectedBook.abbrev.en}+${selectedChapter}?translation=${selectedVersion}`
-      );
-
-      if (!response.ok) {
-        throw new Error(text.bible.error);
+      const bookData = await getBookData(selectedBook.abbrev.pt);
+      if (!bookData || !bookData.chapters[selectedChapter - 1]) {
+        throw new Error('Capítulo não encontrado. Os dados locais podem ser limitados.');
       }
-      const data = await response.json();
-      setVerses(data.verses);
+      const chapterVerses = bookData.chapters[selectedChapter - 1].map((text, index) => ({
+        book: selectedBook.name,
+        chapter: selectedChapter,
+        verse: index + 1,
+        text: text,
+      }));
+      setVerses(chapterVerses);
     } catch (err) {
       console.error(err);
       setError((err as Error).message);
@@ -60,12 +57,17 @@ export default function BibliaPage() {
   const handleBookChange = (abbrev: string) => {
     const book = bibleBooks.find((b) => b.abbrev.pt === abbrev) || null;
     setSelectedBook(book);
-    setSelectedChapter(1); // Reset chapter to 1 when book changes
+    setSelectedChapter(1); 
   };
 
   const chapterOptions = selectedBook
     ? Array.from({ length: selectedBook.chapters }, (_, i) => i + 1)
     : [];
+
+  // Fetch Gênesis 1 on initial load
+  useEffect(() => {
+    fetchChapter();
+  }, []);
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 flex flex-col h-full">
@@ -75,23 +77,7 @@ export default function BibliaPage() {
 
       <Card className="mb-6">
         <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
-            <Select
-              value={selectedVersion}
-              onValueChange={setSelectedVersion}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={text.bible.selectVersion} />
-              </SelectTrigger>
-              <SelectContent>
-                {versions.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <Select
               value={selectedBook?.abbrev.pt || ''}
               onValueChange={handleBookChange}
@@ -166,4 +152,3 @@ export default function BibliaPage() {
     </div>
   );
 }
-
