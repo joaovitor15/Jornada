@@ -25,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, TrendingUp, DollarSign } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp } from 'lucide-react';
 import {
   collection,
   query,
@@ -171,83 +171,13 @@ export default function ReportsPage() {
       where('mainCategory', '==', 'Fornecedores')
     );
     
-    const calculateGrossProfit = async () => {
-      try {
-        const [incomesSnap, expensesSnap] = await Promise.all([
-          getDocs(incomesQuery),
-          getDocs(expensesQuery)
-        ]);
-
-        let currentNetRevenue = 0;
-        incomesSnap.forEach(doc => {
-          const income = doc.data() as Income;
-          if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
-            currentNetRevenue += income.amount;
-          }
-        });
-
-        let supplierCosts = 0;
-        expensesSnap.forEach((doc) => {
-          supplierCosts += doc.data().amount;
-        });
-        
-        const calculatedGrossProfit = currentNetRevenue - supplierCosts;
-        const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
-
-        setGrossProfit(calculatedGrossProfit);
-        setGrossMargin(calculatedGrossMargin);
-      } catch (error) {
-        console.error("Error calculating gross profit:", error);
-      } finally {
-        setLoadingGrossProfit(false);
-      }
-    };
-
-    calculateGrossProfit();
-
-  }, [user, activeProfile, selectedYear, selectedMonth, grossProfitViewMode]);
-
-  // Effect for Net Profit and Net Margin
-  useEffect(() => {
-    if (!user || activeProfile !== 'Business') {
-        setNetProfit(0);
-        setNetMargin(0);
-        setLoadingNetProfit(false);
-        return;
-    }
-    setLoadingNetProfit(true);
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const incomesQuery = query(
-        collection(db, 'incomes'),
-        where('userId', '==', user.uid),
-        where('profile', '==', 'Business'),
-        where('date', '>=', Timestamp.fromDate(startDate)),
-        where('date', '<=', Timestamp.fromDate(endDate))
-    );
-
-    const expensesQuery = query(
-        collection(db, 'expenses'),
-        where('userId', '==', user.uid),
-        where('profile', '==', 'Business'),
-        where('date', '>=', Timestamp.fromDate(startDate)),
-        where('date', '<=', Timestamp.fromDate(endDate))
-    );
-
-    const calculateNetProfit = async () => {
+    const calculateData = async () => {
         try {
             const [incomesSnap, expensesSnap] = await Promise.all([
                 getDocs(incomesQuery),
                 getDocs(expensesQuery)
             ]);
-            
+
             let currentNetRevenue = 0;
             incomesSnap.forEach(doc => {
                 const income = doc.data() as Income;
@@ -256,27 +186,107 @@ export default function ReportsPage() {
                 }
             });
 
-            let totalExpenses = 0;
+            let supplierCosts = 0;
             expensesSnap.forEach((doc) => {
-                totalExpenses += doc.data().amount;
+                supplierCosts += doc.data().amount;
             });
-
-            const calculatedNetProfit = currentNetRevenue - totalExpenses;
-            const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
             
-            setNetProfit(calculatedNetProfit);
-            setNetMargin(calculatedNetMargin);
+            const calculatedGrossProfit = currentNetRevenue - supplierCosts;
+            const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
 
+            setGrossProfit(calculatedGrossProfit);
+            setGrossMargin(calculatedGrossMargin);
         } catch (error) {
-            console.error("Error calculating net profit:", error);
+            console.error("Error calculating gross profit:", error);
         } finally {
-            setLoadingNetProfit(false);
+            setLoadingGrossProfit(false);
         }
     };
     
-    calculateNetProfit();
+    const unsubIncomes = onSnapshot(incomesQuery, () => calculateData());
+    const unsubExpenses = onSnapshot(expensesQuery, () => calculateData());
 
-}, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
+    return () => {
+        unsubIncomes();
+        unsubExpenses();
+    };
+
+  }, [user, activeProfile, selectedYear, selectedMonth, grossProfitViewMode]);
+
+  // Effect for Net Profit and Net Margin
+  useEffect(() => {
+    if (!user || activeProfile !== 'Business') {
+      setNetProfit(0);
+      setNetMargin(0);
+      setLoadingNetProfit(false);
+      return;
+    }
+    setLoadingNetProfit(true);
+  
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+  
+    const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
+  
+    const incomesQuery = query(
+      collection(db, 'incomes'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
+  
+    const expensesQuery = query(
+      collection(db, 'expenses'),
+      where('userId', '==', user.uid),
+      where('profile', '==', 'Business'),
+      where('date', '>=', Timestamp.fromDate(startDate)),
+      where('date', '<=', Timestamp.fromDate(endDate))
+    );
+  
+    const calculateNetProfit = (incomesSnap: any, expensesSnap: any) => {
+      let currentNetRevenue = 0;
+      incomesSnap.forEach((doc: any) => {
+        const income = doc.data() as Income;
+        if (income.subcategory !== text.businessCategories.pfpbSubcategory) {
+          currentNetRevenue += income.amount;
+        }
+      });
+  
+      let totalExpenses = 0;
+      expensesSnap.forEach((doc: any) => {
+        totalExpenses += doc.data().amount;
+      });
+  
+      const calculatedNetProfit = currentNetRevenue - totalExpenses;
+      const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
+  
+      setNetProfit(calculatedNetProfit);
+      setNetMargin(calculatedNetMargin);
+      setLoadingNetProfit(false);
+    };
+  
+    const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnap) => {
+      const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnap) => {
+        calculateNetProfit(incomesSnap, expensesSnap);
+      }, (error) => {
+        console.error("Error fetching expenses for net profit:", error);
+        setLoadingNetProfit(false);
+      });
+      // Store unsubscribe function to call it on cleanup
+      return unsubscribeExpenses;
+    }, (error) => {
+      console.error("Error fetching incomes for net profit:", error);
+      setLoadingNetProfit(false);
+    });
+  
+    return () => {
+      unsubscribeIncomes();
+    };
+  }, [user, activeProfile, selectedYear, selectedMonth, netProfitViewMode]);
 
 
   const periodLabel = useMemo(() => {
