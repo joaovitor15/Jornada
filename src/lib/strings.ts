@@ -300,6 +300,10 @@ export const text = {
     cmvTooltip: "Custo da Mercadoria Vendida. Representa o total de custos diretos com fornecedores.\nCálculo: Soma das despesas com 'Fornecedores'.",
     costMargin: 'Margem de Custo',
     costMarginTooltip: "Mostra quanto do faturamento é consumido pelo custo dos produtos.\nCálculo: (CMV / Receita Líquida) * 100",
+    personnelCost: 'Custo com Pessoal',
+    personnelCostTooltip: "Soma de todas as despesas com a categoria 'Funcionários'.",
+    personnelCostMargin: 'Margem Pessoal',
+    personnelCostMarginTooltip: "Mostra quanto do faturamento é consumido pelo custo com pessoal.\nCálculo: (Custo com Pessoal / Receita Líquida) * 100",
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users } from 'lucide-react';
 import {
   collection,
   query,
@@ -74,6 +75,7 @@ export default function ReportsPage() {
   const [grossProfitViewMode, setGrossProfitViewMode] = useState('mensal');
   const [netProfitViewMode, setNetProfitViewMode] = useState('mensal');
   const [cmvViewMode, setCmvViewMode] = useState('mensal');
+  const [personnelCostViewMode, setPersonnelCostViewMode] = useState('mensal');
 
   // States for calculated values
   const [netRevenue, setNetRevenue] = useState(0);
@@ -90,6 +92,10 @@ export default function ReportsPage() {
   const [cmv, setCmv] = useState(0);
   const [costMargin, setCostMargin] = useState(0);
   const [loadingCmv, setLoadingCmv] = useState(true);
+  
+  const [personnelCost, setPersonnelCost] = useState(0);
+  const [personnelCostMargin, setPersonnelCostMargin] = useState(0);
+  const [loadingPersonnelCost, setLoadingPersonnelCost] = useState(true);
 
 
   const formatCurrency = (value: number) => {
@@ -127,14 +133,15 @@ export default function ReportsPage() {
     const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
       const incomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
       setAllIncomes(incomes);
+      setLoadingData(false);
     }, () => setLoadingData(false));
 
     const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
       const expenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
       setAllExpenses(expenses);
+      setLoadingData(false);
     }, () => setLoadingData(false));
     
-    setLoadingData(false);
 
     return () => {
       unsubIncomes();
@@ -275,6 +282,42 @@ export default function ReportsPage() {
     setCostMargin(calculatedCostMargin);
     setLoadingCmv(false);
   }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode]);
+  
+    // Effect for Personnel Cost
+  useEffect(() => {
+    setLoadingPersonnelCost(true);
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
+    
+    const filteredIncomes = allIncomes.filter(i => {
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate;
+    });
+
+    const filteredExpenses = allExpenses.filter(e => {
+      const d = e.date.toDate();
+      return d >= startDate && d <= endDate;
+    });
+    
+    const currentNetRevenue = filteredIncomes
+        .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+        .reduce((acc, income) => acc + income.amount, 0);
+
+    const calculatedPersonnelCost = filteredExpenses
+      .filter(expense => expense.mainCategory === 'Funcionários')
+      .reduce((acc, expense) => acc + expense.amount, 0);
+
+    const calculatedPersonnelCostMargin = currentNetRevenue > 0 ? (calculatedPersonnelCost / currentNetRevenue) * 100 : 0;
+
+    setPersonnelCost(calculatedPersonnelCost);
+    setPersonnelCostMargin(calculatedPersonnelCostMargin);
+    setLoadingPersonnelCost(false);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode]);
 
 
   const periodLabel = useMemo(() => {
@@ -296,7 +339,7 @@ export default function ReportsPage() {
     );
   }
 
-  const isLoading = loadingData || loadingNetRevenue || loadingGrossProfit || loadingNetProfit || loadingCmv;
+  const isLoading = loadingData || loadingNetRevenue || loadingGrossProfit || loadingNetProfit || loadingCmv || loadingPersonnelCost;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
@@ -441,6 +484,92 @@ export default function ReportsPage() {
                         </div>
                         <span className="text-2xl font-bold">
                           {formatPercent(costMargin)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.personnelCost}
+                    </CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div style={{ whiteSpace: 'pre-line' }}>
+                            {text.reports.personnelCostTooltip}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <div>
+                    <Tabs
+                      value={personnelCostViewMode}
+                      onValueChange={setPersonnelCostViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({personnelCostViewMode === 'mensal' ? periodLabel : selectedYear})
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 dark:bg-cyan-900/50">
+                        <Users className="h-6 w-6 text-cyan-500" />
+                      </div>
+                      <span className="text-2xl font-bold">
+                        {formatCurrency(personnelCost)}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{text.reports.personnelCostMargin}</h3>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div style={{ whiteSpace: 'pre-line' }}>
+                                {text.reports.personnelCostMarginTooltip}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/50">
+                          <Percent className="h-6 w-6 text-teal-500" />
+                        </div>
+                        <span className="text-2xl font-bold">
+                          {formatPercent(personnelCostMargin)}
                         </span>
                       </div>
                     </div>
