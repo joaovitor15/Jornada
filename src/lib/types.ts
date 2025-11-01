@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
@@ -52,3 +53,15 @@ export type BillPayment = {
 };
 
 export type Transaction = Expense | BillPayment;
+
+export type BibleBook = {
+  name: string;
+  abbrev: { pt: string; en: string };
+  chapters: number;
+  testament: 'VT' | 'NT';
+};
+
+export type Verse = {
+  number: number;
+  text: string;
+};
