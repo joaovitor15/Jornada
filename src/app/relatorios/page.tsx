@@ -25,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, TrendingUp } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, TrendingUp, DollarSign } from 'lucide-react';
 import {
   collection,
   query,
@@ -295,7 +295,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
                      <TooltipProvider>
                         <Tooltip>
@@ -310,6 +310,20 @@ export default function ReportsPage() {
                         </Tooltip>
                     </TooltipProvider>
                   </div>
+                   <Tabs
+                    value={viewMode}
+                    onValueChange={setViewMode}
+                    className="w-auto"
+                  >
+                    <TabsList className="h-8">
+                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                        {text.reports.monthly}
+                      </TabsTrigger>
+                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                        {text.reports.annual}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
                  <p className="text-xs text-muted-foreground">
                   ({viewMode === 'mensal' ? periodLabel : selectedYear})
@@ -381,6 +395,20 @@ export default function ReportsPage() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
+                   <Tabs
+                    value={viewMode}
+                    onValueChange={setViewMode}
+                    className="w-auto"
+                  >
+                    <TabsList className="h-8">
+                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                        {text.reports.monthly}
+                      </TabsTrigger>
+                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                        {text.reports.annual}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   ({viewMode === 'mensal' ? periodLabel : selectedYear})
@@ -395,7 +423,7 @@ export default function ReportsPage() {
                   <>
                     <div className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
-                        <CircleDollarSign className="h-6 w-6 text-purple-500" />
+                        <DollarSign className="h-6 w-6 text-purple-500" />
                       </div>
                       <span className="text-2xl font-bold">
                         {formatCurrency(netProfit)}
