@@ -11,7 +11,6 @@ import { z } from 'zod';
 import { type BibleBook, type Verse } from '@/lib/types';
 
 const BIBLE_API_URL = 'https://www.abibliadigital.com.br/api';
-const BIBLE_API_TOKEN = process.env.BIBLE_API_TOKEN;
 const BIBLE_VERSION = 'nvi';
 
 const GetVerseInputSchema = z.object({
@@ -22,17 +21,9 @@ const GetVerseInputSchema = z.object({
 type GetVerseInput = z.infer<typeof GetVerseInputSchema>;
 
 
-// Helper function to make authenticated requests
+// Helper function to make requests
 async function fetchFromBibleAPI(endpoint: string) {
-  if (!BIBLE_API_TOKEN) {
-    throw new Error('BIBLE_API_TOKEN is not defined in environment variables.');
-  }
-
-  const response = await fetch(`${BIBLE_API_URL}${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${BIBLE_API_TOKEN}`,
-    },
-  });
+  const response = await fetch(`${BIBLE_API_URL}${endpoint}`);
 
   if (!response.ok) {
     throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
