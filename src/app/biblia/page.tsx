@@ -61,7 +61,7 @@ export default function BibliaPage() {
       try {
         // Nova URL da API (abibliadigital.com.br)
         const response = await fetch(
-          `https://www.abibliadigital.com.br/api/verses/${selectedVersion}/${selectedBook.abbrev}/${selectedChapter}`
+          'https://www.abibliadigital.com.br/api/${selectedVersion}/${selectedBook.abbrev}/${selectedChapter}`
         );
 
         if (!response.ok) {
