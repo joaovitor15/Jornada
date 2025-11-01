@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle } from 'lucide-react';
 import {
   collection,
   query,
@@ -112,6 +111,9 @@ export default function ReportsPage() {
   const [fixedCostsMargin, setFixedCostsMargin] = useState(0);
   const [loadingFixedCosts, setLoadingFixedCosts] = useState(true);
 
+  const [personalTotalIncome, setPersonalTotalIncome] = useState(0);
+  const [loadingPersonalTotalIncome, setLoadingPersonalTotalIncome] = useState(true);
+
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -124,9 +126,9 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-  // Main effect to fetch all data
+  // Main effect to fetch all data for the active profile
   useEffect(() => {
-    if (!user || activeProfile !== 'Business') {
+    if (!user) {
       setAllIncomes([]);
       setAllExpenses([]);
       setLoadingData(false);
@@ -137,12 +139,12 @@ export default function ReportsPage() {
     const incomesQuery = query(
       collection(db, 'incomes'),
       where('userId', '==', user.uid),
-      where('profile', '==', 'Business')
+      where('profile', '==', activeProfile)
     );
     const expensesQuery = query(
       collection(db, 'expenses'),
       where('userId', '==', user.uid),
-      where('profile', '==', 'Business')
+      where('profile', '==', activeProfile)
     );
 
     const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
@@ -164,8 +166,29 @@ export default function ReportsPage() {
     };
   }, [user, activeProfile]);
 
+  // Effect for Personal Profile Total Income
+  useEffect(() => {
+    if (activeProfile !== 'Personal') return;
+    setLoadingPersonalTotalIncome(true);
+    
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const filteredIncomes = allIncomes.filter(income => {
+      const incomeDate = income.date.toDate();
+      return incomeDate >= startOfYear && incomeDate <= endOfYear;
+    });
+
+    const calculatedTotalIncome = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
+    
+    setPersonalTotalIncome(calculatedTotalIncome);
+    setLoadingPersonalTotalIncome(false);
+
+  }, [allIncomes, selectedYear, activeProfile]);
+
   // Effect for Net Revenue
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingNetRevenue(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -187,11 +210,12 @@ export default function ReportsPage() {
     setNetRevenue(calculatedNetRevenue);
     setLoadingNetRevenue(false);
 
-  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode]);
+  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile]);
 
 
   // Effect for Gross Profit and Gross Margin
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingGrossProfit(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -226,11 +250,12 @@ export default function ReportsPage() {
     setGrossMargin(calculatedGrossMargin);
     setLoadingGrossProfit(false);
 
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile]);
 
 
   // Effect for Net Profit and Net Margin
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingNetProfit(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -261,10 +286,11 @@ export default function ReportsPage() {
     setNetProfit(calculatedNetProfit);
     setNetMargin(calculatedNetMargin);
     setLoadingNetProfit(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile]);
 
   // Effect for CMV and Cost Margin
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingCmv(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -296,10 +322,11 @@ export default function ReportsPage() {
     setCmv(calculatedCmv);
     setCostMargin(calculatedCostMargin);
     setLoadingCmv(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile]);
   
     // Effect for Personnel Cost
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingPersonnelCost(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -332,10 +359,11 @@ export default function ReportsPage() {
     setPersonnelCost(calculatedPersonnelCost);
     setPersonnelCostMargin(calculatedPersonnelCostMargin);
     setLoadingPersonnelCost(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile]);
 
   // Effect for Impostos
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingImpostos(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -367,10 +395,11 @@ export default function ReportsPage() {
     setImpostos(calculatedImpostos);
     setImpostosMargin(calculatedImpostosMargin);
     setLoadingImpostos(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile]);
 
   // Effect for Sistema
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingSistema(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -402,10 +431,11 @@ export default function ReportsPage() {
     setSistema(calculatedSistema);
     setSistemaMargin(calculatedSistemaMargin);
     setLoadingSistema(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile]);
 
   // Effect for Fixed Costs
   useEffect(() => {
+    if (activeProfile !== 'Business') return;
     setLoadingFixedCosts(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -437,25 +467,97 @@ export default function ReportsPage() {
     setFixedCosts(calculatedFixedCosts);
     setFixedCostsMargin(calculatedFixedCostsMargin);
     setLoadingFixedCosts(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile]);
 
 
   const periodLabel = useMemo(() => {
     return `${months[selectedMonth].label} de ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
-  if (activeProfile !== 'Business') {
+  const commonFilters = (
+    <div className="flex justify-between items-center mb-6">
+      <div>
+        <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
+        <p className="text-muted-foreground">{text.reports.description}</p>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">
+            {text.dashboard.yearLabel}:
+          </label>
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(value) => setSelectedYear(Number(value))}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (activeProfile === 'Personal' || activeProfile === 'Home') {
+    const isLoading = loadingData || loadingPersonalTotalIncome;
+    
     return (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {text.reports.financialSummary(selectedYear)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AnnualFinancialChart year={selectedYear} />
-          </CardContent>
-        </Card>
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
+        {commonFilters}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+             <Card>
+              <CardHeader>
+                <CardTitle>
+                  {text.reports.financialSummary(selectedYear)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnnualFinancialChart year={selectedYear} />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.totalIncome}
+                    </CardTitle>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    ({selectedYear})
+                  </p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(personalTotalIncome)}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     );
   }
 

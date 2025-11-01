@@ -317,6 +317,7 @@ export const text = {
     fixedCostsTooltip: 'Soma de todas as despesas, exceto os custos com "Fornecedores".',
     fixedCostsMargin: 'Margem de Gastos Fixos',
     fixedCostsMarginTooltip: 'Percentual da receita consumido pelos gastos fixos.\nCálculo: (Gastos Fixos / Receita Líquida) * 100',
+    totalIncome: 'Total de Entradas',
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
@@ -350,5 +351,14 @@ export const text = {
       atLeastOne: 'Pelo menos um valor é necessário.',
       invalidValue: 'A soma dos valores deve ser maior que zero.',
     },
+  },
+  bible: {
+    title: 'Bíblia Sagrada',
+    selectVersion: 'Selecione uma versão',
+    selectBook: 'Selecione um livro',
+    selectChapter: 'Selecione um capítulo',
+    search: 'Buscar',
+    error: 'Falha ao buscar o capítulo. Verifique a versão e o livro.',
+    loading: 'Carregando...',
   },
 };
