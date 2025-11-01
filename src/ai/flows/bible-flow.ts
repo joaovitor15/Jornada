@@ -20,13 +20,18 @@ const GetVerseInputSchema = z.object({
 });
 type GetVerseInput = z.infer<typeof GetVerseInputSchema>;
 
-
 // Helper function to make requests
 async function fetchFromBibleAPI(endpoint: string) {
-  const response = await fetch(`${BIBLE_API_URL}${endpoint}`);
+  const response = await fetch(`${BIBLE_API_URL}${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.BIBLE_API_TOKEN}`,
+    },
+  });
 
   if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}: ${await response.text()}`);
+    throw new Error(
+      `API request failed with status ${response.status}: ${await response.text()}`
+    );
   }
 
   return response.json();
@@ -50,7 +55,6 @@ const getBooksFlow = ai.defineFlow(
   }
 );
 
-
 /**
  * Fetches verses from a specific chapter of a book.
  * @param input - An object containing the book abbreviation and chapter number.
@@ -69,7 +73,7 @@ const getVerseFlow = ai.defineFlow(
   async (input) => {
     const endpoint = `/verses/${BIBLE_VERSION}/${input.book}/${input.chapter}`;
     const result = await fetchFromBibleAPI(endpoint);
-    
+
     // The API returns an object with book, chapter, and verses properties.
     // We only need to return the verses array.
     return result.verses;

@@ -360,7 +360,7 @@ export const text = {
     selectChapter: 'Selecione um capítulo',
     search: 'Buscar',
     loading: 'Carregando...',
-    error: 'Erro ao buscar dados da Bíblia. Verifique sua chave de API.',
+    error: 'Erro ao buscar os dados. Tente novamente.',
     noResults: 'Nenhum resultado encontrado.',
     chapterTitle: (book: string, chapter: number) => `${book} ${chapter}`,
   },
