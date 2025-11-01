@@ -31,7 +31,11 @@ async function fetchFromBibleAPI(endpoint: string) {
     );
   }
 
-  return response.json();
+  // Handle response as buffer and decode manually to avoid serialization issues
+  const buffer = await response.arrayBuffer();
+  const decoder = new TextDecoder('utf-8');
+  const text = decoder.decode(buffer);
+  return JSON.parse(text);
 }
 
 /**
