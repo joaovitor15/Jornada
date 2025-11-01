@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -445,264 +444,268 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.cmv}
-                    </CardTitle>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div style={{ whiteSpace: 'pre-line' }}>
-                            {text.reports.cmvTooltip}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div>
-                    <Tabs
-                      value={cmvViewMode}
-                      onValueChange={setCmvViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({cmvViewMode === 'mensal' ? periodLabel : selectedYear})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                        <ShoppingCart className="h-6 w-6 text-red-500" />
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatCurrency(cmv)}
-                      </span>
+            <div className="md:col-span-1">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        {text.reports.cmv}
+                      </CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.cmvTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{text.reports.costMargin}</h3>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div style={{ whiteSpace: 'pre-line' }}>
-                                {text.reports.costMarginTooltip}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
+                    <div>
+                      <Tabs
+                        value={cmvViewMode}
+                        onValueChange={setCmvViewMode}
+                        className="w-auto"
+                      >
+                        <TabsList className="h-8">
+                          <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                            {text.reports.monthly}
+                          </TabsTrigger>
+                          <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                            {text.reports.annual}
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        ({cmvViewMode === 'mensal' ? periodLabel : selectedYear})
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <>
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-900/50">
-                          <Percent className="h-6 w-6 text-pink-500" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                          <ShoppingCart className="h-6 w-6 text-red-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatPercent(costMargin)}
+                          {formatCurrency(cmv)}
                         </span>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.personnelCost}
-                    </CardTitle>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div style={{ whiteSpace: 'pre-line' }}>
-                            {text.reports.personnelCostTooltip}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div>
-                    <Tabs
-                      value={personnelCostViewMode}
-                      onValueChange={setPersonnelCostViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({personnelCostViewMode === 'mensal' ? periodLabel : selectedYear})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 dark:bg-cyan-900/50">
-                        <Users className="h-6 w-6 text-cyan-500" />
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatCurrency(personnelCost)}
-                      </span>
-                    </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{text.reports.personnelCostMargin}</h3>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div style={{ whiteSpace: 'pre-line' }}>
-                                {text.reports.personnelCostMarginTooltip}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{text.reports.costMargin}</h3>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div style={{ whiteSpace: 'pre-line' }}>
+                                  {text.reports.costMarginTooltip}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-900/50">
+                            <Percent className="h-6 w-6 text-pink-500" />
+                          </div>
+                          <span className="text-2xl font-bold">
+                            {formatPercent(costMargin)}
+                          </span>
+                        </div>
                       </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+               <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        {text.reports.personnelCost}
+                      </CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.personnelCostTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div>
+                      <Tabs
+                        value={personnelCostViewMode}
+                        onValueChange={setPersonnelCostViewMode}
+                        className="w-auto"
+                      >
+                        <TabsList className="h-8">
+                          <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                            {text.reports.monthly}
+                          </TabsTrigger>
+                          <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                            {text.reports.annual}
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        ({personnelCostViewMode === 'mensal' ? periodLabel : selectedYear})
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <>
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/50">
-                          <Percent className="h-6 w-6 text-teal-500" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 dark:bg-cyan-900/50">
+                          <Users className="h-6 w-6 text-cyan-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatPercent(personnelCostMargin)}
+                          {formatCurrency(personnelCost)}
                         </span>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.impostos}
-                    </CardTitle>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div style={{ whiteSpace: 'pre-line' }}>
-                            {text.reports.impostosTooltip}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div>
-                    <Tabs
-                      value={impostosViewMode}
-                      onValueChange={setImpostosViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({impostosViewMode === 'mensal' ? periodLabel : selectedYear})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
-                        <Landmark className="h-6 w-6 text-orange-500" />
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatCurrency(impostos)}
-                      </span>
-                    </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{text.reports.impostosMargin}</h3>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div style={{ whiteSpace: 'pre-line' }}>
-                                {text.reports.impostosMarginTooltip}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{text.reports.personnelCostMargin}</h3>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div style={{ whiteSpace: 'pre-line' }}>
+                                  {text.reports.personnelCostMarginTooltip}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/50">
+                            <Percent className="h-6 w-6 text-teal-500" />
+                          </div>
+                          <span className="text-2xl font-bold">
+                            {formatPercent(personnelCostMargin)}
+                          </span>
+                        </div>
                       </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        {text.reports.impostos}
+                      </CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {text.reports.impostosTooltip}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div>
+                      <Tabs
+                        value={impostosViewMode}
+                        onValueChange={setImpostosViewMode}
+                        className="w-auto"
+                      >
+                        <TabsList className="h-8">
+                          <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                            {text.reports.monthly}
+                          </TabsTrigger>
+                          <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                            {text.reports.annual}
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        ({impostosViewMode === 'mensal' ? periodLabel : selectedYear})
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <>
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/50">
-                          <Percent className="h-6 w-6 text-yellow-500" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
+                          <Landmark className="h-6 w-6 text-orange-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatPercent(impostosMargin)}
+                          {formatCurrency(impostos)}
                         </span>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{text.reports.impostosMargin}</h3>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div style={{ whiteSpace: 'pre-line' }}>
+                                  {text.reports.impostosMarginTooltip}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/50">
+                            <Percent className="h-6 w-6 text-yellow-500" />
+                          </div>
+                          <span className="text-2xl font-bold">
+                            {formatPercent(impostosMargin)}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
