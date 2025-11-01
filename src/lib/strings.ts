@@ -312,6 +312,10 @@ export const text = {
     sistemaTooltip: "Soma de todas as despesas com a categoria 'Sistema'.",
     sistemaMargin: 'Margem de Sistema',
     sistemaMarginTooltip: "Mostra quanto do faturamento é consumido por custos de sistema.\nCálculo: (Total de Sistema / Receita Líquida) * 100",
+    fixedCosts: 'Gastos Fixos',
+    fixedCostsTooltip: 'Soma de todas as despesas, exceto os custos com "Fornecedores".',
+    fixedCostsMargin: 'Margem de Gastos Fixos',
+    fixedCostsMarginTooltip: 'Percentual da receita consumido pelos gastos fixos.\nCálculo: (Gastos Fixos / Receita Líquida) * 100',
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
