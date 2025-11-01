@@ -127,14 +127,14 @@ export default function ReportsPage() {
     const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
       const incomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
       setAllIncomes(incomes);
-      setLoadingData(false);
     }, () => setLoadingData(false));
 
     const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
       const expenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
       setAllExpenses(expenses);
-      setLoadingData(false);
     }, () => setLoadingData(false));
+    
+    setLoadingData(false);
 
     return () => {
       unsubIncomes();
@@ -361,92 +361,94 @@ export default function ReportsPage() {
               <AnnualFinancialChart year={selectedYear} />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">
-                    {text.reports.cmv}
-                  </CardTitle>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div style={{ whiteSpace: 'pre-line' }}>
-                          {text.reports.cmvTooltip}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                 <div>
-                  <Tabs
-                    value={cmvViewMode}
-                    onValueChange={setCmvViewMode}
-                    className="w-auto"
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                        {text.reports.monthly}
-                      </TabsTrigger>
-                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                        {text.reports.annual}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                   <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({cmvViewMode === 'mensal' ? periodLabel : selectedYear})
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-24">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                      <ShoppingCart className="h-6 w-6 text-red-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(cmv)}
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.cmv}
+                    </CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div style={{ whiteSpace: 'pre-line' }}>
+                            {text.reports.cmvTooltip}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{text.reports.costMargin}</h3>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div style={{ whiteSpace: 'pre-line' }}>
-                              {text.reports.costMarginTooltip}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                  <div>
+                    <Tabs
+                      value={cmvViewMode}
+                      onValueChange={setCmvViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({cmvViewMode === 'mensal' ? periodLabel : selectedYear})
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <>
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-900/50">
-                        <Percent className="h-6 w-6 text-pink-500" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                        <ShoppingCart className="h-6 w-6 text-red-500" />
                       </div>
                       <span className="text-2xl font-bold">
-                        {formatPercent(costMargin)}
+                        {formatCurrency(cmv)}
                       </span>
                     </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{text.reports.costMargin}</h3>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div style={{ whiteSpace: 'pre-line' }}>
+                                {text.reports.costMarginTooltip}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-900/50">
+                          <Percent className="h-6 w-6 text-pink-500" />
+                        </div>
+                        <span className="text-2xl font-bold">
+                          {formatPercent(costMargin)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="lg:col-span-1 space-y-6">
@@ -682,9 +684,6 @@ export default function ReportsPage() {
               )}
             </CardContent>
           </Card>
-          
-          
-
         </div>
       </div>
     </div>
