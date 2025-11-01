@@ -296,6 +296,10 @@ export const text = {
     grossMarginTooltip: "Mostra a porcentagem de lucro em relação à receita.\nCálculo: (Lucro Bruto / Receita Líquida) * 100",
     netMargin: 'Margem Líquida',
     netMarginTooltip: "Mede a porcentagem de lucro que a empresa reteve de sua receita.\nCálculo: (Lucro Líquido / Receita Líquida) * 100",
+    cmv: 'CMV',
+    cmvTooltip: "Custo da Mercadoria Vendida. Representa o total de custos diretos com fornecedores.\nCálculo: Soma das despesas com 'Fornecedores'.",
+    costMargin: 'Margem de Custo',
+    costMarginTooltip: "Mostra quanto do faturamento é consumido pelo custo dos produtos.\nCálculo: (CMV / Receita Líquida) * 100",
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
