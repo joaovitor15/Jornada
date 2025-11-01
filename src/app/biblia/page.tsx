@@ -39,7 +39,7 @@ interface BibleApiResponse {
 
 const versions = [
   { id: 'nvi', name: 'NVI' },
-  { id: 'ra', name: 'Almeida Revista e Atualizada' },
+  { id: 'ara', name: 'Almeida Revista e Atualizada' },
   { id: 'acf', name: 'Almeida Corrigida Fiel' },
   { id: 'kjv', name: 'King James Version' },
 ];
@@ -115,7 +115,7 @@ export default function BibliaPage() {
             value={selectedVersion}
             onValueChange={setSelectedVersion}
           >
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="Versão" />
             </SelectTrigger>
             <SelectContent>
