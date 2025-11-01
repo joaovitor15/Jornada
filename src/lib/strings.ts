@@ -304,6 +304,10 @@ export const text = {
     personnelCostTooltip: "Soma de todas as despesas com a categoria 'Funcionários'.",
     personnelCostMargin: 'Margem Pessoal',
     personnelCostMarginTooltip: "Mostra quanto do faturamento é consumido pelo custo com pessoal.\nCálculo: (Custo com Pessoal / Receita Líquida) * 100",
+    impostos: 'Impostos',
+    impostosTooltip: "Soma de todas as despesas com a categoria 'Impostos'.",
+    impostosMargin: 'Margem de Impostos',
+    impostosMarginTooltip: "Mostra quanto do faturamento é consumido por impostos.\nCálculo: (Total de Impostos / Receita Líquida) * 100",
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',
