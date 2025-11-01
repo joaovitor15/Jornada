@@ -332,7 +332,7 @@ export default function ReportsPage() {
                         </div>
                         
                         <div className="space-y-2">
-                             <div className="flex justify-between items-center">
+                             <div className="flex items-center gap-2">
                                 <h3 className="font-semibold">{text.reports.grossMargin}</h3>
                                     <TooltipProvider>
                                         <Tooltip>
@@ -403,7 +403,7 @@ export default function ReportsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{text.reports.netMargin}</h3>
                         <TooltipProvider>
                           <Tooltip>
