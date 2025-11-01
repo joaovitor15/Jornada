@@ -39,8 +39,8 @@ export default function Header({ menuTrigger }: HeaderProps) {
   
   const profiles: { id: Profile, label: string }[] = [
     { id: text.header.profileTypes.personal as Profile, label: text.header.personal },
-    { id: text.header.profileTypes.business as Profile, label: text.header.business },
     { id: text.header.profileTypes.home as Profile, label: text.header.home },
+    { id: text.header.profileTypes.business as Profile, label: text.header.business },
   ];
 
   return (
