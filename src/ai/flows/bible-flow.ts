@@ -22,11 +22,7 @@ type GetVerseInput = z.infer<typeof GetVerseInputSchema>;
 
 // Helper function to make requests
 async function fetchFromBibleAPI(endpoint: string) {
-  const response = await fetch(`${BIBLE_API_URL}${endpoint}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.BIBLE_API_TOKEN}`,
-    },
-  });
+  const response = await fetch(`${BIBLE_API_URL}${endpoint}`);
 
   if (!response.ok) {
     throw new Error(
