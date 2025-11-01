@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import AnnualFinancialChart from '@/components/relatorios/AnnualFinancialChart';
-import BusinessSummary from '@/components/relatorios/BusinessSummary';
 import {
   Select,
   SelectContent,
@@ -352,7 +351,6 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} />
               </CardContent>
             </Card>
-            <BusinessSummary year={selectedYear} />
           </div>
 
           <div className="lg:col-span-1 space-y-6">
