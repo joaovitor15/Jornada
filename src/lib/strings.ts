@@ -320,6 +320,7 @@ export const text = {
     totalIncome: 'Total de Entradas',
     investments: 'Investimentos',
     outgoings: 'Saídas',
+    finalBalance: 'Saldo Final',
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',

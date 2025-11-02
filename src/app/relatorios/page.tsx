@@ -24,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown, Wallet } from 'lucide-react';
 import {
   collection,
   query,
@@ -82,6 +82,7 @@ export default function ReportsPage() {
   const [personalTotalIncomeViewMode, setPersonalTotalIncomeViewMode] = useState('mensal');
   const [investmentsViewMode, setInvestmentsViewMode] = useState('mensal');
   const [outgoingsViewMode, setOutgoingsViewMode] = useState('mensal');
+  const [finalBalanceViewMode, setFinalBalanceViewMode] = useState('mensal');
 
 
   // States for calculated values
@@ -122,7 +123,8 @@ export default function ReportsPage() {
   const [loadingInvestments, setLoadingInvestments] = useState(true);
   const [outgoings, setOutgoings] = useState(0);
   const [loadingOutgoings, setLoadingOutgoings] = useState(true);
-
+  const [finalBalance, setFinalBalance] = useState(0);
+  const [loadingFinalBalance, setLoadingFinalBalance] = useState(true);
 
 
   const formatCurrency = (value: number) => {
@@ -282,6 +284,69 @@ export default function ReportsPage() {
     setLoadingOutgoings(false);
   
   }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
+
+  // Effect for Personal Profile Final Balance
+  useEffect(() => {
+    if (activeProfile !== 'Personal') return;
+    setLoadingFinalBalance(true);
+
+    // This calculation depends on the other states, which have their own view modes.
+    // We need to ensure this calculation respects the SAME view mode.
+    // Let's assume the finalBalanceViewMode dictates the period for all underlying calculations.
+    // However, the child states (personalTotalIncome, investments, outgoings) are already calculated
+    // based on THEIR OWN view modes. For consistency, the final balance should reflect the same period.
+    // A simple approach is to calculate it directly when its dependencies update.
+
+    // To ensure consistency, we'll re-calculate the components based on finalBalanceViewMode here.
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+  
+    const startDate = finalBalanceViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = finalBalanceViewMode === 'mensal' ? endOfMonth : endOfYear;
+
+    // Recalculate income
+    const filteredIncomes = allIncomes.filter(income => {
+        if (!income.date) return false;
+        const incomeDate = income.date.toDate();
+        return incomeDate >= startDate && incomeDate <= endDate;
+    });
+    const incomeForPeriod = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
+
+    // Recalculate investments
+    const filteredExpensesForInvestments = allExpenses.filter(expense => {
+      if (!expense.date) return false;
+      const expenseDate = expense.date.toDate();
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+    const investmentsForPeriod = filteredExpensesForInvestments
+      .filter(expense => expense.mainCategory === 'Bolsa de Valores')
+      .reduce((acc, expense) => acc + expense.amount, 0);
+      
+    // Recalculate outgoings
+    const filteredExpensesForOutgoings = allExpenses.filter(expense => {
+      if (!expense.date) return false;
+      const expenseDate = expense.date.toDate();
+      return (
+        expenseDate >= startDate &&
+        expenseDate <= endDate &&
+        expense.mainCategory !== 'Bolsa de Valores' &&
+        !expense.paymentMethod.startsWith('Cartão:')
+      );
+    });
+    const filteredBillPayments = allBillPayments.filter(payment => {
+      if (!payment.date) return false;
+      const paymentDate = payment.date.toDate();
+      return paymentDate >= startDate && paymentDate <= endDate;
+    });
+    const outgoingsForPeriod = filteredExpensesForOutgoings.reduce((acc, expense) => acc + expense.amount, 0) + filteredBillPayments.reduce((acc, payment) => acc + payment.amount, 0);
+
+    setFinalBalance(incomeForPeriod - investmentsForPeriod - outgoingsForPeriod);
+    setLoadingFinalBalance(false);
+
+  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode]);
+
 
 
   // Effect for Net Revenue
@@ -584,21 +649,19 @@ export default function ReportsPage() {
 
 
   const periodLabel = useMemo(() => {
-    if (personalTotalIncomeViewMode === 'anual') {
-      return selectedYear;
-    }
     return `${months[selectedMonth].label} de ${selectedYear}`;
-  }, [selectedMonth, selectedYear, personalTotalIncomeViewMode]);
+  }, [selectedMonth, selectedYear]);
 
-  if (activeProfile === 'Personal' || activeProfile === 'Home') {
-    const isLoading = loadingData || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings;
-    const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
-    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
-    const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
+  if (activeProfile === 'Personal') {
+    const isLoading = loadingData || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings || loadingFinalBalance;
+    const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
+    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
+    const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
+    const finalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
 
     return (
-       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-         <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
             <p className="text-muted-foreground">{text.reports.description}</p>
@@ -789,6 +852,52 @@ export default function ReportsPage() {
                     </div>
                     <span className="text-2xl font-bold">
                       {formatCurrency(outgoings)}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+             <Card>
+               <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.finalBalance}
+                    </CardTitle>
+                  </div>
+                   <div>
+                    <Tabs
+                      value={finalBalanceViewMode}
+                      onValueChange={setFinalBalanceViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({finalBalancePeriodLabel})
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-16">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/50">
+                      <Wallet className="h-6 w-6 text-gray-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(finalBalance)}
                     </span>
                   </div>
                 )}
