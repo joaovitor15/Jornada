@@ -1529,6 +1529,9 @@ export default function ReportsPage() {
                 )}
               </CardContent>
             </Card>
+            <div className="md:col-span-2">
+               <CategoryCardSpendingTabs showCardSpending={false} />
+            </div>
           </div>
         </div>
 
@@ -1635,7 +1638,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                {isLoading ? (
-                  <div className="flex justify-center items-center">
+                  <div className="flex justify-center items-center h-24">
                       <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                ) : (
