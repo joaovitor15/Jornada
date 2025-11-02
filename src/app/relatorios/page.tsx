@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -170,13 +171,13 @@ export default function ReportsPage() {
   useEffect(() => {
     if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
     setLoadingPersonalTotalIncome(true);
-    
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
 
     const filteredIncomes = allIncomes.filter(income => {
       const incomeDate = income.date.toDate();
-      return incomeDate >= startOfYear && incomeDate <= endOfYear;
+      return incomeDate >= startOfMonth && incomeDate <= endOfMonth;
     });
 
     const calculatedTotalIncome = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
@@ -184,7 +185,7 @@ export default function ReportsPage() {
     setPersonalTotalIncome(calculatedTotalIncome);
     setLoadingPersonalTotalIncome(false);
 
-  }, [allIncomes, selectedYear, activeProfile]);
+  }, [allIncomes, selectedYear, selectedMonth, activeProfile]);
 
   // Effect for Net Revenue
   useEffect(() => {
@@ -474,7 +475,7 @@ export default function ReportsPage() {
     return `${months[selectedMonth].label} de ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
-  const commonFilters = (
+  const personalHomeFilters = (
     <div className="flex justify-between items-center mb-6">
       <div>
         <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
@@ -482,9 +483,25 @@ export default function ReportsPage() {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">
-            {text.dashboard.yearLabel}:
-          </label>
+          <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
+          <Select
+            value={String(selectedMonth)}
+            onValueChange={(value) => setSelectedMonth(Number(value))}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((month) => (
+                <SelectItem key={month.value} value={String(month.value)}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
           <Select
             value={String(selectedYear)}
             onValueChange={(value) => setSelectedYear(Number(value))}
@@ -510,7 +527,7 @@ export default function ReportsPage() {
     
     return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        {commonFilters}
+        {personalHomeFilters}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
              <Card>
@@ -534,7 +551,7 @@ export default function ReportsPage() {
                     </CardTitle>
                   </div>
                   <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({selectedYear})
+                    ({periodLabel})
                   </p>
                 </div>
               </CardHeader>
