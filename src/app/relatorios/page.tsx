@@ -34,7 +34,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import type { Income, Expense } from '@/lib/types';
+import type { Income, Expense, BillPayment } from '@/lib/types';
 
 
 const generateYearOptions = () => {
@@ -67,6 +67,7 @@ export default function ReportsPage() {
   // States for data
   const [allIncomes, setAllIncomes] = useState<Income[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [allBillPayments, setAllBillPayments] = useState<BillPayment[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // View modes
@@ -140,6 +141,7 @@ export default function ReportsPage() {
     if (!user) {
       setAllIncomes([]);
       setAllExpenses([]);
+      setAllBillPayments([]);
       setLoadingData(false);
       return;
     }
@@ -155,6 +157,11 @@ export default function ReportsPage() {
       where('userId', '==', user.uid),
       where('profile', '==', activeProfile)
     );
+    const billPaymentsQuery = query(
+      collection(db, 'billPayments'),
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile)
+    );
 
     const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
       const incomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
@@ -167,11 +174,18 @@ export default function ReportsPage() {
       setAllExpenses(expenses);
       setLoadingData(false);
     }, () => setLoadingData(false));
+
+    const unsubBillPayments = onSnapshot(billPaymentsQuery, (snap) => {
+      const payments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BillPayment));
+      setAllBillPayments(payments);
+      setLoadingData(false);
+    }, () => setLoadingData(false));
     
 
     return () => {
       unsubIncomes();
       unsubExpenses();
+      unsubBillPayments();
     };
   }, [user, activeProfile]);
 
@@ -233,29 +247,41 @@ export default function ReportsPage() {
   useEffect(() => {
     if (activeProfile !== 'Personal') return;
     setLoadingOutgoings(true);
-
+  
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
+  
     const startDate = outgoingsViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = outgoingsViewMode === 'mensal' ? endOfMonth : endOfYear;
-
+  
     const filteredExpenses = allExpenses.filter(expense => {
       if (!expense.date) return false;
       const expenseDate = expense.date.toDate();
-      return expenseDate >= startDate && expenseDate <= endDate;
+      return (
+        expenseDate >= startDate &&
+        expenseDate <= endDate &&
+        expense.mainCategory !== 'Bolsa de Valores' &&
+        !expense.paymentMethod.startsWith('Cartão:')
+      );
     });
-
-    const calculatedOutgoings = filteredExpenses
-      .filter(expense => expense.mainCategory !== 'Bolsa de Valores')
-      .reduce((acc, expense) => acc + expense.amount, 0);
-
+  
+    const filteredBillPayments = allBillPayments.filter(payment => {
+      if (!payment.date) return false;
+      const paymentDate = payment.date.toDate();
+      return paymentDate >= startDate && paymentDate <= endDate;
+    });
+  
+    const nonCardExpensesTotal = filteredExpenses.reduce((acc, expense) => acc + expense.amount, 0);
+    const billPaymentsTotal = filteredBillPayments.reduce((acc, payment) => acc + payment.amount, 0);
+  
+    const calculatedOutgoings = nonCardExpensesTotal + billPaymentsTotal;
+  
     setOutgoings(calculatedOutgoings);
     setLoadingOutgoings(false);
-
-  }, [allExpenses, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
+  
+  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
 
 
   // Effect for Net Revenue
@@ -564,7 +590,7 @@ export default function ReportsPage() {
     return `${months[selectedMonth].label} de ${selectedYear}`;
   }, [selectedMonth, selectedYear, personalTotalIncomeViewMode]);
 
-  if (activeProfile === 'Personal') {
+  if (activeProfile === 'Personal' || activeProfile === 'Home') {
     const isLoading = loadingData || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings;
     const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
     const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
