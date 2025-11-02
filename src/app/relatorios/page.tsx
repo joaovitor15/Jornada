@@ -475,59 +475,55 @@ export default function ReportsPage() {
     return `${months[selectedMonth].label} de ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
-  const personalHomeFilters = (
-    <div className="flex justify-between items-center mb-6">
-      <div>
-        <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
-        <p className="text-muted-foreground">{text.reports.description}</p>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
-          <Select
-            value={String(selectedMonth)}
-            onValueChange={(value) => setSelectedMonth(Number(value))}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={String(month.value)}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
-          <Select
-            value={String(selectedYear)}
-            onValueChange={(value) => setSelectedYear(Number(value))}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map((year) => (
-                <SelectItem key={year} value={String(year)}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </div>
-  );
-
   if (activeProfile === 'Personal') {
     const isLoading = loadingData || loadingPersonalTotalIncome;
     
     return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        {personalHomeFilters}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
+            <p className="text-muted-foreground">{text.reports.description}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
+              <Select
+                value={String(selectedMonth)}
+                onValueChange={(value) => setSelectedMonth(Number(value))}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={String(month.value)}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
+              <Select
+                value={String(selectedYear)}
+                onValueChange={(value) => setSelectedYear(Number(value))}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
              <Card>
@@ -583,7 +579,50 @@ export default function ReportsPage() {
     
     return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        {personalHomeFilters}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
+            <p className="text-muted-foreground">{text.reports.description}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
+              <Select
+                value={String(selectedMonth)}
+                onValueChange={(value) => setSelectedMonth(Number(value))}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={String(month.value)}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
+              <Select
+                value={String(selectedYear)}
+                onValueChange={(value) => setSelectedYear(Number(value))}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
              <Card>
