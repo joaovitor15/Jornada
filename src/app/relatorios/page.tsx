@@ -522,7 +522,63 @@ export default function ReportsPage() {
     </div>
   );
 
-  if (activeProfile === 'Personal' || activeProfile === 'Home') {
+  if (activeProfile === 'Personal') {
+    const isLoading = loadingData || loadingPersonalTotalIncome;
+    
+    return (
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
+        {personalHomeFilters}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+             <Card>
+              <CardHeader>
+                <CardTitle>
+                  {text.reports.financialSummary(selectedYear)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnnualFinancialChart year={selectedYear} />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.totalIncome}
+                    </CardTitle>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    ({periodLabel})
+                  </p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(personalTotalIncome)}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (activeProfile === 'Home') {
     const isLoading = loadingData || loadingPersonalTotalIncome;
     
     return (
