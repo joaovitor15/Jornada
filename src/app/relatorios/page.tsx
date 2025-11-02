@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -496,7 +495,7 @@ export default function ReportsPage() {
     
     return (
        <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
             <p className="text-muted-foreground">{text.reports.description}</p>
@@ -593,7 +592,7 @@ export default function ReportsPage() {
   if (activeProfile === 'Home') {
     return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
             <p className="text-muted-foreground">{text.reports.description}</p>
@@ -659,7 +658,7 @@ export default function ReportsPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
           <p className="text-muted-foreground">{text.reports.description}</p>
