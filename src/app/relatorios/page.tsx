@@ -713,7 +713,7 @@ export default function ReportsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AnnualFinancialChart year={selectedYear} />
+                <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
             <CategoryCardSpendingTabs/>
@@ -970,7 +970,7 @@ export default function ReportsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AnnualFinancialChart year={selectedYear} />
+                <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
             <CategoryCardSpendingTabs showCardSpending={false} />
@@ -1182,7 +1182,7 @@ export default function ReportsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AnnualFinancialChart year={selectedYear} />
+              <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
             </CardContent>
           </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
