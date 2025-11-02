@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,13 +19,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
@@ -38,22 +32,6 @@ import {
   Legend,
 } from 'recharts';
 import { Progress } from '../ui/progress';
-
-const generateYearOptions = () => {
-  const currentYear = new Date().getFullYear();
-  const years = [];
-  for (let i = 0; i < 5; i++) {
-    years.push(currentYear - i);
-  }
-  return years;
-};
-
-const months = Object.entries(text.dashboard.months).map(
-  ([key, label], index) => ({
-    value: index,
-    label: label,
-  })
-);
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -187,20 +165,18 @@ function CardSpendingList({ expenses, cards }: { expenses: Expense[], cards: Car
 
 interface CategoryCardSpendingTabsProps {
   showCardSpending?: boolean;
+  selectedMonth: number;
+  selectedYear: number;
 }
 
 
 // --- Main Tabs Component ---
-export default function CategoryCardSpendingTabs({ showCardSpending = true }: CategoryCardSpendingTabsProps) {
+export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const yearOptions = generateYearOptions();
 
   useEffect(() => {
     if (!user || !activeProfile) return;
@@ -244,16 +220,11 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true }: Ca
 
   }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending]);
 
-  const TABS = showCardSpending 
-    ? [
-        { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
-        { value: "subcategories", label: "Subcategorias", content: <SpendingChart expenses={expenses} groupBy="subcategory" /> },
-        { value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> },
-      ]
-    : [
-        { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
-        { value: "subcategories", label: "Subcategorias", content: <SpendingChart expenses={expenses} groupBy="subcategory" /> },
-      ];
+  const TABS = [
+    { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
+    { value: "subcategories", label: "Subcategorias", content: <SpendingChart expenses={expenses} groupBy="subcategory" /> },
+    ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
+  ];
 
   return (
     <Card>
@@ -262,24 +233,6 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true }: Ca
           <div>
             <CardTitle>Análise de Gastos</CardTitle>
             <CardDescription>Veja seus gastos por categoria e cartão.</CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-36 text-xs h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-24 text-xs h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </CardHeader>

@@ -716,7 +716,7 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs/>
+            <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} />
           </div>
           <div className="lg:col-span-1 space-y-6">
             <Card>
@@ -973,7 +973,7 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs showCardSpending={false} />
+            <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} showCardSpending={false} />
           </div>
           <div className="lg:col-span-1 space-y-6">
              <Card>
@@ -1229,7 +1229,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : (
@@ -1314,7 +1314,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : (
@@ -1400,7 +1400,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : (
@@ -1486,7 +1486,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : (
@@ -1530,7 +1530,7 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
             <div className="md:col-span-2">
-               <CategoryCardSpendingTabs showCardSpending={false} />
+               <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} showCardSpending={false} />
             </div>
           </div>
         </div>
@@ -1638,7 +1638,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                       <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                ) : (
@@ -1725,7 +1725,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoading ? (
-                <div className="flex justify-center items-center h-24">
+                <div className="flex justify-center items-center">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               ) : (
@@ -1811,7 +1811,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoading ? (
-                <div className="flex justify-center items-center h-24">
+                <div className="flex justify-center items-center">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               ) : (
