@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -1632,9 +1633,9 @@ export default function ReportsPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
+                  <div className="flex justify-center items-center">
                       <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                ) : (
@@ -1648,7 +1649,7 @@ export default function ReportsPage() {
                           </span>
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="mt-4 space-y-2">
                            <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{text.reports.grossMargin}</h3>
                                   <TooltipProvider>
