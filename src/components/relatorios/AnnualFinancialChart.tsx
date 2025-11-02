@@ -215,7 +215,7 @@ export default function AnnualFinancialChart({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-[400px]">
+      <div className="flex justify-center items-center h-full min-h-[350px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -228,11 +228,11 @@ export default function AnnualFinancialChart({
   const noData = chartData.every(d => d.income === 0 && d.expense === 0);
 
   if (noData) {
-    return <div className="flex justify-center items-center h-full min-h-[400px] text-muted-foreground">{text.reports.noData}</div>;
+    return <div className="flex justify-center items-center h-full min-h-[350px] text-muted-foreground">{text.reports.noData}</div>;
   }
 
   return (
-    <ResponsiveContainer width="100%" height={400} key={animationKey}>
+    <ResponsiveContainer width="100%" height={350} key={animationKey}>
       <AreaChart
         data={chartData}
         margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
