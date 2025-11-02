@@ -14,7 +14,6 @@ export const text = {
     },
   },
   sidebar: {
-    bible: 'Bíblia',
     dashboard: 'Dashboard',
     releases: 'Lançamentos',
     reports: 'Relatórios',

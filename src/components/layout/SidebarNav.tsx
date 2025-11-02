@@ -8,7 +8,6 @@ import {
   BarChart,
   CreditCard,
   TrendingUp,
-  BookOpen,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -22,11 +21,6 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   const navLinks = [
-    {
-      href: '/biblia',
-      label: text.sidebar.bible,
-      icon: BookOpen,
-    },
     {
       href: '/dashboard',
       label: text.sidebar.dashboard,
