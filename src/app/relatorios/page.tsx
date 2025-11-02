@@ -35,6 +35,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import type { Income, Expense, BillPayment } from '@/lib/types';
+import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 
 
 const generateYearOptions = () => {
@@ -714,6 +715,7 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} />
               </CardContent>
             </Card>
+            <CategoryCardSpendingTabs/>
           </div>
           <div className="lg:col-span-1 space-y-6">
             <Card>
