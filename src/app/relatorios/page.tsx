@@ -78,6 +78,7 @@ export default function ReportsPage() {
   const [impostosViewMode, setImpostosViewMode] = useState('mensal');
   const [sistemaViewMode, setSistemaViewMode] = useState('mensal');
   const [fixedCostsViewMode, setFixedCostsViewMode] = useState('mensal');
+  const [personalTotalIncomeViewMode, setPersonalTotalIncomeViewMode] = useState('mensal');
 
   // States for calculated values
   const [netRevenue, setNetRevenue] = useState(0);
@@ -170,22 +171,27 @@ export default function ReportsPage() {
   useEffect(() => {
     if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
     setLoadingPersonalTotalIncome(true);
-
+  
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+  
+    const startDate = personalTotalIncomeViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = personalTotalIncomeViewMode === 'mensal' ? endOfMonth : endOfYear;
+  
     const filteredIncomes = allIncomes.filter(income => {
       if (!income.date) return false;
       const incomeDate = income.date.toDate();
-      return incomeDate >= startOfMonth && incomeDate <= endOfMonth;
+      return incomeDate >= startDate && incomeDate <= endDate;
     });
-
+  
     const calculatedTotalIncome = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
     
     setPersonalTotalIncome(calculatedTotalIncome);
     setLoadingPersonalTotalIncome(false);
-
-  }, [allIncomes, selectedYear, selectedMonth, activeProfile]);
+  
+  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode]);
 
   // Effect for Net Revenue
   useEffect(() => {
@@ -487,8 +493,11 @@ export default function ReportsPage() {
 
 
   const periodLabel = useMemo(() => {
+    if (personalTotalIncomeViewMode === 'anual') {
+      return selectedYear;
+    }
     return `${months[selectedMonth].label} de ${selectedYear}`;
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, personalTotalIncomeViewMode]);
 
   if (activeProfile === 'Personal') {
     const isLoading = loadingData || loadingPersonalTotalIncome;
@@ -554,16 +563,32 @@ export default function ReportsPage() {
           </div>
           <div className="lg:col-span-1 space-y-6">
             <Card>
-              <CardHeader>
+               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">
                       {text.reports.totalIncome}
                     </CardTitle>
                   </div>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({periodLabel})
-                  </p>
+                   <div>
+                    <Tabs
+                      value={personalTotalIncomeViewMode}
+                      onValueChange={setPersonalTotalIncomeViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({periodLabel})
+                    </p>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
