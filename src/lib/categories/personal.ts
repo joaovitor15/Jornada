@@ -1,6 +1,6 @@
 export const personalExpenseCategories = {
   "Ofertas": ["Igreja Batista Pioneira", "Grupo de Jovens", "Missões Pioneiras", "JMM", "Outros"],
-  "Investimentos": ["Nacional", "Exterior"]
+  "Bolsa de Valores": ["Nacional", "Exterior"],
   "Jogos": ["EA Sports", "Supercell", "Gift Cards", "Play Store"],
   "Compras": ["Amazon", "Mercado Livre", "Magazine Luiza", "Shopee"],
   "TV": ["SKY +", "Meli +", "Canal Prime", "Amazon Prime", "Youtube Premium", "Disney +", "HBO MAX", "Paramount +"],
