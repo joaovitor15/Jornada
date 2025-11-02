@@ -972,6 +972,7 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} />
               </CardContent>
             </Card>
+            <CategoryCardSpendingTabs showCardSpending={false} />
           </div>
           <div className="lg:col-span-1 space-y-6">
              <Card>

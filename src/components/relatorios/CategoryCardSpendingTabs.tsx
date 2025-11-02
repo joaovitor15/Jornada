@@ -180,8 +180,13 @@ function CardSpendingList({ expenses, cards }: { expenses: Expense[], cards: Car
   )
 }
 
+interface CategoryCardSpendingTabsProps {
+  showCardSpending?: boolean;
+}
+
+
 // --- Main Tabs Component ---
-export default function CategoryCardSpendingTabs() {
+export default function CategoryCardSpendingTabs({ showCardSpending = true }: CategoryCardSpendingTabsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -208,30 +213,31 @@ export default function CategoryCardSpendingTabs() {
       where('date', '<=', Timestamp.fromDate(endDate))
     );
 
-    const cardsQuery = query(
-      collection(db, 'cards'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
     const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
       const fetchedExpenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
       setExpenses(fetchedExpenses);
       setLoading(false);
     }, () => setLoading(false));
-
-    const unsubCards = onSnapshot(cardsQuery, (snap) => {
-      const fetchedCards = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
-      setCards(fetchedCards);
-    });
-
+    
+    let unsubCards = () => {};
+    if (showCardSpending) {
+      const cardsQuery = query(
+        collection(db, 'cards'),
+        where('userId', '==', user.uid),
+        where('profile', '==', activeProfile)
+      );
+      unsubCards = onSnapshot(cardsQuery, (snap) => {
+        const fetchedCards = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
+        setCards(fetchedCards);
+      });
+    }
 
     return () => {
       unsubExpenses();
       unsubCards();
     };
 
-  }, [user, activeProfile, selectedYear, selectedMonth]);
+  }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending]);
 
   return (
     <Card>
@@ -262,18 +268,22 @@ export default function CategoryCardSpendingTabs() {
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="categories">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="cards">Cartões</TabsTrigger>
-          </TabsList>
-          <TabsContent value="categories">
-            {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : <CategorySpendingChart expenses={expenses} />}
-          </TabsContent>
-          <TabsContent value="cards">
-            {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : <CardSpendingList expenses={expenses} cards={cards} />}
-          </TabsContent>
-        </Tabs>
+        {showCardSpending ? (
+          <Tabs defaultValue="categories">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="categories">Categorias</TabsTrigger>
+              <TabsTrigger value="cards">Cartões</TabsTrigger>
+            </TabsList>
+            <TabsContent value="categories">
+              {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : <CategorySpendingChart expenses={expenses} />}
+            </TabsContent>
+            <TabsContent value="cards">
+              {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : <CardSpendingList expenses={expenses} cards={cards} />}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : <CategorySpendingChart expenses={expenses} />
+        )}
       </CardContent>
     </Card>
   );
