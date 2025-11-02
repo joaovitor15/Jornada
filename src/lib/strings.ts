@@ -318,6 +318,8 @@ export const text = {
     fixedCostsMargin: 'Margem de Gastos Fixos',
     fixedCostsMarginTooltip: 'Percentual da receita consumido pelos gastos fixos.\nCálculo: (Gastos Fixos / Receita Líquida) * 100',
     totalIncome: 'Total de Entradas',
+    investments: 'Investimentos',
+    outgoings: 'Saídas',
   },
   anticipateInstallments: {
     title: 'Antecipar Parcelas',

@@ -24,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle } from 'lucide-react';
+import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown } from 'lucide-react';
 import {
   collection,
   query,
@@ -79,6 +79,9 @@ export default function ReportsPage() {
   const [sistemaViewMode, setSistemaViewMode] = useState('mensal');
   const [fixedCostsViewMode, setFixedCostsViewMode] = useState('mensal');
   const [personalTotalIncomeViewMode, setPersonalTotalIncomeViewMode] = useState('mensal');
+  const [investmentsViewMode, setInvestmentsViewMode] = useState('mensal');
+  const [outgoingsViewMode, setOutgoingsViewMode] = useState('mensal');
+
 
   // States for calculated values
   const [netRevenue, setNetRevenue] = useState(0);
@@ -114,6 +117,11 @@ export default function ReportsPage() {
 
   const [personalTotalIncome, setPersonalTotalIncome] = useState(0);
   const [loadingPersonalTotalIncome, setLoadingPersonalTotalIncome] = useState(true);
+  const [investments, setInvestments] = useState(0);
+  const [loadingInvestments, setLoadingInvestments] = useState(true);
+  const [outgoings, setOutgoings] = useState(0);
+  const [loadingOutgoings, setLoadingOutgoings] = useState(true);
+
 
 
   const formatCurrency = (value: number) => {
@@ -192,6 +200,63 @@ export default function ReportsPage() {
     setLoadingPersonalTotalIncome(false);
   
   }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode]);
+
+  // Effect for Personal Profile Investments
+  useEffect(() => {
+    if (activeProfile !== 'Personal') return;
+    setLoadingInvestments(true);
+
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startDate = investmentsViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = investmentsViewMode === 'mensal' ? endOfMonth : endOfYear;
+
+    const filteredExpenses = allExpenses.filter(expense => {
+      if (!expense.date) return false;
+      const expenseDate = expense.date.toDate();
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+
+    const calculatedInvestments = filteredExpenses
+      .filter(expense => expense.mainCategory === 'Bolsa de Valores')
+      .reduce((acc, expense) => acc + expense.amount, 0);
+      
+    setInvestments(calculatedInvestments);
+    setLoadingInvestments(false);
+
+  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode]);
+
+  // Effect for Personal Profile Outgoings
+  useEffect(() => {
+    if (activeProfile !== 'Personal') return;
+    setLoadingOutgoings(true);
+
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    const startDate = outgoingsViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = outgoingsViewMode === 'mensal' ? endOfMonth : endOfYear;
+
+    const filteredExpenses = allExpenses.filter(expense => {
+      if (!expense.date) return false;
+      const expenseDate = expense.date.toDate();
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+
+    const calculatedOutgoings = filteredExpenses
+      .filter(expense => expense.mainCategory !== 'Bolsa de Valores')
+      .reduce((acc, expense) => acc + expense.amount, 0);
+
+    setOutgoings(calculatedOutgoings);
+    setLoadingOutgoings(false);
+
+  }, [allExpenses, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
+
 
   // Effect for Net Revenue
   useEffect(() => {
@@ -500,11 +565,14 @@ export default function ReportsPage() {
   }, [selectedMonth, selectedYear, personalTotalIncomeViewMode]);
 
   if (activeProfile === 'Personal') {
-    const isLoading = loadingData || loadingPersonalTotalIncome;
-    
+    const isLoading = loadingData || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings;
+    const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
+    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
+    const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : `${months[selectedMonth].label} de ${selectedYear}`;
+
     return (
        <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+         <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
             <p className="text-muted-foreground">{text.reports.description}</p>
@@ -586,7 +654,7 @@ export default function ReportsPage() {
                       </TabsList>
                     </Tabs>
                     <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({periodLabel})
+                      ({personalIncomePeriodLabel})
                     </p>
                   </div>
                 </div>
@@ -603,6 +671,98 @@ export default function ReportsPage() {
                     </div>
                     <span className="text-2xl font-bold">
                       {formatCurrency(personalTotalIncome)}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+               <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.investments}
+                    </CardTitle>
+                  </div>
+                   <div>
+                    <Tabs
+                      value={investmentsViewMode}
+                      onValueChange={setInvestmentsViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({investmentsPeriodLabel})
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-16">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                      <TrendingUp className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(investments)}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+               <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      {text.reports.outgoings}
+                    </CardTitle>
+                  </div>
+                   <div>
+                    <Tabs
+                      value={outgoingsViewMode}
+                      onValueChange={setOutgoingsViewMode}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                          {text.reports.monthly}
+                        </TabsTrigger>
+                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                          {text.reports.annual}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      ({outgoingsPeriodLabel})
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-16">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                      <TrendingDown className="h-6 w-6 text-red-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(outgoings)}
                     </span>
                   </div>
                 )}
