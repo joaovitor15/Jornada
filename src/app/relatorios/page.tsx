@@ -176,6 +176,7 @@ export default function ReportsPage() {
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
 
     const filteredIncomes = allIncomes.filter(income => {
+      if (!income.date) return false;
       const incomeDate = income.date.toDate();
       return incomeDate >= startOfMonth && incomeDate <= endOfMonth;
     });
@@ -200,6 +201,7 @@ export default function ReportsPage() {
     const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
     
     const filteredIncomes = allIncomes.filter(income => {
+      if (!income.date) return false;
       const incomeDate = income.date.toDate();
       return incomeDate >= startDate && incomeDate <= endDate;
     });
@@ -227,11 +229,13 @@ export default function ReportsPage() {
     const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const filteredIncomes = allIncomes.filter(i => {
+      if (!i.date) return false;
       const d = i.date.toDate();
       return d >= startDate && d <= endDate;
     });
     
     const filteredExpenses = allExpenses.filter(e => {
+       if (!e.date) return false;
        const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -267,10 +271,12 @@ export default function ReportsPage() {
     const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
     
     const filteredIncomes = allIncomes.filter(i => {
+      if (!i.date) return false;
       const d = i.date.toDate();
       return d >= startDate && d <= endDate;
     });
     const filteredExpenses = allExpenses.filter(e => {
+       if (!e.date) return false;
        const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -302,10 +308,12 @@ export default function ReportsPage() {
     const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const filteredIncomes = allIncomes.filter(i => {
+        if (!i.date) return false;
         const d = i.date.toDate();
         return d >= startDate && d <= endDate;
     });
     const filteredExpenses = allExpenses.filter(e => {
+        if (!e.date) return false;
         const d = e.date.toDate();
         return d >= startDate && d <= endDate;
     });
@@ -338,11 +346,13 @@ export default function ReportsPage() {
     const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
     
     const filteredIncomes = allIncomes.filter(i => {
+        if (!i.date) return false;
         const d = i.date.toDate();
         return d >= startDate && d <= endDate;
     });
 
     const filteredExpenses = allExpenses.filter(e => {
+      if (!e.date) return false;
       const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -375,10 +385,12 @@ export default function ReportsPage() {
     const endDate = impostosViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const filteredIncomes = allIncomes.filter(i => {
+      if (!i.date) return false;
       const d = i.date.toDate();
       return d >= startDate && d <= endDate;
     });
     const filteredExpenses = allExpenses.filter(e => {
+      if (!e.date) return false;
       const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -411,10 +423,12 @@ export default function ReportsPage() {
     const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const filteredIncomes = allIncomes.filter(i => {
+      if (!i.date) return false;
       const d = i.date.toDate();
       return d >= startDate && d <= endDate;
     });
     const filteredExpenses = allExpenses.filter(e => {
+      if (!e.date) return false;
       const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -447,10 +461,12 @@ export default function ReportsPage() {
     const endDate = fixedCostsViewMode === 'mensal' ? endOfMonth : endOfYear;
   
     const filteredIncomes = allIncomes.filter(i => {
+      if (!i.date) return false;
       const d = i.date.toDate();
       return d >= startDate && d <= endDate;
     });
     const filteredExpenses = allExpenses.filter(e => {
+       if (!e.date) return false;
        const d = e.date.toDate();
       return d >= startDate && d <= endDate;
     });
@@ -524,8 +540,8 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-6">
              <Card>
               <CardHeader>
                 <CardTitle>
@@ -534,38 +550,6 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <AnnualFinancialChart year={selectedYear} />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.totalIncome}
-                    </CardTitle>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({periodLabel})
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(personalTotalIncome)}
-                    </span>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -623,8 +607,8 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-6">
              <Card>
               <CardHeader>
                 <CardTitle>
@@ -633,38 +617,6 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <AnnualFinancialChart year={selectedYear} />
-              </CardContent>
-            </Card>
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.totalIncome}
-                    </CardTitle>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({periodLabel})
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(personalTotalIncome)}
-                    </span>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
