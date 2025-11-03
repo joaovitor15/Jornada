@@ -7,6 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Card, CardContent } from '@/components/ui/card';
 import { text } from '@/lib/strings';
 
 export default function EmergencyReserve() {
@@ -17,9 +18,13 @@ export default function EmergencyReserve() {
           {text.sidebar.emergencyReserve}
         </AccordionTrigger>
         <AccordionContent>
-          <div className="text-center text-muted-foreground py-10">
-            {text.common.comingSoon}
-          </div>
+          <Card className="rounded-lg border shadow-sm">
+            <CardContent className="p-0">
+              <div className="text-center text-muted-foreground py-10">
+                <p>{text.common.comingSoon}</p>
+              </div>
+            </CardContent>
+          </Card>
         </AccordionContent>
       </AccordionItem>
     </Accordion>
