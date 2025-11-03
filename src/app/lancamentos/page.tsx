@@ -3,7 +3,6 @@
 import ExpensesList from '@/components/dashboard/expenses-list';
 import IncomeList from '@/components/dashboard/income-list';
 import BillPaymentsList from '@/components/faturas/bill-payments-list';
-import EmergencyReserve from '@/components/lancamentos/emergency-reserve';
 import { Button } from '@/components/ui/button';
 import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
@@ -41,7 +40,6 @@ export default function LancamentosPage() {
         <ExpensesList />
         <IncomeList />
         <BillPaymentsList />
-        <EmergencyReserve />
       </div>
     </div>
   );
