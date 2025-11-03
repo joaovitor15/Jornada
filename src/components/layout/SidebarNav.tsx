@@ -4,10 +4,10 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
-  List,
   BarChart,
   CreditCard,
   ShieldCheck,
+  Anchor,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -39,7 +39,7 @@ export default function SidebarNav() {
     {
       href: '/lancamentos',
       label: text.sidebar.releases,
-      icon: List,
+      icon: Anchor,
     },
     {
       href: '/reserva-de-emergencia',
