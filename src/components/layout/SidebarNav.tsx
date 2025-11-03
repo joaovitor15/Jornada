@@ -37,11 +37,6 @@ export default function SidebarNav() {
       icon: CreditCard,
     },
     {
-      href: '/reserva-de-emergencia',
-      label: text.sidebar.emergencyReserve,
-      icon: Shield,
-    },
-    {
       href: '/lancamentos',
       label: text.sidebar.releases,
       icon: ClipboardList,
