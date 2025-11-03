@@ -354,11 +354,12 @@ export const text = {
   },
   emergencyReserve: {
     title: 'Adicionar à Reserva',
+    formTitle: 'Movimentação da Reserva',
     description: 'Registre uma nova contribuição para sua reserva de emergência.',
-    amountLabel: 'Valor da Contribuição',
-    dateLabel: 'Data da Contribuição',
-    addSuccess: 'Contribuição adicionada à reserva.',
-    addError: 'Falha ao adicionar contribuição.',
+    amountLabel: 'Valor',
+    dateLabel: 'Data',
+    addSuccess: 'Movimentação registrada com sucesso.',
+    addError: 'Falha ao registrar movimentação.',
     descriptionPlaceholder: 'Ex: Poupança para viagem (Opcional)',
   }
 };

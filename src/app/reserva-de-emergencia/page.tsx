@@ -55,24 +55,27 @@ export default function ReservaDeEmergenciaPage() {
     <>
       <div className="flex flex-col">
         <div className="flex items-start justify-between mb-6">
-          <h1 className="text-2xl font-bold">
-            {text.sidebar.emergencyReserve}
-          </h1>
-          <div className="flex flex-col items-end gap-4">
-             <Button
-                onClick={() => setIsReserveFormOpen(true)}
-                size="sm"
-                variant="outline"
-              >
-                <Shield className="mr-2 h-4 w-4" />
-                Adicionar Reserva
-              </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {text.sidebar.emergencyReserve}
+            </h1>
+            <Button
+              onClick={() => setIsReserveFormOpen(true)}
+              size="sm"
+              className="mt-4"
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Nova Movimentação
+            </Button>
+          </div>
+
+          <div className="w-80">
             {loading ? (
-              <div className="flex justify-center items-center py-10 w-80">
+              <div className="flex justify-center items-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : totalReserve > 0 && (
-              <Card className="w-80">
+              <Card>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">

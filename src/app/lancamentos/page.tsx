@@ -29,7 +29,7 @@ export default function LancamentosPage() {
               variant="outline"
             >
               <Shield className="mr-2 h-4 w-4" />
-              Adicionar Reserva
+              Movimentar Reserva
             </Button>
             <Button
               onClick={() => setIsIncomeFormOpen(true)}

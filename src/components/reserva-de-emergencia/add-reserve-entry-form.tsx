@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { emergencyReserveLocations } from '@/lib/categories';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -59,6 +60,7 @@ const formSchema = z.object({
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   location: z.string().min(1, { message: 'Selecione um local.' }),
+  type: z.enum(['add', 'withdraw']).default('add'),
 });
 
 type AddReserveEntryFormProps = {
@@ -77,9 +79,13 @@ export default function AddReserveEntryForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      type: 'add',
+    },
   });
 
   const { isSubmitting, watch, setValue, control, reset } = form;
+  const transactionType = watch('type');
 
   useEffect(() => {
     if (isOpen) {
@@ -89,6 +95,7 @@ export default function AddReserveEntryForm({
         amount: undefined,
         date: initialDate,
         location: '',
+        type: 'add',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
@@ -119,12 +126,17 @@ export default function AddReserveEntryForm({
       return;
     }
 
+    const finalAmount =
+      values.type === 'withdraw' ? -Math.abs(values.amount) : values.amount;
+
     try {
       await addDoc(collection(db, 'emergencyReserveEntries'), {
         userId: user.uid,
         profile: activeProfile,
-        description: values.description || 'Contribuição',
-        amount: values.amount,
+        description:
+          values.description ||
+          (values.type === 'add' ? 'Contribuição' : 'Retirada'),
+        amount: finalAmount,
         date: Timestamp.fromDate(values.date),
         location: values.location,
       });
@@ -162,7 +174,7 @@ export default function AddReserveEntryForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.emergencyReserve.title}</DialogTitle>
+          <DialogTitle>{text.emergencyReserve.formTitle}</DialogTitle>
           <DialogDescription>
             {text.emergencyReserve.description}
           </DialogDescription>
@@ -172,6 +184,37 @@ export default function AddReserveEntryForm({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
+            <FormField
+              control={control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Movimentação</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="add" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Adicionar</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="withdraw" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Retirar</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="description"
@@ -293,7 +336,9 @@ export default function AddReserveEntryForm({
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {text.emergencyReserve.title}
+                {transactionType === 'add'
+                  ? text.emergencyReserve.title
+                  : 'Registrar Retirada'}
               </Button>
             </DialogFooter>
           </form>

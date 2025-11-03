@@ -172,7 +172,7 @@ export default function EmergencyReserveList() {
               <CardContent className="p-0">
                 {entries.length === 0 ? (
                   <div className="text-center text-muted-foreground py-10">
-                    <p>Nenhuma contribuição registrada.</p>
+                    <p>Nenhuma movimentação registrada.</p>
                   </div>
                 ) : (
                   <Table>
@@ -205,7 +205,7 @@ export default function EmergencyReserveList() {
                           )}
                         >
                           <TableCell className="font-medium py-2 px-4 align-middle">
-                            {entry.description || 'Contribuição'}
+                            {entry.description || 'Movimentação'}
                           </TableCell>
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
                             {entry.location}
@@ -213,7 +213,12 @@ export default function EmergencyReserveList() {
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
                             {format(entry.date.toDate(), 'dd/MM/yyyy')}
                           </TableCell>
-                          <TableCell className="text-right py-2 px-4 align-middle font-semibold text-green-600">
+                          <TableCell
+                            className={cn(
+                              'text-right py-2 px-4 align-middle font-semibold',
+                              entry.amount > 0 ? 'text-green-600' : 'text-red-600'
+                            )}
+                          >
                             {new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
@@ -298,7 +303,7 @@ export default function EmergencyReserveList() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita. Isso excluirá permanentemente
-              esta contribuição.
+              esta movimentação.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
