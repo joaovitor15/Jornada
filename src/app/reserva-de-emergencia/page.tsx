@@ -3,7 +3,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, PiggyBank, Shield, Dices } from 'lucide-react';
+import {
+  Loader2,
+  PiggyBank,
+  Shield,
+  Dices,
+  Banknote,
+  CalendarCheck2,
+} from 'lucide-react';
 import { text } from '@/lib/strings';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 import { useAuth } from '@/hooks/use-auth';
@@ -21,6 +28,7 @@ import { EmergencyReserveEntry } from '@/lib/types';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -67,6 +75,12 @@ const diceFormSchema = z.object({
   date: z.date({ required_error: 'A data é obrigatória.' }),
 });
 
+interface SubcategoryTotal {
+  name: string;
+  mainCategory: string;
+  total: number;
+}
+
 export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -74,6 +88,9 @@ export default function ReservaDeEmergenciaPage() {
   const [totalProtegido, setTotalProtegido] = useState(0);
   const [totalReserva, setTotalReserva] = useState(0);
   const [totalProgramado, setTotalProgramado] = useState(0);
+  const [subcategoryTotals, setSubcategoryTotals] = useState<
+    SubcategoryTotal[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [diceResult, setDiceResult] = useState({ main: '', sub: '' });
@@ -112,20 +129,61 @@ export default function ReservaDeEmergenciaPage() {
       let totalGeral = 0;
       let totalCatReserva = 0;
       let totalCatProgramado = 0;
+      const subTotals: { [key: string]: number } = {};
 
-      querySnapshot.forEach((doc) => {
-        const entry = doc.data() as Omit<EmergencyReserveEntry, 'id'>;
+      const entries = querySnapshot.docs.map(
+        (doc) => doc.data() as Omit<EmergencyReserveEntry, 'id'>
+      );
+
+      entries.forEach((entry) => {
         totalGeral += entry.amount;
+
         if (entry.mainCategory === 'Reserva de Emergencia') {
           totalCatReserva += entry.amount;
         } else if (entry.mainCategory === 'Reserva Programada') {
           totalCatProgramado += entry.amount;
         }
+
+        if (entry.subcategory) {
+          subTotals[entry.subcategory] =
+            (subTotals[entry.subcategory] || 0) + entry.amount;
+        }
       });
-      
+
+      const subcategoryToMainMap = new Map<string, string>();
+      Object.entries(reserveCategories).forEach(([main, subs]) => {
+        subs.forEach((sub) => subcategoryToMainMap.set(sub, main));
+      });
+
+      const populatedSubTotals: SubcategoryTotal[] = Object.entries(subTotals)
+        .map(([name, total]) => ({
+          name,
+          mainCategory: subcategoryToMainMap.get(name) || 'Desconhecida',
+          total,
+        }))
+        .filter((sub) => sub.total > 0)
+        .sort((a, b) => {
+          // Prioritize 'Reserva de Emergencia'
+          if (
+            a.mainCategory === 'Reserva de Emergencia' &&
+            b.mainCategory !== 'Reserva de Emergencia'
+          ) {
+            return -1;
+          }
+          if (
+            a.mainCategory !== 'Reserva de Emergencia' &&
+            b.mainCategory === 'Reserva de Emergencia'
+          ) {
+            return 1;
+          }
+          // Then sort by total descending
+          return b.total - a.total;
+        });
+
       setTotalProtegido(totalGeral);
       setTotalReserva(totalCatReserva);
       setTotalProgramado(totalCatProgramado);
+      setSubcategoryTotals(populatedSubTotals);
       setLoading(false);
     });
 
@@ -192,91 +250,122 @@ export default function ReservaDeEmergenciaPage() {
     }
   };
 
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+
+  const getIconForCategory = (mainCategory: string) => {
+    switch (mainCategory) {
+      case 'Reserva de Emergencia':
+        return <Shield className="h-6 w-6 text-green-500" />;
+      case 'Reserva Programada':
+        return <CalendarCheck2 className="h-6 w-6 text-purple-500" />;
+      default:
+        return <Banknote className="h-6 w-6 text-gray-500" />;
+    }
+  };
+
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">
           {text.sidebar.emergencyReserve}
         </h1>
-        {isClient && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={handleDiceRoll}
-          >
-            <Dices className="h-5 w-5" />
-            <span className="sr-only">Sortear Subcategoria</span>
+        <div className="flex items-center gap-2">
+          {isClient && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={handleDiceRoll}
+            >
+              <Dices className="h-5 w-5" />
+              <span className="sr-only">Sortear Subcategoria</span>
+            </Button>
+          )}
+          <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
+            <Shield className="mr-2 h-4 w-4" />
+            Nova Movimentação
           </Button>
-        )}
-        <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
-          <Shield className="mr-2 h-4 w-4" />
-          Nova Movimentação
-        </Button>
+        </div>
       </div>
-      
+
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : totalProtegido > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Protegido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                  <PiggyBank className="h-6 w-6 text-blue-500" />
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Protegido
+                </CardTitle>
+                <PiggyBank className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalProtegido)}
                 </div>
-                <span className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalProtegido)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Reserva</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                  <Shield className="h-6 w-6 text-green-500" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Reserva</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalReserva)}
                 </div>
-                <span className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalReserva)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Programado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
-                  <PiggyBank className="h-6 w-6 text-purple-500" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Programado</CardTitle>
+                <CalendarCheck2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalProgramado)}
                 </div>
-                <span className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalProgramado)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          {subcategoryTotals.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {subcategoryTotals.map((sub) => (
+                <Card key={sub.name}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{sub.name}</CardTitle>
+                    <CardDescription>{sub.mainCategory}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                          sub.mainCategory === 'Reserva de Emergencia'
+                            ? 'bg-green-100 dark:bg-green-900/50'
+                            : 'bg-purple-100 dark:bg-purple-900/50'
+                        }`}
+                      >
+                        {getIconForCategory(sub.mainCategory)}
+                      </div>
+                      <span className="text-2xl font-bold">
+                        {formatCurrency(sub.total)}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
+      )}
 
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
@@ -379,5 +468,3 @@ export default function ReservaDeEmergenciaPage() {
     </>
   );
 }
-
-    
