@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, PiggyBank, Shield, Dice } from 'lucide-react';
+import { Loader2, PiggyBank, Shield, Dices } from 'lucide-react';
 import { text } from '@/lib/strings';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 import { useAuth } from '@/hooks/use-auth';
@@ -91,7 +91,7 @@ export default function ReservaDeEmergenciaPage() {
             className="rounded-full"
             onClick={handleDiceRoll}
           >
-            <Dice className="h-5 w-5" />
+            <Dices className="h-5 w-5" />
             <span className="sr-only">Sortear Subcategoria</span>
           </Button>
         )}
@@ -142,7 +142,7 @@ export default function ReservaDeEmergenciaPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Dice className="h-6 w-6" />
+              <Dices className="h-6 w-6" />
               Resultado do Sorteio
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-lg font-bold text-primary py-4">
