@@ -52,24 +52,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-background border border-border p-2 rounded-lg shadow-lg">
         <p className="label font-bold">{`${label}`}</p>
-        {payload[0] && (
-          <p className="intro text-green-500">{`${text.summary.income}: ${new Intl.NumberFormat(
-            'pt-BR',
-            {
+        {payload.map((pld: any) => (
+          <p key={pld.dataKey} style={{ color: pld.color }}>
+            {`${pld.name}: ${new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
-            }
-          ).format(payload[0].value)}`}</p>
-        )}
-        {payload[1] && (
-          <p className="intro text-red-500">{`${text.summary.expenses}: ${new Intl.NumberFormat(
-            'pt-BR',
-            {
-              style: 'currency',
-              currency: 'BRL',
-            }
-          ).format(payload[1].value)}`}</p>
-        )}
+            }).format(pld.value)}`}
+          </p>
+        ))}
       </div>
     );
   }
