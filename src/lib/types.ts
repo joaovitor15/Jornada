@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
@@ -53,3 +52,18 @@ export type BillPayment = {
 };
 
 export type Transaction = Expense | BillPayment;
+
+export type EmergencyReserve = {
+  userId: string;
+  profile: Profile;
+  goal: number;
+};
+
+export type EmergencyReserveEntry = {
+  id: string;
+  userId: string;
+  profile: Profile;
+  amount: number;
+  date: Timestamp;
+  description?: string;
+};
