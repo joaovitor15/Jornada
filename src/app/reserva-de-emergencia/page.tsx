@@ -71,7 +71,9 @@ export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
-  const [totalReserve, setTotalReserve] = useState(0);
+  const [totalProtegido, setTotalProtegido] = useState(0);
+  const [totalReserva, setTotalReserva] = useState(0);
+  const [totalProgramado, setTotalProgramado] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [diceResult, setDiceResult] = useState({ main: '', sub: '' });
@@ -107,12 +109,23 @@ export default function ReservaDeEmergenciaPage() {
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      let total = 0;
+      let totalGeral = 0;
+      let totalCatReserva = 0;
+      let totalCatProgramado = 0;
+
       querySnapshot.forEach((doc) => {
         const entry = doc.data() as Omit<EmergencyReserveEntry, 'id'>;
-        total += entry.amount;
+        totalGeral += entry.amount;
+        if (entry.mainCategory === 'Reserva de Emergencia') {
+          totalCatReserva += entry.amount;
+        } else if (entry.mainCategory === 'Reserva Programada') {
+          totalCatProgramado += entry.amount;
+        }
       });
-      setTotalReserve(total);
+      
+      setTotalProtegido(totalGeral);
+      setTotalReserva(totalCatReserva);
+      setTotalProgramado(totalCatProgramado);
       setLoading(false);
     });
 
@@ -201,20 +214,16 @@ export default function ReservaDeEmergenciaPage() {
           Nova Movimentação
         </Button>
       </div>
-
-      <div className="w-80">
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : totalReserve > 0 ? (
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : totalProtegido > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">Total na Reserva</CardTitle>
-                </div>
-              </div>
+              <CardTitle className="text-lg">Total Protegido</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
@@ -225,13 +234,49 @@ export default function ReservaDeEmergenciaPage() {
                   {new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
-                  }).format(totalReserve)}
+                  }).format(totalProtegido)}
                 </span>
               </div>
             </CardContent>
           </Card>
-        ) : null}
-      </div>
+           <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Reserva</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                  <Shield className="h-6 w-6 text-green-500" />
+                </div>
+                <span className="text-2xl font-bold">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(totalReserva)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Programado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
+                  <PiggyBank className="h-6 w-6 text-purple-500" />
+                </div>
+                <span className="text-2xl font-bold">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  }).format(totalProgramado)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
 
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
@@ -334,3 +379,5 @@ export default function ReservaDeEmergenciaPage() {
     </>
   );
 }
+
+    
