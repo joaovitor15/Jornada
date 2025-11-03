@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -130,7 +131,7 @@ export default function AddIncomeForm({
     }
   }, [isOpen, isEditMode, incomeToEdit, form]);
 
-  const { isSubmitting, watch, setValue, resetField, control } = form;
+  const { isSubmitting, watch, setValue, control } = form;
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -165,12 +166,17 @@ export default function AddIncomeForm({
     return map;
   }, [categoryConfig]);
 
+  // Auto-select subcategory if there's only one
   useEffect(() => {
-    if (selectedCategory && categoryConfig[selectedCategory]) {
-      if (!isEditMode) resetField('subcategory');
+    if (selectedCategory && categoryConfig[selectedCategory] && !isEditMode) {
+      const subcategoriesForSelected = categoryConfig[selectedCategory];
+      if (subcategoriesForSelected.length === 1) {
+        setValue('subcategory', subcategoriesForSelected[0], { shouldValidate: true });
+      }
     }
-  }, [selectedCategory, categoryConfig, resetField, isEditMode]);
+  }, [selectedCategory, categoryConfig, setValue, isEditMode]);
 
+  // Auto-select main category when subcategory is chosen
   useEffect(() => {
     if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
       const correspondingMainCategory = subcategoryToMainCategoryMap[selectedSubcategory];
@@ -179,6 +185,7 @@ export default function AddIncomeForm({
       }
     }
   }, [selectedSubcategory, subcategoryToMainCategoryMap, setValue, selectedCategory]);
+
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {

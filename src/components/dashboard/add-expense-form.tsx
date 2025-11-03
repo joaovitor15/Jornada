@@ -127,10 +127,9 @@ export default function AddExpenseForm({
     resolver: zodResolver(formSchema),
   });
   
-  const { watch, setValue, resetField, control, formState: { isSubmitting, errors }, getValues } = form;
+  const { watch, setValue, reset, control, formState: { isSubmitting, errors }, getValues } = form;
   const selectedPaymentMethod = watch('paymentMethod');
   const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
-
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -226,16 +225,20 @@ export default function AddExpenseForm({
     return map;
   }, [categoryConfig]);
 
+  // Auto-select subcategory if there's only one
   useEffect(() => {
-    if (selectedCategory && categoryConfig[selectedCategory]) {
-      if (!isEditMode) resetField('subcategory');
+    if (selectedCategory && categoryConfig[selectedCategory] && !isEditMode) {
+      const subcategoriesForSelected = categoryConfig[selectedCategory];
+      if (subcategoriesForSelected.length === 1) {
+        setValue('subcategory', subcategoriesForSelected[0], { shouldValidate: true });
+      }
     }
-  }, [selectedCategory, categoryConfig, resetField, isEditMode]);
+  }, [selectedCategory, categoryConfig, setValue, isEditMode]);
 
+  // Auto-select main category when subcategory is chosen
   useEffect(() => {
     if (selectedSubcategory && subcategoryToMainCategoryMap[selectedSubcategory]) {
-      const correspondingMainCategory =
-        subcategoryToMainCategoryMap[selectedSubcategory];
+      const correspondingMainCategory = subcategoryToMainCategoryMap[selectedSubcategory];
       if (selectedCategory !== correspondingMainCategory) {
         setValue('mainCategory', correspondingMainCategory, { shouldValidate: true });
       }
@@ -591,5 +594,3 @@ export default function AddExpenseForm({
     </Dialog>
   );
 }
-
-    
