@@ -14,22 +14,24 @@ export default function LancamentosPage() {
   const { setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
 
   return (
-    <div className="container mx-auto">
+    <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">{text.dashboard.title}</h1>
+        <h1 className="text-2xl font-bold">{text.sidebar.releases}</h1>
         <div className="flex gap-2">
           <Button
             onClick={() => setIsIncomeFormOpen(true)}
+            size="sm"
             className="bg-green-500 text-white hover:bg-green-600"
           >
-            <ArrowUpRight className="mr-2 h-5 w-5" />
+            <ArrowUpRight className="mr-2 h-4 w-4" />
             {text.summary.newIncome}
           </Button>
           <Button
             onClick={() => setIsExpenseFormOpen(true)}
+            size="sm"
             className="bg-red-500 text-white hover:bg-red-600"
           >
-            <ArrowDownLeft className="mr-2 h-5 w-5" />
+            <ArrowDownLeft className="mr-2 h-4 w-4" />
             {text.summary.newTransaction}
           </Button>
         </div>
