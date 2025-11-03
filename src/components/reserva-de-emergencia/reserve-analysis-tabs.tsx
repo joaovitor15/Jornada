@@ -136,38 +136,16 @@ export default function ReserveAnalysisTabs() {
   const { activeProfile } = useProfile();
   const [entries, setEntries] = useState<EmergencyReserveEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('anual'); // Default to annual
-
-  const today = new Date();
-  const selectedMonth = getMonth(today);
-  const selectedYear = getYear(today);
-
-  const months = Object.values(text.dashboard.months);
-  const periodLabel = useMemo(() => {
-    return viewMode === 'mensal' ? `${months[selectedMonth]} de ${selectedYear}` : `Total de ${selectedYear}`;
-  }, [selectedMonth, selectedYear, viewMode, months]);
-
 
   useEffect(() => {
     if (!user || !activeProfile) return;
 
     setLoading(true);
 
-    let startDate, endDate;
-    if (viewMode === 'mensal') {
-      startDate = new Date(selectedYear, selectedMonth, 1);
-      endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    } else { // anual
-      startDate = new Date(selectedYear, 0, 1);
-      endDate = new Date(selectedYear, 11, 31, 23, 59, 59);
-    }
-
     const reserveQuery = query(
       collection(db, 'emergencyReserveEntries'),
       where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
+      where('profile', '==', activeProfile)
     );
 
     const unsubscribe = onSnapshot(reserveQuery, (snap) => {
@@ -179,7 +157,7 @@ export default function ReserveAnalysisTabs() {
 
     return () => unsubscribe();
 
-  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
+  }, [user, activeProfile]);
 
   const TABS = [
     { value: "categories", label: "Categorias", content: <ReserveSpendingChart entries={entries} groupBy="mainCategory" /> },
@@ -194,25 +172,6 @@ export default function ReserveAnalysisTabs() {
           <div>
             <CardTitle>Análise da Reserva</CardTitle>
             <CardDescription>Visualize a distribuição dos seus recursos.</CardDescription>
-          </div>
-          <div>
-            <Tabs
-              value={viewMode}
-              onValueChange={setViewMode}
-              className="w-auto"
-            >
-              <TabsList className="h-8">
-                <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                  {text.reports.monthly}
-                </TabsTrigger>
-                <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                  {text.reports.annual}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <p className="text-xs text-muted-foreground text-center mt-1">
-              ({periodLabel})
-            </p>
           </div>
         </div>
       </CardHeader>
