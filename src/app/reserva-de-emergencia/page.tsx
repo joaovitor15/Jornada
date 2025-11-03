@@ -53,36 +53,26 @@ export default function ReservaDeEmergenciaPage() {
 
   return (
     <>
-      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col">
+        <div className="flex items-start justify-between mb-6">
           <h1 className="text-2xl font-bold">
             {text.sidebar.emergencyReserve}
           </h1>
-          <Button
-            onClick={() => setIsReserveFormOpen(true)}
-            size="sm"
-            variant="outline"
-          >
-            <Shield className="mr-2 h-4 w-4" />
-            Adicionar Reserva
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-             <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-              <p className="text-muted-foreground">
-                Futuro espaço para mais detalhes ou gráficos da reserva.
-              </p>
-            </div>
-          </div>
-          <div className="lg:col-span-1 space-y-6">
+          <div className="flex flex-col items-end gap-4">
+             <Button
+                onClick={() => setIsReserveFormOpen(true)}
+                size="sm"
+                variant="outline"
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Adicionar Reserva
+              </Button>
             {loading ? (
-              <div className="flex justify-center items-center py-10">
+              <div className="flex justify-center items-center py-10 w-80">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : (
-              <Card>
+            ) : totalReserve > 0 && (
+              <Card className="w-80">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
