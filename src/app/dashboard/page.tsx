@@ -246,7 +246,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex gap-2">
-             {activeProfile === 'Home' && (
+             {(activeProfile === 'Home' || activeProfile === 'Business') && (
               <Button
                 onClick={() => setIsSumFormOpen(true)}
                 size="icon"
@@ -424,7 +424,7 @@ export default function DashboardPage() {
         isOpen={isExpenseFormOpen}
         onOpenChange={setIsExpenseFormOpen}
       />
-      {activeProfile === 'Home' && (
+      {(activeProfile === 'Home' || activeProfile === 'Business') && (
         <SumExpensesForm
           isOpen={isSumFormOpen}
           onOpenChange={setIsSumFormOpen}

@@ -116,16 +116,39 @@ export default function SumExpensesForm({
       return;
     }
 
+    let expenseData;
+
+    if (activeProfile === 'Home') {
+      expenseData = {
+        description: 'Alimentos',
+        mainCategory: 'Alimentação',
+        subcategory: 'Comida',
+        paymentMethod: 'Dinheiro',
+      };
+    } else if (activeProfile === 'Business') {
+      expenseData = {
+        description: 'Pagamento de Fornecedores',
+        mainCategory: 'Fornecedores',
+        subcategory: 'Pagamentos Fonecedores',
+        paymentMethod: 'Pix',
+      };
+    } else {
+        toast({
+            variant: 'destructive',
+            title: text.common.error,
+            description: 'Perfil não suportado para esta operação.',
+        });
+        return;
+    }
+
+
     try {
       await addDoc(collection(db, 'expenses'), {
         userId: user.uid,
         profile: activeProfile,
-        description: 'Alimentos',
         amount: total,
-        mainCategory: 'Alimentação',
-        subcategory: 'Comida',
-        paymentMethod: 'Dinheiro',
         date: Timestamp.fromDate(data.date),
+        ...expenseData
       });
       toast({
         title: text.common.success,
@@ -249,5 +272,3 @@ export default function SumExpensesForm({
     </Dialog>
   );
 }
-
-    
