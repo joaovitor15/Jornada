@@ -7,7 +7,7 @@ import {
   BarChart,
   CreditCard,
   ShieldCheck,
-  Anchor,
+  ClipboardList,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -37,14 +37,14 @@ export default function SidebarNav() {
       icon: CreditCard,
     },
     {
-      href: '/lancamentos',
-      label: text.sidebar.releases,
-      icon: Anchor,
-    },
-    {
       href: '/reserva-de-emergencia',
       label: text.sidebar.emergencyReserve,
       icon: ShieldCheck,
+    },
+    {
+      href: '/lancamentos',
+      label: text.sidebar.releases,
+      icon: ClipboardList,
     },
   ];
 
