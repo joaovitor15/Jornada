@@ -28,12 +28,14 @@ service cloud.firestore {
 
     // Rule for the 'emergencyReserves' collection
     match /emergencyReserves/{reserveId} {
-      allow read, write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
     // Rule for the 'emergencyReserveEntries' collection
     match /emergencyReserveEntries/{entryId} {
-      allow read, create, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
   }
 }
