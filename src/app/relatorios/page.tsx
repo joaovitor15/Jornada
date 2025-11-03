@@ -716,7 +716,10 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} />
+            <CategoryCardSpendingTabs 
+               selectedMonth={selectedMonth} 
+               selectedYear={selectedYear}
+             />
           </div>
           <div className="lg:col-span-1 space-y-6">
             <Card>
@@ -973,7 +976,11 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} showCardSpending={false} />
+            <CategoryCardSpendingTabs 
+              selectedMonth={selectedMonth} 
+              selectedYear={selectedYear} 
+              showCardSpending={false} 
+            />
           </div>
           <div className="lg:col-span-1 space-y-6">
              <Card>
@@ -1530,7 +1537,11 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
             <div className="md:col-span-2">
-               <CategoryCardSpendingTabs selectedMonth={selectedMonth} selectedYear={selectedYear} showCardSpending={false} />
+               <CategoryCardSpendingTabs 
+                 selectedMonth={selectedMonth} 
+                 selectedYear={selectedYear} 
+                 showCardSpending={false} 
+                />
             </div>
           </div>
         </div>

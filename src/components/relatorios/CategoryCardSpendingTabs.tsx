@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   collection,
   query,
@@ -177,14 +177,25 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('mensal');
+
+  const months = Object.values(text.dashboard.months);
+  const periodLabel = useMemo(() => {
+    return viewMode === 'mensal' ? `${months[selectedMonth]} de ${selectedYear}` : selectedYear;
+  }, [selectedMonth, selectedYear, viewMode, months]);
+
 
   useEffect(() => {
     if (!user || !activeProfile) return;
 
     setLoading(true);
 
-    const startDate = new Date(selectedYear, selectedMonth, 1);
-    const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startDate = viewMode === 'mensal'
+      ? new Date(selectedYear, selectedMonth, 1)
+      : new Date(selectedYear, 0, 1);
+    const endDate = viewMode === 'mensal'
+      ? new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59)
+      : new Date(selectedYear, 11, 31, 23, 59, 59);
 
     const expensesQuery = query(
       collection(db, 'expenses'),
@@ -218,7 +229,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
       unsubCards();
     };
 
-  }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending]);
+  }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
 
   const TABS = [
     { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
@@ -229,10 +240,29 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-wrap justify-between items-center gap-4">
+        <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <CardTitle>Análise de Gastos</CardTitle>
             <CardDescription>Veja seus gastos por categoria e cartão.</CardDescription>
+          </div>
+          <div>
+            <Tabs
+              value={viewMode}
+              onValueChange={setViewMode}
+              className="w-auto"
+            >
+              <TabsList className="h-8">
+                <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                  {text.reports.monthly}
+                </TabsTrigger>
+                <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                  {text.reports.annual}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              ({periodLabel})
+            </p>
           </div>
         </div>
       </CardHeader>
