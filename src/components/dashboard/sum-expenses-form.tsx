@@ -68,6 +68,15 @@ export default function SumExpensesForm({
   const { isSubmitting } = form.formState;
 
   const valuesInput = watch('values');
+  
+  const isBusinessProfile = activeProfile === 'Business';
+
+  const dialogTexts = {
+    title: isBusinessProfile ? "Somar Pagamentos a Fornecedores" : text.sumExpensesForm.title,
+    description: isBusinessProfile 
+      ? 'Digite os valores dos pagamentos separados por espaço. O total será lançado como uma única despesa em "Fornecedores / Pagamentos Fonecedores".'
+      : text.sumExpensesForm.description,
+  }
 
   useEffect(() => {
     if (!valuesInput) {
@@ -183,9 +192,9 @@ export default function SumExpensesForm({
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{text.sumExpensesForm.title}</DialogTitle>
+          <DialogTitle>{dialogTexts.title}</DialogTitle>
           <DialogDescription>
-            {text.sumExpensesForm.description}
+            {dialogTexts.description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
