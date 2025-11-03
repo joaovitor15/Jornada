@@ -68,40 +68,47 @@ export default function ReservaDeEmergenciaPage() {
           </Button>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+             <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">
+                Futuro espaço para mais detalhes ou gráficos da reserva.
+              </p>
+            </div>
           </div>
-        ) : totalReserve > 0 ? (
-          <div className="mb-8 max-w-md mx-auto">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total na Reserva
-                </CardTitle>
-                <PiggyBank className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  }).format(totalReserve)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Valor total guardado neste perfil.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="lg:col-span-1 space-y-6">
+            {loading ? (
+              <div className="flex justify-center items-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        Total na Reserva
+                      </CardTitle>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                      <PiggyBank className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      }).format(totalReserve)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-            <p className="text-muted-foreground">
-              Use o botão acima para adicionar uma nova contribuição à sua
-              reserva.
-            </p>
-          </div>
-        )}
+        </div>
       </div>
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
