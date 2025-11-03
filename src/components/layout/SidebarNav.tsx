@@ -7,6 +7,7 @@ import {
   List,
   BarChart,
   CreditCard,
+  ShieldCheck,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -39,6 +40,11 @@ export default function SidebarNav() {
       href: '/lancamentos',
       label: text.sidebar.releases,
       icon: List,
+    },
+    {
+      href: '/reserva-de-emergencia',
+      label: text.sidebar.emergencyReserve,
+      icon: ShieldCheck,
     },
   ];
 

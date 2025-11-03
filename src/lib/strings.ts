@@ -18,7 +18,7 @@ export const text = {
     releases: 'Lançamentos',
     reports: 'Relatórios',
     cards: 'Cartões',
-    investments: 'Investimentos',
+    emergencyReserve: 'Reserva de Emergência',
     payBill: 'Pagar Fatura',
   },
   dashboard: {
