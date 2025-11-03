@@ -7,7 +7,6 @@ import {
   List,
   BarChart,
   CreditCard,
-  TrendingUp,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -35,11 +34,6 @@ export default function SidebarNav() {
       href: '/cartoes',
       label: text.sidebar.cards,
       icon: CreditCard,
-    },
-    {
-      href: '/investimentos',
-      label: text.sidebar.investments,
-      icon: TrendingUp,
     },
     {
       href: '/lancamentos',
