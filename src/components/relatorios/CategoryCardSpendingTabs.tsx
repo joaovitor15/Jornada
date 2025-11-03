@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -20,6 +19,13 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import type { Expense, Card as CardType } from '@/lib/types';
@@ -66,12 +72,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses, groupBy }: { expenses: Expense[], groupBy: 'mainCategory' | 'subcategory' }) {
+function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expenses: Expense[], groupBy: 'mainCategory' | 'subcategory', mainCategoryFilter?: string }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
 
   useEffect(() => {
+    const filteredExpenses = mainCategoryFilter === 'all'
+      ? expenses
+      : expenses.filter(e => e.mainCategory === mainCategoryFilter);
+
     const totals: { [key: string]: number } = {};
-    expenses.forEach((expense) => {
+    filteredExpenses.forEach((expense) => {
       const key = expense[groupBy];
       totals[key] = (totals[key] || 0) + expense.amount;
     });
@@ -83,10 +93,14 @@ function SpendingChart({ expenses, groupBy }: { expenses: Expense[], groupBy: 'm
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [expenses, groupBy]);
+  }, [expenses, groupBy, mainCategoryFilter]);
 
   if (expenses.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos neste período.</div>;
+  }
+  
+  if (chartData.length === 0) {
+     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos para a categoria selecionada.</div>;
   }
 
   return (
@@ -173,6 +187,32 @@ interface CategoryCardSpendingTabsProps {
   selectedYear: number;
 }
 
+function SubcategoryTabContent({ expenses }: { expenses: Expense[] }) {
+  const [selectedMainCategory, setSelectedMainCategory] = useState('all');
+  
+  const availableCategories = useMemo(() => {
+    const categories = new Set(expenses.map(e => e.mainCategory));
+    return Array.from(categories).sort();
+  }, [expenses]);
+  
+  return (
+    <div className="space-y-4">
+       <Select value={selectedMainCategory} onValueChange={setSelectedMainCategory}>
+        <SelectTrigger className="w-full md:w-1/2 mx-auto">
+          <SelectValue placeholder="Filtrar por categoria principal" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas as Categorias</SelectItem>
+          {availableCategories.map(cat => (
+            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <SpendingChart expenses={expenses} groupBy="subcategory" mainCategoryFilter={selectedMainCategory} />
+    </div>
+  )
+}
+
 
 // --- Main Tabs Component ---
 export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
@@ -237,7 +277,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
 
   const TABS = [
     { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
-    { value: "subcategories", label: "Subcategorias", content: <SpendingChart expenses={expenses} groupBy="subcategory" /> },
+    { value: "subcategories", label: "Subcategorias", content: <SubcategoryTabContent expenses={expenses} /> },
     ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
   ];
 
