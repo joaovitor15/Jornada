@@ -113,11 +113,15 @@ function SpendingChart({ expenses, groupBy }: { expenses: Expense[], groupBy: 'm
           verticalAlign="middle"
           align="right"
           wrapperStyle={{ overflowY: 'auto', maxHeight: 280 }}
-          formatter={(value, entry) => (
-            <span className="text-muted-foreground text-xs">
-              {value} ({formatCurrency(entry.payload?.value || 0)})
-            </span>
-          )}
+          formatter={(value, entry) => {
+            const { color, payload } = entry;
+            const percent = (payload as any)?.percent || 0;
+            return (
+              <span className="text-muted-foreground text-xs">
+                {value} ({formatCurrency(entry.payload?.value || 0)}) <span className="font-bold">{percent.toFixed(2)}%</span>
+              </span>
+            );
+          }}
         />
       </PieChart>
     </ResponsiveContainer>
