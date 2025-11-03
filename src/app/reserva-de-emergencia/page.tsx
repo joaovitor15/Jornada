@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
 import {
   DropdownMenu,
@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Trash2, Loader2, MoreHorizontal } from 'lucide-react';
+import { Trash2, Loader2, MoreHorizontal, PlusCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
+import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 
 export default function EmergencyReservePage() {
   const { user } = useAuth();
@@ -58,6 +59,7 @@ export default function EmergencyReservePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] =
     useState<EmergencyReserveEntry | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
 
   const ITEMS_PER_PAGE = 10;
@@ -155,125 +157,134 @@ export default function EmergencyReservePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{text.sidebar.emergencyReserve}</h1>
-        {/* Placeholder for Add button */}
+    <>
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">
+            {text.sidebar.emergencyReserve}
+          </h1>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Reserva
+          </Button>
+        </div>
+
+        <h2 className="text-lg font-semibold mb-4">
+          Histórico de Contribuições
+        </h2>
+
+        {entries.length === 0 ? (
+          <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-lg">
+            <p>Nenhuma contribuição registrada.</p>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                      {text.common.description}
+                    </TableHead>
+                    <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                      {text.common.date}
+                    </TableHead>
+                    <TableHead className="h-10 px-4 align-middle font-medium text-muted-foreground text-xs uppercase text-right">
+                      {text.common.amount}
+                    </TableHead>
+                    <TableHead className="h-10 px-4 align-middle font-medium text-muted-foreground text-xs uppercase text-center">
+                      {text.common.options}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentEntries.map((entry, index) => (
+                    <TableRow
+                      key={entry.id}
+                      className={cn(
+                        'hover:bg-muted/50',
+                        index % 2 === 0 ? 'bg-muted/25' : ''
+                      )}
+                    >
+                      <TableCell className="font-medium py-2 px-4 align-middle">
+                        {entry.description || 'Contribuição'}
+                      </TableCell>
+                      <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
+                        {format(entry.date.toDate(), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-4 align-middle font-semibold text-green-600">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(entry.amount)}
+                      </TableCell>
+                      <TableCell className="py-2 px-4 align-middle text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setEntryToDelete(entry);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              className="text-red-500"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>{text.common.delete}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+            {totalPages > 1 && (
+              <CardFooter className="flex justify-center py-4 border-t">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    {text.common.previous}
+                  </Button>
+                  {pageNumbers.map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    {text.common.next}
+                  </Button>
+                </div>
+              </CardFooter>
+            )}
+          </Card>
+        )}
       </div>
 
-       <Card className="rounded-lg border shadow-sm">
-        <CardHeader>
-            <CardTitle>Histórico de Contribuições</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {entries.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10">
-              <p>Nenhuma contribuição registrada.</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                    {text.common.description}
-                  </TableHead>
-                  <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                    {text.common.date}
-                  </TableHead>
-                  <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">
-                    {text.common.amount}
-                  </TableHead>
-                  <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-center">
-                    {text.common.options}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentEntries.map((entry, index) => (
-                  <TableRow
-                    key={entry.id}
-                    className={cn(
-                      'hover:bg-muted/50',
-                      index % 2 === 0 ? 'bg-muted/25' : ''
-                    )}
-                  >
-                    <TableCell className="font-medium py-2 px-2 align-middle">
-                      {entry.description || 'Contribuição'}
-                    </TableCell>
-                    <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
-                      {format(entry.date.toDate(), 'dd/MM/yyyy')}
-                    </TableCell>
-                    <TableCell className="text-right py-2 px-2 align-middle font-semibold text-green-600">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(entry.amount)}
-                    </TableCell>
-                    <TableCell className="py-2 px-2 align-middle text-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 rounded-full data-[state=open]:bg-primary/10"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setEntryToDelete(entry);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <div className="flex items-center justify-center bg-secondary rounded-full h-6 w-6 mr-2">
-                              <Trash2 className="h-3 w-3 text-secondary-foreground" />
-                            </div>
-                            <span>{text.common.delete}</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-        {totalPages > 1 && (
-          <CardFooter className="flex justify-center py-4 border-t">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-              >
-                {text.common.previous}
-              </Button>
-              {pageNumbers.map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? 'default' : 'outline'}
-                  size="icon"
-                  className="h-8 w-8 rounded-full"
-                  onClick={() => goToPage(page)}
-                >
-                  {page}
-                </Button>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-              >
-                {text.common.next}
-              </Button>
-            </div>
-          </CardFooter>
-        )}
-      </Card>
+      <AddReserveEntryForm isOpen={isFormOpen} onOpenChange={setIsFormOpen} />
 
       <AlertDialog
         open={isDeleteDialogOpen}
@@ -285,7 +296,8 @@ export default function EmergencyReservePage() {
               Excluir lançamento da reserva?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente esta contribuição.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente
+              esta contribuição.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -301,6 +313,6 @@ export default function EmergencyReservePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

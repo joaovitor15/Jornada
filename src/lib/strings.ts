@@ -75,8 +75,6 @@ export const text = {
     goToDashboard: 'Ver Lançamentos',
     newTransaction: 'Nova Despesa',
     newIncome: 'Nova Receita',
-    income: 'Entradas',
-    expenses: 'Saídas',
   },
   cards: {
     myInvoices: 'Minhas Faturas',
@@ -354,4 +352,13 @@ export const text = {
       invalidValue: 'A soma dos valores deve ser maior que zero.',
     },
   },
+  emergencyReserve: {
+    title: 'Adicionar à Reserva',
+    description: 'Registre uma nova contribuição para sua reserva de emergência.',
+    amountLabel: 'Valor da Contribuição',
+    dateLabel: 'Data da Contribuição',
+    addSuccess: 'Contribuição adicionada à reserva.',
+    addError: 'Falha ao adicionar contribuição.',
+    descriptionPlaceholder: 'Ex: Poupança para viagem (Opcional)',
+  }
 };
