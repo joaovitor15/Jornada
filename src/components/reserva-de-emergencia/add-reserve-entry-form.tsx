@@ -40,6 +40,14 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { CurrencyInput } from '../ui/currency-input';
 import { Input } from '../ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { emergencyReserveLocations } from '@/lib/categories';
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -50,6 +58,7 @@ const formSchema = z.object({
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
+  location: z.string().min(1, { message: 'Selecione um local.' }),
 });
 
 type AddReserveEntryFormProps = {
@@ -79,6 +88,7 @@ export default function AddReserveEntryForm({
         description: '',
         amount: undefined,
         date: initialDate,
+        location: '',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
@@ -116,6 +126,7 @@ export default function AddReserveEntryForm({
         description: values.description || 'Contribuição',
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
+        location: values.location,
       });
 
       toast({
@@ -174,6 +185,34 @@ export default function AddReserveEntryForm({
                       disabled={isSubmitting}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Local</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o local da reserva" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {emergencyReserveLocations.map((location) => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -181,6 +182,9 @@ export default function EmergencyReserveList() {
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Local
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.date}
                         </TableHead>
                         <TableHead className="h-10 px-4 align-middle font-medium text-muted-foreground text-xs uppercase text-right">
@@ -202,6 +206,9 @@ export default function EmergencyReserveList() {
                         >
                           <TableCell className="font-medium py-2 px-4 align-middle">
                             {entry.description || 'Contribuição'}
+                          </TableCell>
+                          <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
+                            {entry.location}
                           </TableCell>
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
                             {format(entry.date.toDate(), 'dd/MM/yyyy')}

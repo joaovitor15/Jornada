@@ -66,4 +66,5 @@ export type EmergencyReserveEntry = {
   amount: number;
   date: Timestamp;
   description?: string;
+  location: string;
 };
