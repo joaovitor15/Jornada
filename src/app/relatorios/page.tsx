@@ -1609,7 +1609,7 @@ export default function ReportsPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                  <div className="flex items-center gap-2">
                   <CardTitle className="text-lg">{text.reports.grossProfit}</CardTitle>
@@ -1649,7 +1649,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                {isLoading ? (
-                  <div className="flex justify-center items-center">
+                  <div className="flex justify-center items-center h-24">
                       <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                ) : (
