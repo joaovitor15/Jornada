@@ -300,37 +300,53 @@ export default function ReservaDeEmergenciaPage() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Protegido
-                </CardTitle>
-                <PiggyBank className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Total Protegido</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totalProtegido)}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50"
+                  >
+                    <PiggyBank className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(totalProtegido)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Reserva</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Reserva</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totalReserva)}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50"
+                  >
+                    <Shield className="h-6 w-6 text-green-500" />
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(totalReserva)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Programado</CardTitle>
-                <CalendarCheck2 className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Programado</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(totalProgramado)}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50"
+                  >
+                    <CalendarCheck2 className="h-6 w-6 text-purple-500" />
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(totalProgramado)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
