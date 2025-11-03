@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, PiggyBank, Shield } from 'lucide-react';
+import { Loader2, PiggyBank, Shield, Dice } from 'lucide-react';
 import { text } from '@/lib/strings';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 import { useAuth } from '@/hooks/use-auth';
@@ -16,6 +17,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { reserveCategories } from '@/lib/categories';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
@@ -23,6 +34,8 @@ export default function ReservaDeEmergenciaPage() {
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
   const [totalReserve, setTotalReserve] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showDiceResult, setShowDiceResult] = useState(false);
+  const [diceResult, setDiceResult] = useState('');
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -49,6 +62,15 @@ export default function ReservaDeEmergenciaPage() {
 
     return () => unsubscribe();
   }, [user, activeProfile]);
+  
+  const handleDiceRoll = () => {
+    const allSubcategories = Object.values(reserveCategories).flat();
+    const randomIndex = Math.floor(Math.random() * allSubcategories.length);
+    const result = allSubcategories[randomIndex];
+    setDiceResult(result);
+    setShowDiceResult(true);
+  };
+
 
   return (
     <>
@@ -56,10 +78,18 @@ export default function ReservaDeEmergenciaPage() {
         <h1 className="text-2xl font-bold">
           {text.sidebar.emergencyReserve}
         </h1>
+        
         <Button
-          onClick={() => setIsReserveFormOpen(true)}
-          size="sm"
+          variant="outline"
+          size="icon"
+          className="rounded-full"
+          onClick={handleDiceRoll}
         >
+          <Dice className="h-5 w-5" />
+          <span className="sr-only">Sortear Subcategoria</span>
+        </Button>
+
+        <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
           <Shield className="mr-2 h-4 w-4" />
           Nova Movimentação
         </Button>
@@ -70,14 +100,12 @@ export default function ReservaDeEmergenciaPage() {
           <div className="flex justify-center items-center py-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : totalReserve > 0 && (
+        ) : totalReserve > 0 ? (
           <Card>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">
-                    Total na Reserva
-                  </CardTitle>
+                  <CardTitle className="text-lg">Total na Reserva</CardTitle>
                 </div>
               </div>
             </CardHeader>
@@ -95,13 +123,32 @@ export default function ReservaDeEmergenciaPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
 
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
       />
+      
+      <AlertDialog open={showDiceResult} onOpenChange={setShowDiceResult}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Dice className="h-6 w-6" />
+              Resultado do Sorteio
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-lg font-bold text-primary py-4">
+              {diceResult}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowDiceResult(false)}>
+              Fechar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
