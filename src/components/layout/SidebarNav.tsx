@@ -7,7 +7,6 @@ import {
   BarChart,
   CreditCard,
   ClipboardList,
-  Shield,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
