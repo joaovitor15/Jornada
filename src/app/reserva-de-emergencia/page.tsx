@@ -72,6 +72,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import ReserveAnalysisTabs from '@/components/reserva-de-emergencia/reserve-analysis-tabs';
 
 const diceFormSchema = z.object({
   amount: z.coerce
@@ -383,6 +384,9 @@ export default function ReservaDeEmergenciaPage() {
               ))}
             </div>
           )}
+
+          <ReserveAnalysisTabs />
+
         </div>
       )}
 
