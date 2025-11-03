@@ -73,7 +73,7 @@ export default function ReservaDeEmergenciaPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : totalReserve > 0 ? (
-          <div className="mb-8">
+          <div className="mb-8 max-w-md mx-auto">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
