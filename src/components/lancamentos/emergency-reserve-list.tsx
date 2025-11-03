@@ -182,6 +182,12 @@ export default function EmergencyReserveList() {
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Categoria
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Subcategoria
+                        </TableHead>
+                        <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           Local
                         </TableHead>
                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
@@ -206,6 +212,12 @@ export default function EmergencyReserveList() {
                         >
                           <TableCell className="font-medium py-2 px-4 align-middle">
                             {entry.description || 'Movimentação'}
+                          </TableCell>
+                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
+                            {entry.mainCategory}
+                          </TableCell>
+                          <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
+                            {entry.subcategory}
                           </TableCell>
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
                             {entry.location}

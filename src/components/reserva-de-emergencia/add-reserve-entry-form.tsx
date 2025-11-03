@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,7 +47,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { emergencyReserveLocations } from '@/lib/categories';
+import {
+  emergencyReserveLocations,
+  reserveCategories,
+} from '@/lib/categories';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
@@ -60,6 +63,8 @@ const formSchema = z.object({
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   location: z.string().min(1, { message: 'Selecione um local.' }),
+  mainCategory: z.string().min(1, { message: 'Selecione uma categoria.' }),
+  subcategory: z.string().min(1, { message: 'Selecione uma subcategoria.' }),
   type: z.enum(['add', 'withdraw']).default('add'),
 });
 
@@ -86,6 +91,7 @@ export default function AddReserveEntryForm({
 
   const { isSubmitting, watch, setValue, control, reset } = form;
   const transactionType = watch('type');
+  const selectedMainCategory = watch('mainCategory');
 
   useEffect(() => {
     if (isOpen) {
@@ -95,6 +101,8 @@ export default function AddReserveEntryForm({
         amount: undefined,
         date: initialDate,
         location: '',
+        mainCategory: '',
+        subcategory: '',
         type: 'add',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
@@ -106,9 +114,12 @@ export default function AddReserveEntryForm({
       if (name === 'date' && value.date) {
         setDateInput(format(value.date, 'dd/MM/yyyy'));
       }
+      if (name === 'mainCategory') {
+        setValue('subcategory', '');
+      }
     });
     return () => subscription.unsubscribe();
-  }, [watch]);
+  }, [watch, setValue]);
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -139,6 +150,8 @@ export default function AddReserveEntryForm({
         amount: finalAmount,
         date: Timestamp.fromDate(values.date),
         location: values.location,
+        mainCategory: values.mainCategory,
+        subcategory: values.subcategory,
       });
 
       toast({
@@ -163,10 +176,17 @@ export default function AddReserveEntryForm({
     }
   };
 
+  const subcategories = useMemo(() => {
+    if (selectedMainCategory && reserveCategories[selectedMainCategory]) {
+      return reserveCategories[selectedMainCategory];
+    }
+    return [];
+  }, [selectedMainCategory]);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="sm:max-w-[425px]"
+        className="sm:max-w-md"
         onInteractOutside={(e) => {
           if (isSubmitting) {
             e.preventDefault();
@@ -232,6 +252,66 @@ export default function AddReserveEntryForm({
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="mainCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.keys(reserveCategories).map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="subcategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subcategoria</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isSubmitting || subcategories.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subcategories.map((subcategory) => (
+                          <SelectItem key={subcategory} value={subcategory}>
+                            {subcategory}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
             <FormField
               control={form.control}
               name="location"
@@ -260,6 +340,7 @@ export default function AddReserveEntryForm({
                 </FormItem>
               )}
             />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

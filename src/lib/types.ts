@@ -67,4 +67,6 @@ export type EmergencyReserveEntry = {
   date: Timestamp;
   description?: string;
   location: string;
+  mainCategory: string;
+  subcategory: string;
 };
