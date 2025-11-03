@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   BarChart,
   CreditCard,
-  ShieldCheck,
   ClipboardList,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
@@ -37,11 +36,6 @@ export default function SidebarNav() {
       icon: CreditCard,
     },
     {
-      href: '/reserva-de-emergencia',
-      label: text.sidebar.emergencyReserve,
-      icon: ShieldCheck,
-    },
-    {
       href: '/lancamentos',
       label: text.sidebar.releases,
       icon: ClipboardList,
@@ -58,7 +52,7 @@ export default function SidebarNav() {
               <TooltipTrigger asChild>
                 <Link href={link.href}>
                   <Button
-                    variant={pathname === link.href ? 'secondary' : 'ghost'}
+                    variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
                     size="icon"
                     className="rounded-full"
                     aria-label={link.label}

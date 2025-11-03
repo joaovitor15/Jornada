@@ -8,6 +8,12 @@ import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
 import { text } from '@/lib/strings';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 export default function LancamentosPage() {
   const { setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
@@ -40,6 +46,18 @@ export default function LancamentosPage() {
         <ExpensesList />
         <IncomeList />
         <BillPaymentsList />
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1" className="border-b-0">
+            <AccordionTrigger className="bg-card border rounded-lg shadow-sm px-6 py-4 w-full text-lg font-semibold flex justify-between items-center hover:no-underline">
+              {text.sidebar.emergencyReserve}
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="text-center text-muted-foreground py-10">
+                {text.common.comingSoon}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   );
