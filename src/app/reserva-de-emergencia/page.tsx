@@ -53,54 +53,52 @@ export default function ReservaDeEmergenciaPage() {
 
   return (
     <>
-      <div className="flex flex-col">
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {text.sidebar.emergencyReserve}
-            </h1>
-            <Button
-              onClick={() => setIsReserveFormOpen(true)}
-              size="sm"
-              className="mt-4"
-            >
-              <Shield className="mr-2 h-4 w-4" />
-              Nova Movimentação
-            </Button>
-          </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {text.sidebar.emergencyReserve}
+          </h1>
+          <Button
+            onClick={() => setIsReserveFormOpen(true)}
+            size="sm"
+            className="mt-4"
+          >
+            <Shield className="mr-2 h-4 w-4" />
+            Nova Movimentação
+          </Button>
+        </div>
 
-          <div className="w-80">
-            {loading ? (
-              <div className="flex justify-center items-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : totalReserve > 0 && (
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg">
-                        Total na Reserva
-                      </CardTitle>
-                    </div>
+        <div className="w-80">
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : totalReserve > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">
+                      Total na Reserva
+                    </CardTitle>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                      <PiggyBank className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(totalReserve)}
-                    </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                    <PiggyBank className="h-6 w-6 text-blue-500" />
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  <span className="text-2xl font-bold">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    }).format(totalReserve)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
       <AddReserveEntryForm
