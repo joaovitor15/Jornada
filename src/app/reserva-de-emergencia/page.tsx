@@ -36,6 +36,11 @@ export default function ReservaDeEmergenciaPage() {
   const [loading, setLoading] = useState(true);
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [diceResult, setDiceResult] = useState('');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -79,15 +84,17 @@ export default function ReservaDeEmergenciaPage() {
           {text.sidebar.emergencyReserve}
         </h1>
         
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={handleDiceRoll}
-        >
-          <Dice className="h-5 w-5" />
-          <span className="sr-only">Sortear Subcategoria</span>
-        </Button>
+        {isClient && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={handleDiceRoll}
+          >
+            <Dice className="h-5 w-5" />
+            <span className="sr-only">Sortear Subcategoria</span>
+          </Button>
+        )}
 
         <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
           <Shield className="mr-2 h-4 w-4" />
