@@ -32,7 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { reserveCategories } from '@/lib/categories';
+import { reserveCategories, emergencyReserveLocations } from '@/lib/categories';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -65,6 +65,13 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const diceFormSchema = z.object({
   amount: z.coerce
@@ -73,6 +80,7 @@ const diceFormSchema = z.object({
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
+  location: z.string().min(1, 'Por favor, selecione um local.'),
 });
 
 interface SubcategoryTotal {
@@ -209,6 +217,7 @@ export default function ReservaDeEmergenciaPage() {
     resetDiceForm({
       amount: undefined,
       date: new Date(),
+      location: '',
     });
     setShowDiceResult(true);
   };
@@ -230,7 +239,7 @@ export default function ReservaDeEmergenciaPage() {
         description: `Contribuição para ${diceResult.sub}`,
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
-        location: '', // User will have to fill this in later if needed
+        location: values.location,
         mainCategory: diceResult.main,
         subcategory: diceResult.sub,
       });
@@ -305,9 +314,7 @@ export default function ReservaDeEmergenciaPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50"
-                  >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
                     <PiggyBank className="h-6 w-6 text-blue-500" />
                   </div>
                   <span className="text-2xl font-bold">
@@ -322,9 +329,7 @@ export default function ReservaDeEmergenciaPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50"
-                  >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
                     <Shield className="h-6 w-6 text-green-500" />
                   </div>
                   <span className="text-2xl font-bold">
@@ -339,9 +344,7 @@ export default function ReservaDeEmergenciaPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50"
-                  >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
                     <CalendarCheck2 className="h-6 w-6 text-purple-500" />
                   </div>
                   <span className="text-2xl font-bold">
@@ -419,6 +422,34 @@ export default function ReservaDeEmergenciaPage() {
                           }}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o local" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {emergencyReserveLocations.map((location) => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
