@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/tooltip';
 import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown, Wallet } from 'lucide-react';
 import { useTransactions } from '@/hooks/use-transactions';
-import type { Income, Expense, BillPayment } from '@/lib/types';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 
 
@@ -74,48 +73,6 @@ export default function ReportsPage() {
   const [finalBalanceViewMode, setFinalBalanceViewMode] = useState('mensal');
 
 
-  // States for calculated values
-  const [netRevenue, setNetRevenue] = useState(0);
-  const [loadingNetRevenue, setLoadingNetRevenue] = useState(true);
-  
-  const [grossProfit, setGrossProfit] = useState(0);
-  const [grossMargin, setGrossMargin] = useState(0);
-  const [loadingGrossProfit, setLoadingGrossProfit] = useState(true);
-
-  const [netProfit, setNetProfit] = useState(0);
-  const [netMargin, setNetMargin] = useState(0);
-  const [loadingNetProfit, setLoadingNetProfit] = useState(true);
-  
-  const [cmv, setCmv] = useState(0);
-  const [costMargin, setCostMargin] = useState(0);
-  const [loadingCmv, setLoadingCmv] = useState(true);
-  
-  const [personnelCost, setPersonnelCost] = useState(0);
-  const [personnelCostMargin, setPersonnelCostMargin] = useState(0);
-  const [loadingPersonnelCost, setLoadingPersonnelCost] = useState(true);
-  
-  const [impostos, setImpostos] = useState(0);
-  const [impostosMargin, setImpostosMargin] = useState(0);
-  const [loadingImpostos, setLoadingImpostos] = useState(true);
-  
-  const [sistema, setSistema] = useState(0);
-  const [sistemaMargin, setSistemaMargin] = useState(0);
-  const [loadingSistema, setLoadingSistema] = useState(true);
-  
-  const [fixedCosts, setFixedCosts] = useState(0);
-  const [fixedCostsMargin, setFixedCostsMargin] = useState(0);
-  const [loadingFixedCosts, setLoadingFixedCosts] = useState(true);
-
-  const [personalTotalIncome, setPersonalTotalIncome] = useState(0);
-  const [loadingPersonalTotalIncome, setLoadingPersonalTotalIncome] = useState(true);
-  const [investments, setInvestments] = useState(0);
-  const [loadingInvestments, setLoadingInvestments] = useState(true);
-  const [outgoings, setOutgoings] = useState(0);
-  const [loadingOutgoings, setLoadingOutgoings] = useState(true);
-  const [finalBalance, setFinalBalance] = useState(0);
-  const [loadingFinalBalance, setLoadingFinalBalance] = useState(true);
-
-
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
@@ -127,459 +84,350 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-
-  // Effect for Personal Profile Total Income
-  useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
-    setLoadingPersonalTotalIncome(true);
-  
+  // --- Personal Profile Calculations ---
+  const personalTotalIncome = useMemo(() => {
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-  
     const startDate = personalTotalIncomeViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = personalTotalIncomeViewMode === 'mensal' ? endOfMonth : endOfYear;
-  
-    const filteredIncomes = allIncomes.filter(income => {
-      if (!income.date) return false;
-      const incomeDate = income.date.toDate();
-      return incomeDate >= startDate && incomeDate <= endDate;
-    });
-  
-    const calculatedTotalIncome = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
-    
-    setPersonalTotalIncome(calculatedTotalIncome);
-    setLoadingPersonalTotalIncome(false);
-  
-  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode, dataLoading]);
 
-  // Effect for Personal Profile Investments
-  useEffect(() => {
-    if (activeProfile !== 'Personal' || dataLoading) return;
-    setLoadingInvestments(true);
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    const startDate = investmentsViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = investmentsViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const filteredExpenses = allExpenses.filter(expense => {
-      if (!expense.date) return false;
-      const expenseDate = expense.date.toDate();
-      return expenseDate >= startDate && expenseDate <= endDate;
-    });
-
-    const calculatedInvestments = filteredExpenses
-      .filter(expense => expense.mainCategory === 'Bolsa de Valores')
-      .reduce((acc, expense) => acc + expense.amount, 0);
-      
-    setInvestments(calculatedInvestments);
-    setLoadingInvestments(false);
-
-  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode, dataLoading]);
-
-  // Effect for Personal Profile Outgoings
-  useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
-    setLoadingOutgoings(true);
-  
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-  
-    const startDate = outgoingsViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = outgoingsViewMode === 'mensal' ? endOfMonth : endOfYear;
-  
-    const filteredExpenses = allExpenses.filter(expense => {
-      if (!expense.date) return false;
-      const expenseDate = expense.date.toDate();
-      return (
-        expenseDate >= startDate &&
-        expenseDate <= endDate &&
-        expense.mainCategory !== 'Bolsa de Valores' &&
-        !expense.paymentMethod.startsWith('Cartão:')
-      );
-    });
-  
-    const filteredBillPayments = allBillPayments.filter(payment => {
-      if (!payment.date) return false;
-      const paymentDate = payment.date.toDate();
-      return paymentDate >= startDate && paymentDate <= endDate;
-    });
-  
-    const nonCardExpensesTotal = filteredExpenses.reduce((acc, expense) => acc + expense.amount, 0);
-    const billPaymentsTotal = filteredBillPayments.reduce((acc, payment) => acc + payment.amount, 0);
-  
-    const calculatedOutgoings = nonCardExpensesTotal + billPaymentsTotal;
-  
-    setOutgoings(calculatedOutgoings);
-    setLoadingOutgoings(false);
-  
-  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode, dataLoading]);
-
-  // Effect for Personal Profile Final Balance
-  useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
-    setLoadingFinalBalance(true);
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-  
-    const startDate = finalBalanceViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = finalBalanceViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    // Recalculate income
-    const filteredIncomes = allIncomes.filter(income => {
+    return allIncomes
+      .filter(income => {
         if (!income.date) return false;
         const incomeDate = income.date.toDate();
         return incomeDate >= startDate && incomeDate <= endDate;
-    });
-    const incomeForPeriod = filteredIncomes.reduce((acc, income) => acc + income.amount, 0);
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
+  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode]);
 
-    let investmentsForPeriod = 0;
-    if (activeProfile === 'Personal') {
-        const filteredExpensesForInvestments = allExpenses.filter(expense => {
-          if (!expense.date) return false;
-          const expenseDate = expense.date.toDate();
-          return expenseDate >= startDate && expenseDate <= endDate;
-        });
-        investmentsForPeriod = filteredExpensesForInvestments
-          .filter(expense => expense.mainCategory === 'Bolsa de Valores')
-          .reduce((acc, expense) => acc + expense.amount, 0);
-    }
-      
-    // Recalculate outgoings
-    const filteredExpensesForOutgoings = allExpenses.filter(expense => {
-      if (!expense.date) return false;
-      const expenseDate = expense.date.toDate();
-      const isInvestment = activeProfile === 'Personal' && expense.mainCategory === 'Bolsa de Valores';
-      return (
-        expenseDate >= startDate &&
-        expenseDate <= endDate &&
-        !isInvestment &&
-        !expense.paymentMethod.startsWith('Cartão:')
-      );
-    });
-    const filteredBillPayments = allBillPayments.filter(payment => {
-      if (!payment.date) return false;
-      const paymentDate = payment.date.toDate();
-      return paymentDate >= startDate && paymentDate <= endDate;
-    });
-    const outgoingsForPeriod = filteredExpensesForOutgoings.reduce((acc, expense) => acc + expense.amount, 0) + filteredBillPayments.reduce((acc, payment) => acc + payment.amount, 0);
-
-    const calculatedFinalBalance = incomeForPeriod - outgoingsForPeriod - investmentsForPeriod;
-
-    setFinalBalance(calculatedFinalBalance);
-    setLoadingFinalBalance(false);
-
-  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode, dataLoading]);
-
-
-
-  // Effect for Net Revenue
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingNetRevenue(true);
+  const investments = useMemo(() => {
+    if (activeProfile !== 'Personal') return 0;
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = investmentsViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = investmentsViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const startDate = netRevenueViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
+    return allExpenses
+      .filter(expense => {
+        if (!expense.date) return false;
+        const expenseDate = expense.date.toDate();
+        return expenseDate >= startDate && expenseDate <= endDate && expense.mainCategory === 'Bolsa de Valores';
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0);
+  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode]);
+
+  const outgoings = useMemo(() => {
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = outgoingsViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = outgoingsViewMode === 'mensal' ? endOfMonth : endOfYear;
+
+    const nonCardExpensesTotal = allExpenses
+      .filter(expense => {
+        if (!expense.date) return false;
+        const expenseDate = expense.date.toDate();
+        return (
+          expenseDate >= startDate &&
+          expenseDate <= endDate &&
+          expense.mainCategory !== 'Bolsa de Valores' &&
+          !expense.paymentMethod.startsWith('Cartão:')
+        );
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0);
+      
+    const billPaymentsTotal = allBillPayments
+      .filter(payment => {
+        if (!payment.date) return false;
+        const paymentDate = payment.date.toDate();
+        return paymentDate >= startDate && paymentDate <= endDate;
+      })
+      .reduce((acc, payment) => acc + payment.amount, 0);
+
+    return nonCardExpensesTotal + billPaymentsTotal;
+  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
+
+  const finalBalance = useMemo(() => {
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
     
-    const filteredIncomes = allIncomes.filter(income => {
-      if (!income.date) return false;
-      const incomeDate = income.date.toDate();
-      return incomeDate >= startDate && incomeDate <= endDate;
-    });
+    // We need to recalculate income/outgoings based on the finalBalance view mode, not their own modes.
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = finalBalanceViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = finalBalanceViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const calculatedNetRevenue = filteredIncomes
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+    const incomeForPeriod = allIncomes
+      .filter(income => {
+        if (!income.date) return false;
+        const incomeDate = income.date.toDate();
+        return incomeDate >= startDate && incomeDate <= endDate;
+      })
       .reduce((acc, income) => acc + income.amount, 0);
 
-    setNetRevenue(calculatedNetRevenue);
-    setLoadingNetRevenue(false);
+    const outgoingsForPeriod = allExpenses
+      .filter(expense => {
+        if (!expense.date) return false;
+        const expenseDate = expense.date.toDate();
+        return (
+          expenseDate >= startDate &&
+          expenseDate <= endDate &&
+          expense.mainCategory !== 'Bolsa de Valores' &&
+          !expense.paymentMethod.startsWith('Cartão:')
+        );
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0) +
+      allBillPayments
+        .filter(payment => {
+          if (!payment.date) return false;
+          const paymentDate = payment.date.toDate();
+          return paymentDate >= startDate && paymentDate <= endDate;
+        })
+        .reduce((acc, payment) => acc + payment.amount, 0);
 
-  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, dataLoading]);
+    const investmentsForPeriod = activeProfile === 'Personal' ? allExpenses
+      .filter(expense => {
+        if (!expense.date) return false;
+        const expenseDate = expense.date.toDate();
+        return expenseDate >= startDate && expenseDate <= endDate && expense.mainCategory === 'Bolsa de Valores';
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0) : 0;
+      
+    return incomeForPeriod - outgoingsForPeriod - investmentsForPeriod;
+  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode]);
 
 
-  // Effect for Gross Profit and Gross Margin
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingGrossProfit(true);
+  // --- Business Profile Calculations ---
+  const netRevenue = useMemo(() => {
+    if (activeProfile !== 'Business') return 0;
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = netRevenueViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
 
+    return allIncomes
+      .filter(income => {
+        if (!income.date) return false;
+        const incomeDate = income.date.toDate();
+        return incomeDate >= startDate && incomeDate <= endDate && income.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
+  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile]);
+
+  const { grossProfit, grossMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { grossProfit: 0, grossMargin: 0 };
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
     const startDate = grossProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const filteredIncomes = allIncomes.filter(i => {
-      if (!i.date) return false;
-      const d = i.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    
-    const filteredExpenses = allExpenses.filter(e => {
-       if (!e.date) return false;
-       const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-
-    const currentNetRevenue = filteredIncomes
-        .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-        .reduce((acc, income) => acc + income.amount, 0);
-    
-    const supplierCosts = filteredExpenses
-        .filter(expense => expense.mainCategory === 'Fornecedores')
-        .reduce((acc, expense) => acc + expense.amount, 0);
+    const currentNetRevenue = allIncomes
+      .filter(i => {
+        if (!i.date) return false;
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
+      
+    const supplierCosts = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory === 'Fornecedores';
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0);
 
     const calculatedGrossProfit = currentNetRevenue - supplierCosts;
     const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
-    
-    setGrossProfit(calculatedGrossProfit);
-    setGrossMargin(calculatedGrossMargin);
-    setLoadingGrossProfit(false);
+    return { grossProfit: calculatedGrossProfit, grossMargin: calculatedGrossMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile]);
 
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, dataLoading]);
-
-
-  // Effect for Net Profit and Net Margin
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingNetProfit(true);
+  const { netProfit, netMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { netProfit: 0, netMargin: 0 };
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-  
     const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
     
-    const filteredIncomes = allIncomes.filter(i => {
-      if (!i.date) return false;
-      const d = i.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    const filteredExpenses = allExpenses.filter(e => {
-       if (!e.date) return false;
-       const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-
-    const currentNetRevenue = filteredIncomes
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-      .reduce((acc, income) => acc + income.amount, 0);
-
-    const totalExpenses = filteredExpenses.reduce((acc, expense) => acc + expense.amount, 0);
-  
-    const calculatedNetProfit = currentNetRevenue - totalExpenses;
-    const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
-  
-    setNetProfit(calculatedNetProfit);
-    setNetMargin(calculatedNetMargin);
-    setLoadingNetProfit(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile, dataLoading]);
-
-  // Effect for CMV and Cost Margin
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingCmv(true);
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    const startDate = cmvViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const filteredIncomes = allIncomes.filter(i => {
+    const currentNetRevenue = allIncomes
+      .filter(i => {
         if (!i.date) return false;
         const d = i.date.toDate();
-        return d >= startDate && d <= endDate;
-    });
-    const filteredExpenses = allExpenses.filter(e => {
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
+
+    const totalExpenses = allExpenses
+      .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
         return d >= startDate && d <= endDate;
-    });
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0);
+      
+    const calculatedNetProfit = currentNetRevenue - totalExpenses;
+    const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
+    return { netProfit: calculatedNetProfit, netMargin: calculatedNetMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile]);
 
-    const currentNetRevenue = filteredIncomes
-        .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-        .reduce((acc, income) => acc + income.amount, 0);
-    
-    const calculatedCmv = filteredExpenses
-        .filter(expense => expense.mainCategory === 'Fornecedores')
-        .reduce((acc, expense) => acc + expense.amount, 0);
-    
-    const calculatedCostMargin = currentNetRevenue > 0 ? (calculatedCmv / currentNetRevenue) * 100 : 0;
-
-    setCmv(calculatedCmv);
-    setCostMargin(calculatedCostMargin);
-    setLoadingCmv(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile, dataLoading]);
-  
-    // Effect for Personnel Cost
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingPersonnelCost(true);
+  const { cmv, costMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { cmv: 0, costMargin: 0 };
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = cmvViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
-    
-    const filteredIncomes = allIncomes.filter(i => {
+    const currentNetRevenue = allIncomes
+      .filter(i => {
         if (!i.date) return false;
         const d = i.date.toDate();
-        return d >= startDate && d <= endDate;
-    });
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
 
-    const filteredExpenses = allExpenses.filter(e => {
-      if (!e.date) return false;
-      const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    
-    const currentNetRevenue = filteredIncomes
-        .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-        .reduce((acc, income) => acc + income.amount, 0);
+    const calculatedCmv = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory === 'Fornecedores';
+      })
+      .reduce((acc, expense) => acc + expense.amount, 0);
+      
+    const calculatedCostMargin = currentNetRevenue > 0 ? (calculatedCmv / currentNetRevenue) * 100 : 0;
+    return { cmv: calculatedCmv, costMargin: calculatedCostMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile]);
+  
+  const { personnelCost, personnelCostMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { personnelCost: 0, personnelCostMargin: 0 };
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const startOfYear = new Date(selectedYear, 0, 1);
+    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
+    const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
+    const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const calculatedPersonnelCost = filteredExpenses
-      .filter(expense => expense.mainCategory === 'Funcionários')
+    const currentNetRevenue = allIncomes
+      .filter(i => {
+        if (!i.date) return false;
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
+      .reduce((acc, income) => acc + income.amount, 0);
+      
+    const calculatedPersonnelCost = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory === 'Funcionários';
+      })
       .reduce((acc, expense) => acc + expense.amount, 0);
 
     const calculatedPersonnelCostMargin = currentNetRevenue > 0 ? (calculatedPersonnelCost / currentNetRevenue) * 100 : 0;
+    return { personnelCost: calculatedPersonnelCost, personnelCostMargin: calculatedPersonnelCostMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile]);
 
-    setPersonnelCost(calculatedPersonnelCost);
-    setPersonnelCostMargin(calculatedPersonnelCostMargin);
-    setLoadingPersonnelCost(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile, dataLoading]);
-
-  // Effect for Impostos
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingImpostos(true);
+  const { impostos, impostosMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { impostos: 0, impostosMargin: 0 };
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
     const startDate = impostosViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = impostosViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const filteredIncomes = allIncomes.filter(i => {
-      if (!i.date) return false;
-      const d = i.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    const filteredExpenses = allExpenses.filter(e => {
-      if (!e.date) return false;
-      const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-
-    const currentNetRevenue = filteredIncomes
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+    const currentNetRevenue = allIncomes
+      .filter(i => {
+        if (!i.date) return false;
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
       .reduce((acc, income) => acc + income.amount, 0);
 
-    const calculatedImpostos = filteredExpenses
-      .filter(expense => expense.mainCategory === 'Impostos')
+    const calculatedImpostos = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory === 'Impostos';
+      })
       .reduce((acc, expense) => acc + expense.amount, 0);
-    
+      
     const calculatedImpostosMargin = currentNetRevenue > 0 ? (calculatedImpostos / currentNetRevenue) * 100 : 0;
+    return { impostos: calculatedImpostos, impostosMargin: calculatedImpostosMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile]);
 
-    setImpostos(calculatedImpostos);
-    setImpostosMargin(calculatedImpostosMargin);
-    setLoadingImpostos(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile, dataLoading]);
-
-  // Effect for Sistema
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingSistema(true);
+  const { sistema, sistemaMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { sistema: 0, sistemaMargin: 0 };
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-
     const startDate = sistemaViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const filteredIncomes = allIncomes.filter(i => {
-      if (!i.date) return false;
-      const d = i.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    const filteredExpenses = allExpenses.filter(e => {
-      if (!e.date) return false;
-      const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-
-    const currentNetRevenue = filteredIncomes
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+    const currentNetRevenue = allIncomes
+      .filter(i => {
+        if (!i.date) return false;
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
       .reduce((acc, income) => acc + income.amount, 0);
 
-    const calculatedSistema = filteredExpenses
-      .filter(expense => expense.mainCategory === 'Sistema')
+    const calculatedSistema = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory === 'Sistema';
+      })
       .reduce((acc, expense) => acc + expense.amount, 0);
-    
+      
     const calculatedSistemaMargin = currentNetRevenue > 0 ? (calculatedSistema / currentNetRevenue) * 100 : 0;
+    return { sistema: calculatedSistema, sistemaMargin: calculatedSistemaMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile]);
 
-    setSistema(calculatedSistema);
-    setSistemaMargin(calculatedSistemaMargin);
-    setLoadingSistema(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile, dataLoading]);
-
-  // Effect for Fixed Costs
-  useEffect(() => {
-    if (activeProfile !== 'Business' || dataLoading) return;
-    setLoadingFixedCosts(true);
+  const { fixedCosts, fixedCostsMargin } = useMemo(() => {
+    if (activeProfile !== 'Business') return { fixedCosts: 0, fixedCostsMargin: 0 };
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-  
     const startDate = fixedCostsViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = fixedCostsViewMode === 'mensal' ? endOfMonth : endOfYear;
-  
-    const filteredIncomes = allIncomes.filter(i => {
-      if (!i.date) return false;
-      const d = i.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-    const filteredExpenses = allExpenses.filter(e => {
-       if (!e.date) return false;
-       const d = e.date.toDate();
-      return d >= startDate && d <= endDate;
-    });
-  
-    const currentNetRevenue = filteredIncomes
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+
+    const currentNetRevenue = allIncomes
+      .filter(i => {
+        if (!i.date) return false;
+        const d = i.date.toDate();
+        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+      })
       .reduce((acc, income) => acc + income.amount, 0);
-  
-    const calculatedFixedCosts = filteredExpenses
-      .filter(expense => expense.mainCategory !== 'Fornecedores')
+      
+    const calculatedFixedCosts = allExpenses
+      .filter(e => {
+        if (!e.date) return false;
+        const d = e.date.toDate();
+        return d >= startDate && d <= endDate && e.mainCategory !== 'Fornecedores';
+      })
       .reduce((acc, expense) => acc + expense.amount, 0);
-  
+      
     const calculatedFixedCostsMargin = currentNetRevenue > 0 ? (calculatedFixedCosts / currentNetRevenue) * 100 : 0;
-  
-    setFixedCosts(calculatedFixedCosts);
-    setFixedCostsMargin(calculatedFixedCostsMargin);
-    setLoadingFixedCosts(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile, dataLoading]);
+    return { fixedCosts: calculatedFixedCosts, fixedCostsMargin: calculatedFixedCostsMargin };
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile]);
 
 
   const periodLabel = useMemo(() => {
@@ -587,7 +435,7 @@ export default function ReportsPage() {
   }, [selectedMonth, selectedYear]);
 
   if (activeProfile === 'Personal') {
-    const isLoading = dataLoading || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings || loadingFinalBalance;
+    const isLoading = dataLoading;
     const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
     const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
     const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
@@ -848,7 +696,7 @@ export default function ReportsPage() {
   }
   
   if (activeProfile === 'Home') {
-    const isLoading = dataLoading || loadingPersonalTotalIncome || loadingOutgoings || loadingFinalBalance;
+    const isLoading = dataLoading;
     const homeIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
     const homeOutgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
     const homeFinalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
@@ -1062,7 +910,7 @@ export default function ReportsPage() {
     );
   }
 
-  const isLoading = dataLoading || loadingNetRevenue || loadingGrossProfit || loadingNetProfit || loadingCmv || loadingPersonnelCost || loadingImpostos || loadingSistema || loadingFixedCosts;
+  const isLoading = dataLoading;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
@@ -1805,3 +1653,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
