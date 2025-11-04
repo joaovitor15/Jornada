@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,7 +21,6 @@ import {
   Trash2,
   Loader2,
   FolderOpen,
-  Package,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -42,35 +40,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
-function PlanCard({ plan, onEdit, onDelete }: { plan: Plan, onEdit: (plan: Plan) => void, onDelete: (plan: Plan) => void }) {
-  const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
-
+function PlanCard({
+  plan,
+  onEdit,
+  onDelete,
+}: {
+  plan: Plan;
+  onEdit: (plan: Plan) => void;
+  onDelete: (plan: Plan) => void;
+}) {
   const calculateTotalAmount = (plan: Plan) => {
-    const subItemsTotal = plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
+    const subItemsTotal =
+      plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
     return plan.amount + subItemsTotal;
   };
 
-  return (
-    <div
-      key={plan.id}
-      className="border p-4 rounded-lg shadow-sm relative group flex flex-col"
-    >
+  const hasSubItems = plan.subItems && plan.subItems.length > 0;
+
+  const cardContent = (
+    <div className="border p-4 rounded-lg shadow-sm relative group flex flex-col h-full">
       <div className="flex-grow">
         <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-8 w-8 p-0 rounded-full"
-              >
+              <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -104,29 +106,6 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: Plan, onEdit: (plan: Plan)
           <Badge variant="outline">{plan.subcategory}</Badge>
         </div>
       </div>
-      
-      {plan.subItems && plan.subItems.length > 0 && (
-        <Collapsible open={isCollapsibleOpen} onOpenChange={setIsCollapsibleOpen} className="mt-3">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-start px-0 text-xs text-muted-foreground">
-               <Package className="mr-2 h-4 w-4" />
-               Ver itens do combo ({plan.subItems.length})
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc list-inside pl-2">
-              <li>
-                Custo Base: {plan.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </li>
-              {plan.subItems.map((item, index) => (
-                <li key={index}>
-                  {item.name}: {item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                </li>
-              ))}
-            </ul>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
 
       <div className="flex justify-between items-end mt-4 pt-2 border-t">
         <p className="text-sm text-muted-foreground">{plan.type}</p>
@@ -136,8 +115,37 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: Plan, onEdit: (plan: Plan)
       </div>
     </div>
   );
-}
 
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+        {hasSubItems && (
+          <TooltipContent>
+            <ul className="space-y-1 text-sm">
+              <li className="font-semibold">
+                Custo Base:{' '}
+                {plan.amount.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
+              </li>
+              {plan.subItems?.map((item, index) => (
+                <li key={index}>
+                  {item.name}:{' '}
+                  {item.price.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </li>
+              ))}
+            </ul>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function PlansList() {
   const { user } = useAuth();
@@ -233,7 +241,7 @@ export default function PlansList() {
       ) : plans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {plans.map((plan) => (
-            <PlanCard 
+            <PlanCard
               key={plan.id}
               plan={plan}
               onEdit={handleEditClick}
