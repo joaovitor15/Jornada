@@ -22,7 +22,6 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  FolderOpen,
   AlertCircle,
   DollarSign,
 } from 'lucide-react';
@@ -70,6 +69,11 @@ function PlanCard({
   };
   
   const getVencimentoText = (plan: Plan) => {
+    // Defensive check to prevent crash if dueDate is missing or not a timestamp
+    if (!plan.dueDate || typeof plan.dueDate.toDate !== 'function') {
+      return 'Vencimento: Data inválida';
+    }
+
     const dueDate = plan.dueDate.toDate();
     if (plan.type === 'Anual') {
        return `Vence em: ${format(dueDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
@@ -84,7 +88,7 @@ function PlanCard({
 
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full">
-      <div className="absolute top-1 right-1 flex items-center gap-1">
+       <div className="absolute top-1 right-1 flex items-center gap-1">
         {hasSubItems && (
           <Popover>
             <PopoverTrigger asChild>
@@ -165,12 +169,7 @@ function PlanCard({
             currency: 'BRL',
           })}
         </p>
-        <div className="flex items-center gap-2 mt-2">
-          <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          <Badge variant="secondary">{plan.mainCategory}</Badge>
-          <span className="text-muted-foreground text-xs">&gt;</span>
-          <Badge variant="outline">{plan.subcategory}</Badge>
-        </div>
+         <Badge variant="secondary">{plan.mainCategory} &gt; {plan.subcategory}</Badge>
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t">
