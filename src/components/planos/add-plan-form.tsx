@@ -63,7 +63,7 @@ const subItemSchema = z.object({
 });
 
 const planSchema = z.object({
-  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
+  planName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
   amount: z.coerce.number().positive('O custo base deve ser um número positivo.'),
   type: z.enum(['Mensal', 'Anual']),
   paymentDay: z.coerce
@@ -94,7 +94,7 @@ export default function PlanForm({
   const form = useForm<z.infer<typeof planSchema>>({
     resolver: zodResolver(planSchema),
     defaultValues: {
-      name: '',
+      planName: '',
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
@@ -114,7 +114,7 @@ export default function PlanForm({
     if (isOpen) {
       if (isEditMode && planToEdit) {
         form.reset({
-          name: planToEdit.name,
+          planName: planToEdit.name,
           amount: planToEdit.amount,
           type: planToEdit.type,
           paymentDay: planToEdit.paymentDay,
@@ -124,7 +124,7 @@ export default function PlanForm({
         });
       } else {
         form.reset({
-          name: '',
+          planName: '',
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
@@ -172,8 +172,10 @@ export default function PlanForm({
       return;
     }
     
+    const { planName, ...rest } = values;
     const finalValues = {
-        ...values,
+        name: planName,
+        ...rest,
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
     };
 
@@ -223,7 +225,7 @@ export default function PlanForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <FormField
                 control={form.control}
-                name="name"
+                name="planName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{text.plans.form.name}</FormLabel>
@@ -373,12 +375,12 @@ export default function PlanForm({
             <Separator />
 
             <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                    <FormLabel>Planos com Combo</FormLabel>
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-                    </Button>
-                </div>
+              <div className="flex justify-between items-center">
+                <FormLabel>Planos com Combo</FormLabel>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+                </Button>
+              </div>
               <div className="space-y-2 mt-2">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-end gap-2">
@@ -417,10 +419,10 @@ export default function PlanForm({
               </div>
             </div>
             
-            <div className="pt-4 flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
-                  <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+            <div className="pt-4 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
+                <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
               </div>
 
               <div className="flex justify-end gap-2">
