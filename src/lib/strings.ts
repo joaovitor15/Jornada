@@ -362,5 +362,8 @@ export const text = {
     addSuccess: 'Movimentação registrada com sucesso.',
     addError: 'Falha ao registrar movimentação.',
     descriptionPlaceholder: 'Ex: Poupança para viagem (Opcional)',
+  },
+  plans: {
+    newPlan: 'Novo Plano',
   }
 };
