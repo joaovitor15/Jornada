@@ -55,8 +55,8 @@ export type Plan = {
   amount: number; // Base cost
   type: 'Mensal' | 'Anual';
   paymentMethod: string;
-  paymentDay: number; // Dia do vencimento
-  paymentMonth?: number; // Mês do vencimento para planos anuais (1-12)
+  paymentDay?: number; // Dia do vencimento (para planos mensais)
+  dueDate?: Timestamp; // Data completa do vencimento (para planos anuais)
   mainCategory: string;
   subcategory: string;
   subItems?: SubItem[]; // Optional list for combo items

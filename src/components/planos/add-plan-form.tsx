@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, CalendarIcon } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
 import { type Plan, type Profile, type Card } from '@/lib/types';
 import {
@@ -45,6 +45,11 @@ import {
 } from '@/lib/categories';
 import { Separator } from '../ui/separator';
 import { onSnapshot, query, where } from 'firebase/firestore';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const getCategoryConfig = (profile: Profile) => {
   switch (profile) {
@@ -61,17 +66,6 @@ const getCategoryConfig = (profile: Profile) => {
 
 const basePaymentMethods = ['Débito', 'Pix'];
 
-const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
-    value: index + 1,
-    label: label,
-}));
-
-
-const subItemSchema = z.object({
-  name: z.string().min(1, 'O nome do item é obrigatório.'),
-  price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
-});
-
 const planSchema = z
   .object({
     planName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -82,29 +76,39 @@ const planSchema = z
     paymentDay: z.coerce
       .number()
       .int()
-      .min(1, 'O dia deve ser entre 1 e 31')
-      .max(31, 'O dia deve ser entre 1 e 31'),
-    paymentMonth: z.coerce
-      .number()
-      .int()
       .min(1)
-      .max(12)
+      .max(31)
       .optional(),
+    dueDate: z.date().optional(),
     paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
     mainCategory: z.string().min(1, 'Selecione uma categoria.'),
     subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
-    subItems: z.array(subItemSchema).optional(),
+    subItems: z.array(z.object({
+      name: z.string().min(1, 'O nome do item é obrigatório.'),
+      price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
+    })).optional(),
   })
   .refine(
     (data) => {
-      if (data.type === 'Anual') return !!data.paymentMonth;
+      if (data.type === 'Anual') return !!data.dueDate;
       return true;
     },
     {
-      message: 'O mês de vencimento é obrigatório para planos anuais.',
-      path: ['paymentMonth'],
+      message: 'A data de vencimento é obrigatória para planos anuais.',
+      path: ['dueDate'],
+    }
+  )
+   .refine(
+    (data) => {
+      if (data.type === 'Mensal') return !!data.paymentDay;
+      return true;
+    },
+    {
+      message: 'O dia do vencimento é obrigatório para planos mensais.',
+      path: ['paymentDay'],
     }
   );
+
 
 type PlanFormProps = {
   isOpen: boolean;
@@ -130,7 +134,7 @@ export default function PlanForm({
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
-      paymentMonth: undefined,
+      dueDate: undefined,
       paymentMethod: '',
       mainCategory: '',
       subcategory: '',
@@ -154,7 +158,7 @@ export default function PlanForm({
           amount: planToEdit.amount,
           type: planToEdit.type,
           paymentDay: planToEdit.paymentDay,
-          paymentMonth: planToEdit.paymentMonth,
+          dueDate: planToEdit.dueDate ? planToEdit.dueDate.toDate() : undefined,
           paymentMethod: planToEdit.paymentMethod,
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
@@ -166,7 +170,7 @@ export default function PlanForm({
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
-          paymentMonth: undefined,
+          dueDate: undefined,
           paymentMethod: '',
           mainCategory: '',
           subcategory: '',
@@ -233,20 +237,26 @@ export default function PlanForm({
       });
       return;
     }
-
+    
     const { planName, ...rest } = values;
-    const finalValues: Omit<Plan, 'id' | 'userId' | 'profile'> = {
-      name: planName,
-      amount: rest.amount,
-      type: rest.type,
-      paymentDay: rest.paymentDay,
-      paymentMonth: rest.type === 'Anual' ? rest.paymentMonth : undefined,
-      paymentMethod: rest.paymentMethod,
-      mainCategory: rest.mainCategory,
-      subcategory: rest.subcategory,
-      subItems:
-        values.subItems && values.subItems.length > 0 ? values.subItems : [],
+
+    const finalValues: Omit<Plan, 'id' | 'userId' | 'profile'> & { dueDate?: Timestamp } = {
+        name: planName,
+        amount: rest.amount,
+        type: rest.type,
+        paymentMethod: rest.paymentMethod,
+        mainCategory: rest.mainCategory,
+        subcategory: rest.subcategory,
+        subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
     };
+    
+    if (rest.type === 'Anual' && rest.dueDate) {
+        finalValues.dueDate = Timestamp.fromDate(rest.dueDate);
+        finalValues.paymentDay = undefined; // Clear monthly payment day
+    } else {
+        finalValues.paymentDay = rest.paymentDay;
+        finalValues.dueDate = undefined; // Clear annual due date
+    }
 
     try {
       if (isEditMode && planToEdit?.id) {
@@ -420,7 +430,7 @@ export default function PlanForm({
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                  <FormField
                     control={form.control}
                     name="type"
@@ -451,48 +461,63 @@ export default function PlanForm({
                         </FormItem>
                     )}
                     />
-                <FormField
-                  control={form.control}
-                  name="paymentDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dia do Vencimento</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={31}
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(e.target.valueAsNumber)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {planType === 'Mensal' && (
+                    <FormField
+                      control={form.control}
+                      name="paymentDay"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia do Vencimento</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={31}
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                )}
                 {planType === 'Anual' && (
                   <FormField
                     control={form.control}
-                    name="paymentMonth"
+                    name="dueDate"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mês do Vencimento</FormLabel>
-                         <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Data do Vencimento</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
                             <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o mês" />
-                                </SelectTrigger>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: ptBR })
+                                ) : (
+                                  <span>Escolha uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
                             </FormControl>
-                            <SelectContent>
-                                {monthOptions.map((opt) => (
-                                    <SelectItem key={opt.value} value={String(opt.value)}>
-                                        {opt.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date < new Date("1900-01-01")}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}

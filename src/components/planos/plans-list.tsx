@@ -52,6 +52,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import type { Timestamp } from 'firebase/firestore';
 
 function PlanCard({
   plan,
@@ -69,18 +70,19 @@ function PlanCard({
   };
   
   const getVencimentoText = (plan: Plan) => {
-    const monthNames = [
-        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ];
-
-    if (plan.type === 'Anual') {
-       const monthName = plan.paymentMonth ? monthNames[plan.paymentMonth - 1] : '';
-       return `Vence em: ${plan.paymentDay} de ${monthName}`;
+    // Defensive check for new annual plans with dueDate
+    if (plan.type === 'Anual' && plan.dueDate) {
+      const date = (plan.dueDate as Timestamp).toDate();
+      return `Vence em: ${format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
     }
-    // For mensal
-    const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
-    return `Vence dia: ${plan.paymentDay} de ${currentMonthName}`;
+    
+    // Fallback for monthly plans or old data
+    if (plan.paymentDay) {
+       const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
+       return `Vence dia: ${plan.paymentDay} de ${currentMonthName}`;
+    }
+
+    return "Vencimento não definido";
   };
 
 
