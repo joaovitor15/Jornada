@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-background border border-border p-2 rounded-lg shadow-lg">
         <p className="label font-bold">{`${label}`}</p>
         {payload.map((pld: any) => (
-          <p key={pld.dataKey} style={{ color: pld.color }}>
+          <p key={pld.name} style={{ color: pld.color }}>
             {`${pld.name}: ${new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
