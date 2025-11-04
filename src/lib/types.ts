@@ -54,7 +54,8 @@ export type Plan = {
   name: string;
   amount: number; // Base cost
   type: 'Mensal' | 'Anual';
-  paymentDay: number;
+  paymentMethod: string;
+  dueDate: Timestamp; // Changed from paymentDay
   mainCategory: string;
   subcategory: string;
   subItems?: SubItem[]; // Optional list for combo items

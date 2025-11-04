@@ -1,5 +1,7 @@
+
 'use client';
 
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import {
@@ -49,6 +51,8 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function PlanCard({
   plan,
@@ -66,16 +70,13 @@ function PlanCard({
   };
   
   const getVencimentoText = (plan: Plan) => {
-    const monthNames = [
-      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-    ];
-    const currentMonthName = monthNames[new Date().getMonth()];
-
+    const dueDate = plan.dueDate.toDate();
     if (plan.type === 'Anual') {
-       return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
+       return `Vence em: ${format(dueDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
     }
-    return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
+    // For mensal
+    const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
+    return `Vence dia: ${format(dueDate, 'dd')} de ${currentMonthName}`;
   };
 
 
@@ -177,6 +178,7 @@ function PlanCard({
         <p className="text-sm text-muted-foreground">
            {getVencimentoText(plan)}
         </p>
+         <p className="text-sm text-muted-foreground">Pagamento: {plan.paymentMethod}</p>
       </div>
     </div>
   );

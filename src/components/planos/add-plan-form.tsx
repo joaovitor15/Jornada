@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -35,15 +35,23 @@ import {
 } from '@/components/ui/select';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, CalendarIcon } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Plan, type Profile } from '@/lib/types';
+import { type Plan, type Profile, type Card } from '@/lib/types';
 import {
   personalExpenseCategories,
   homeExpenseCategories,
   businessExpenseCategories,
 } from '@/lib/categories';
 import { Separator } from '../ui/separator';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const getCategoryConfig = (profile: Profile) => {
   switch (profile) {
@@ -58,23 +66,52 @@ const getCategoryConfig = (profile: Profile) => {
   }
 };
 
+const basePaymentMethods = ['Débito', 'Pix'];
+
 const subItemSchema = z.object({
   name: z.string().min(1, 'O nome do item é obrigatório.'),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
 });
 
-const planSchema = z.object({
-  planName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
-  amount: z.coerce.number().positive('O custo base deve ser um número positivo.'),
-  type: z.enum(['Mensal', 'Anual']),
-  paymentDay: z.coerce
-    .number()
-    .min(1, 'O dia deve ser entre 1 e 31')
-    .max(31, 'O dia deve ser entre 1 e 31'),
-  mainCategory: z.string().min(1, 'Selecione uma categoria.'),
-  subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
-  subItems: z.array(subItemSchema).optional(),
-});
+const planSchema = z
+  .object({
+    planName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
+    amount: z.coerce
+      .number()
+      .positive('O custo base deve ser um número positivo.'),
+    type: z.enum(['Mensal', 'Anual']),
+    paymentDay: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(31)
+      .optional(),
+    dueDate: z.date().optional(),
+    paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
+    mainCategory: z.string().min(1, 'Selecione uma categoria.'),
+    subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
+    subItems: z.array(subItemSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.type === 'Anual') return !!data.dueDate;
+      return true;
+    },
+    {
+      message: 'A data de vencimento é obrigatória para planos anuais.',
+      path: ['dueDate'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.type === 'Mensal') return !!data.paymentDay;
+      return true;
+    },
+    {
+      message: 'O dia do vencimento é obrigatório para planos mensais.',
+      path: ['paymentDay'],
+    }
+  );
 
 type PlanFormProps = {
   isOpen: boolean;
@@ -90,6 +127,7 @@ export default function PlanForm({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
+  const [cards, setCards] = useState<Card[]>([]);
   const isEditMode = !!planToEdit;
 
   const form = useForm<z.infer<typeof planSchema>>({
@@ -99,26 +137,33 @@ export default function PlanForm({
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
+      dueDate: undefined,
+      paymentMethod: '',
       mainCategory: '',
       subcategory: '',
       subItems: [],
     },
   });
-  
+
   const { watch, setValue, reset, control } = form;
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'subItems',
   });
 
+  const planType = watch('type');
+
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && planToEdit) {
+        const isAnnual = planToEdit.type === 'Anual';
         form.reset({
           planName: planToEdit.name,
           amount: planToEdit.amount,
           type: planToEdit.type,
-          paymentDay: planToEdit.paymentDay,
+          paymentDay: isAnnual ? undefined : planToEdit.dueDate.toDate().getDate(),
+          dueDate: isAnnual ? planToEdit.dueDate.toDate() : undefined,
+          paymentMethod: planToEdit.paymentMethod,
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
           subItems: planToEdit.subItems || [],
@@ -129,6 +174,8 @@ export default function PlanForm({
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
+          dueDate: undefined,
+          paymentMethod: '',
           mainCategory: '',
           subcategory: '',
           subItems: [],
@@ -136,15 +183,28 @@ export default function PlanForm({
       }
     }
   }, [isOpen, isEditMode, planToEdit, form]);
+
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === 'mainCategory') {
+        setValue('subcategory', '');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
   
   useEffect(() => {
-      const subscription = watch((value, { name }) => {
-        if (name === 'mainCategory') {
-            setValue('subcategory', '');
-        }
-      });
-      return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+    if (!user || !activeProfile) return;
+    const cardsQuery = query(
+      collection(db, 'cards'),
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile)
+    );
+    const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
+      setCards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Card)));
+    });
+    return () => unsubscribe();
+  }, [user, activeProfile]);
 
   const { isSubmitting } = form.formState;
 
@@ -154,14 +214,20 @@ export default function PlanForm({
   const subcategories = useMemo(() => {
     return selectedMainCategory ? categoryConfig[selectedMainCategory] || [] : [];
   }, [selectedMainCategory, categoryConfig]);
+  
+  const paymentMethods = useMemo(() => {
+    const cardMethods = cards.map(card => `Cartão: ${card.name}`);
+    return [...basePaymentMethods, ...cardMethods];
+  }, [cards]);
+
 
   const watchedSubItems = watch('subItems');
   const watchedBaseAmount = watch('amount');
   const totalAmount = useMemo(() => {
-    const subItemsTotal = watchedSubItems?.reduce((acc, item) => acc + (item.price || 0), 0) ?? 0;
+    const subItemsTotal =
+      watchedSubItems?.reduce((acc, item) => acc + (item.price || 0), 0) ?? 0;
     return (watchedBaseAmount || 0) + subItemsTotal;
   }, [watchedSubItems, watchedBaseAmount]);
-
 
   const handleSubmit = async (values: z.infer<typeof planSchema>) => {
     if (!user || !activeProfile) {
@@ -172,14 +238,28 @@ export default function PlanForm({
       });
       return;
     }
-    
-    const { planName, ...rest } = values;
-    const finalValues = {
-        name: planName,
-        ...rest,
-        subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
-    };
 
+    let finalDueDate: Date;
+    if (values.type === 'Mensal' && values.paymentDay) {
+        finalDueDate = new Date();
+        finalDueDate.setDate(values.paymentDay);
+    } else if (values.type === 'Anual' && values.dueDate) {
+        finalDueDate = values.dueDate;
+    } else {
+        // Should not happen due to validation
+        toast({ variant: 'destructive', title: "Erro de Validação", description: "Data de vencimento inválida."});
+        return;
+    }
+
+    const { planName, paymentDay, dueDate, ...rest } = values;
+    const finalValues = {
+      name: planName,
+      ...rest,
+      dueDate: Timestamp.fromDate(finalDueDate),
+      subItems:
+        values.subItems && values.subItems.length > 0 ? values.subItems : [],
+    };
+    
     try {
       if (isEditMode && planToEdit?.id) {
         const planRef = doc(db, 'plans', planToEdit.id);
@@ -305,7 +385,9 @@ export default function PlanForm({
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue
-                              placeholder={text.addExpenseForm.selectSubcategory}
+                              placeholder={
+                                text.addExpenseForm.selectSubcategory
+                              }
                             />
                           </SelectTrigger>
                         </FormControl>
@@ -322,6 +404,31 @@ export default function PlanForm({
                   )}
                 />
               </div>
+              
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.paymentMethod}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {paymentMethods.map((method) => (
+                           <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -354,35 +461,78 @@ export default function PlanForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="paymentDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dia do Vencimento</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={31}
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(e.target.valueAsNumber)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {planType === 'Mensal' ? (
+                   <FormField
+                    control={form.control}
+                    name="paymentDay"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dia do Vencimento</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={31}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                   <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col pt-2">
+                        <FormLabel>Data de Vencimento</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className="pl-3 text-left font-normal"
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", { locale: ptBR })
+                                ) : (
+                                  <span>Escolha uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
-              
+
               <Separator />
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <FormLabel>Planos com Combo</FormLabel>
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ name: '', price: 0 })}
+                  >
                     <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
                   </Button>
                 </div>
@@ -394,7 +544,12 @@ export default function PlanForm({
                         name={`subItems.${index}.name`}
                         render={({ field }) => (
                           <FormItem className="flex-1">
-                            <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Nome do item (ex: Disney+)"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -406,17 +561,24 @@ export default function PlanForm({
                           <FormItem>
                             <FormControl>
                               <CurrencyInput
-                                  placeholder="Preço"
-                                  className="w-32"
-                                  value={field.value}
-                                  onValueChange={(values) => field.onChange(values?.floatValue)}
+                                placeholder="Preço"
+                                className="w-32"
+                                value={field.value}
+                                onValueChange={(values) =>
+                                  field.onChange(values?.floatValue)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -427,24 +589,31 @@ export default function PlanForm({
 
             <div className="pt-6 mt-auto">
               <div>
-                  <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
-                  <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Valor Total do Plano
+                </p>
+                <p className="text-2xl font-bold">
+                  {totalAmount.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </p>
               </div>
               <DialogFooter className="mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    disabled={isSubmitting}
-                  >
-                    {text.common.cancel}
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isEditMode ? text.plans.form.save : text.plans.form.add}
-                  </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                >
+                  {text.common.cancel}
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isEditMode ? text.plans.form.save : text.plans.form.add}
+                </Button>
               </DialogFooter>
             </div>
           </form>
