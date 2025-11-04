@@ -9,7 +9,8 @@ interface AddTransactionModalContextType {
   isFormOpen: boolean;
   setIsFormOpen: (isOpen: boolean) => void;
   transactionToEdit: EditableTransaction | null;
-  setTransactionToEdit: (transaction: EditableTransaction | null) => void;
+  setTransactionToEdit: (transaction: EditableTransaction) => void;
+  closeForm: () => void;
 }
 
 const AddTransactionModalContext = createContext<AddTransactionModalContextType | undefined>(undefined);
@@ -18,9 +19,14 @@ export function AddTransactionModalProvider({ children }: { children: ReactNode 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [transactionToEdit, setTransactionToEditState] = useState<EditableTransaction | null>(null);
 
-  const setTransactionToEdit = (transaction: EditableTransaction | null) => {
+  const setTransactionToEdit = (transaction: EditableTransaction) => {
     setTransactionToEditState(transaction);
-    setIsFormOpen(true); // Always open form when a transaction is set for editing
+    setIsFormOpen(true);
+  };
+  
+  const closeForm = () => {
+    setTransactionToEditState(null);
+    setIsFormOpen(false);
   };
   
   const value = {
@@ -28,6 +34,7 @@ export function AddTransactionModalProvider({ children }: { children: ReactNode 
     setIsFormOpen,
     transactionToEdit,
     setTransactionToEdit,
+    closeForm,
   }
 
   return (

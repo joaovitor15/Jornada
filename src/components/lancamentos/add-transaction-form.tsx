@@ -128,7 +128,7 @@ export default function AddTransactionForm() {
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
   const [dateInput, setDateInput] = useState('');
-  const { isFormOpen, setIsFormOpen, transactionToEdit, setTransactionToEdit } = useAddTransactionModal();
+  const { isFormOpen, closeForm, transactionToEdit } = useAddTransactionModal();
   
   const isEditMode = !!transactionToEdit;
 
@@ -240,9 +240,8 @@ export default function AddTransactionForm() {
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
-      setIsFormOpen(open);
       if (!open) {
-        setTransactionToEdit(null);
+        closeForm();
       }
     }
   };
@@ -307,7 +306,7 @@ export default function AddTransactionForm() {
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
             }
         }
-        handleOpenChange(false);
+        closeForm();
     } catch (error) {
         console.error("Error saving transaction:", error);
         toast({ variant: 'destructive', title: text.common.error, description: isEditMode ? "Falha ao atualizar lançamento." : "Falha ao criar lançamento." });
