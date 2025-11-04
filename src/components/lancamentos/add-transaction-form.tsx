@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -76,7 +77,9 @@ import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 const basePaymentMethods: PaymentMethod[] = ['Dinheiro/Pix', 'Débito'];
 
 const formSchema = z.object({
-  type: z.enum(['expense', 'income']).default('expense'),
+  type: z.enum(['expense', 'income'], {
+    required_error: 'Selecione o tipo de lançamento.',
+  }),
   description: z.string().optional(),
   amount: z.coerce
     .number({
@@ -159,7 +162,7 @@ export default function AddTransactionForm() {
         setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
       } else {
         reset({
-            type: 'expense',
+            type: undefined,
             description: '',
             amount: undefined,
             mainCategory: '',
@@ -337,7 +340,7 @@ export default function AddTransactionForm() {
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4 pt-2"
                       disabled={isSubmitting || isEditMode}
                     >

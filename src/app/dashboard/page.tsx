@@ -14,8 +14,6 @@ import {
 import { db } from '@/lib/firebase';
 import {
   Loader2,
-  ArrowUpRight,
-  ArrowDownLeft,
   TrendingUp,
   TrendingDown,
   Wallet,
@@ -41,6 +39,7 @@ import { BillPayment } from '@/lib/types';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
 import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import SplitAddButton from '@/components/dashboard/SplitAddButton';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -242,8 +241,8 @@ export default function DashboardPage() {
               </Select>
             </div>
           </div>
-          <div className="flex gap-2">
-             {(activeProfile === 'Home' || activeProfile === 'Business') && (
+          <div className="flex items-center gap-2">
+            {(activeProfile === 'Home' || activeProfile === 'Business') && (
               <Button
                 onClick={() => setIsSumFormOpen(true)}
                 size="icon"
@@ -253,20 +252,7 @@ export default function DashboardPage() {
                 <Calculator className="h-5 w-5" />
               </Button>
             )}
-             <Button
-              onClick={() => setIsTransactionFormOpen(true)}
-              size="icon"
-              className="h-10 w-10 rounded-full bg-red-500 text-white hover:bg-red-600"
-            >
-              <ArrowDownLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              onClick={() => setIsTransactionFormOpen(true)}
-              size="icon"
-              className="h-10 w-10 rounded-full bg-green-500 text-white hover:bg-green-600"
-            >
-              <ArrowUpRight className="h-5 w-5" />
-            </Button>
+            <SplitAddButton onOpen={() => setIsTransactionFormOpen(true)} />
           </div>
         </div>
 
