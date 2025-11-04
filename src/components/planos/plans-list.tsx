@@ -21,6 +21,7 @@ import {
   Trash2,
   Loader2,
   FolderOpen,
+  AlertCircle,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -41,11 +42,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 
@@ -66,32 +66,72 @@ function PlanCard({
 
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
 
-  const cardContent = (
+  return (
     <div className="border p-4 rounded-lg shadow-sm relative group flex flex-col h-full">
-      <div className="flex-grow">
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(plan)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                <span>{text.common.rename}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(plan)}
-                className="text-red-500"
+      <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {hasSubItems && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>{text.common.delete}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                <AlertCircle className="h-4 w-4 text-blue-500" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="space-y-2">
+                <h4 className="font-medium leading-none">Itens do Combo</h4>
+                <div className="text-sm text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Custo Base:</span>
+                    <span className="font-medium text-foreground">
+                      {plan.amount.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </span>
+                  </div>
+                  {plan.subItems?.map((item, index) => (
+                    <div key={index} className="flex justify-between">
+                      <span>{item.name}:</span>
+                      <span className="font-medium text-foreground">
+                        {item.price.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(plan)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              <span>{text.common.rename}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(plan)}
+              className="text-red-500"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>{text.common.delete}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
+      <div className="flex-grow">
         <h3 className="text-lg font-semibold pr-8">{plan.name}</h3>
         <p className="text-xl font-bold text-primary">
           {calculateTotalAmount(plan).toLocaleString('pt-BR', {
@@ -114,36 +154,6 @@ function PlanCard({
         </p>
       </div>
     </div>
-  );
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
-        {hasSubItems && (
-          <TooltipContent>
-            <ul className="space-y-1 text-sm">
-              <li className="font-semibold">
-                Custo Base:{' '}
-                {plan.amount.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              </li>
-              {plan.subItems?.map((item, index) => (
-                <li key={index}>
-                  {item.name}:{' '}
-                  {item.price.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </li>
-              ))}
-            </ul>
-          </TooltipContent>
-        )}
-      </Tooltip>
-    </TooltipProvider>
   );
 }
 
