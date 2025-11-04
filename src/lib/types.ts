@@ -42,17 +42,24 @@ export type Card = {
   createdAt: Timestamp;
 };
 
+export type SubItem = {
+  name: string;
+  price: number;
+};
+
 export type Plan = {
   id: string;
   userId: string;
   profile: Profile;
   name: string;
-  amount: number;
+  amount: number; // Base cost
   type: 'Mensal' | 'Anual';
   paymentDay: number;
   mainCategory: string;
   subcategory: string;
+  subItems?: SubItem[]; // Optional list for combo items
 };
+
 
 export type BillPayment = {
   id: string;

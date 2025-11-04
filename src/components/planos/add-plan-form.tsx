@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
@@ -36,14 +36,15 @@ import {
 } from '@/components/ui/select';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Plan, type Profile } from '@/lib/types';
+import { type Plan, type Profile, SubItem } from '@/lib/types';
 import {
   personalExpenseCategories,
   homeExpenseCategories,
   businessExpenseCategories,
 } from '@/lib/categories';
+import { Separator } from '../ui/separator';
 
 const getCategoryConfig = (profile: Profile) => {
   switch (profile) {
@@ -58,9 +59,14 @@ const getCategoryConfig = (profile: Profile) => {
   }
 };
 
+const subItemSchema = z.object({
+  name: z.string().min(1, 'O nome do item é obrigatório.'),
+  price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
+});
+
 const planSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
-  amount: z.coerce.number().positive('O valor deve ser um número positivo.'),
+  amount: z.coerce.number().positive('O custo base deve ser um número positivo.'),
   type: z.enum(['Mensal', 'Anual']),
   paymentDay: z.coerce
     .number()
@@ -68,6 +74,7 @@ const planSchema = z.object({
     .max(31, 'O dia deve ser entre 1 e 31'),
   mainCategory: z.string().min(1, 'Selecione uma categoria.'),
   subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
+  subItems: z.array(subItemSchema).optional(),
 });
 
 type PlanFormProps = {
@@ -95,10 +102,15 @@ export default function PlanForm({
       paymentDay: undefined,
       mainCategory: '',
       subcategory: '',
+      subItems: [],
     },
   });
   
-  const { watch, setValue, reset } = form;
+  const { watch, setValue, reset, control } = form;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'subItems',
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -110,6 +122,7 @@ export default function PlanForm({
           paymentDay: planToEdit.paymentDay,
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
+          subItems: planToEdit.subItems || [],
         });
       } else {
         form.reset({
@@ -119,6 +132,7 @@ export default function PlanForm({
           paymentDay: undefined,
           mainCategory: '',
           subcategory: '',
+          subItems: [],
         });
       }
     }
@@ -142,6 +156,13 @@ export default function PlanForm({
     return selectedMainCategory ? categoryConfig[selectedMainCategory] || [] : [];
   }, [selectedMainCategory, categoryConfig]);
 
+  const watchedSubItems = watch('subItems');
+  const watchedBaseAmount = watch('amount');
+  const totalAmount = useMemo(() => {
+    const subItemsTotal = watchedSubItems?.reduce((acc, item) => acc + (item.price || 0), 0) ?? 0;
+    return (watchedBaseAmount || 0) + subItemsTotal;
+  }, [watchedSubItems, watchedBaseAmount]);
+
 
   const handleSubmit = async (values: z.infer<typeof planSchema>) => {
     if (!user || !activeProfile) {
@@ -152,18 +173,23 @@ export default function PlanForm({
       });
       return;
     }
+    
+    const finalValues = {
+        ...values,
+        subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
+    };
 
     try {
       if (isEditMode && planToEdit?.id) {
         const planRef = doc(db, 'plans', planToEdit.id);
-        await updateDoc(planRef, { ...values });
+        await updateDoc(planRef, { ...finalValues });
         toast({
           title: text.common.success,
           description: text.plans.form.updateSuccess,
         });
       } else {
         await addDoc(collection(db, 'plans'), {
-          ...values,
+          ...finalValues,
           userId: user.uid,
           profile: activeProfile,
         });
@@ -185,7 +211,7 @@ export default function PlanForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? text.plans.form.editTitle : text.plans.form.title}
@@ -199,7 +225,7 @@ export default function PlanForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
+            className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
           >
             <FormField
               control={form.control}
@@ -217,27 +243,81 @@ export default function PlanForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.plans.form.amount}</FormLabel>
-                  <FormControl>
-                    <CurrencyInput
-                      placeholder={text.placeholders.amount}
-                      disabled={isSubmitting}
-                      value={field.value}
-                      onValueChange={(values) =>
-                        field.onChange(values?.floatValue)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custo Base</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        placeholder={text.placeholders.amount}
+                        disabled={isSubmitting}
+                        value={field.value}
+                        onValueChange={(values) =>
+                          field.onChange(values?.floatValue)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <div className="flex flex-col justify-end">
+                  <p className="text-sm font-medium">Valor Total do Plano</p>
+                  <p className="text-xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+              </div>
+            </div>
 
+            <Separator />
+
+            <div>
+              <FormLabel>Sub-Itens (para planos combo)</FormLabel>
+              <div className="space-y-2 mt-2">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex items-end gap-2">
+                    <FormField
+                      control={form.control}
+                      name={`subItems.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`subItems.${index}.price`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CurrencyInput
+                                placeholder="Preço"
+                                className="w-28"
+                                value={field.value}
+                                onValueChange={(values) => field.onChange(values?.floatValue)}
+                             />
+                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ name: '', price: 0 })}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+              </Button>
+            </div>
+            
+            <Separator />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -351,7 +431,7 @@ export default function PlanForm({
                 )}
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-4">
               <Button
                 type="button"
                 variant="outline"
