@@ -50,6 +50,8 @@ export type Plan = {
   amount: number;
   type: 'Mensal' | 'Anual';
   paymentDay: number;
+  mainCategory: string;
+  subcategory: string;
 };
 
 export type BillPayment = {

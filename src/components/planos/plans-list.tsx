@@ -21,6 +21,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  FolderOpen,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -41,6 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '../ui/badge';
 
 export default function PlansList() {
   const { user } = useAuth();
@@ -138,45 +140,56 @@ export default function PlansList() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className="border p-4 rounded-lg shadow-sm relative group"
+              className="border p-4 rounded-lg shadow-sm relative group flex flex-col justify-between"
             >
-              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 p-0 rounded-full"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditClick(plan)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      <span>{text.common.rename}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDeleteRequest(plan)}
-                      className="text-red-500"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>{text.common.delete}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div>
+                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-full"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditClick(plan)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>{text.common.rename}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteRequest(plan)}
+                        className="text-red-500"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>{text.common.delete}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <h3 className="text-lg font-semibold pr-8">{plan.name}</h3>
+                <p className="text-xl font-bold text-primary">
+                  {plan.amount.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  <Badge variant="secondary" className="text-xs">{plan.mainCategory}</Badge>
+                  <span className="text-muted-foreground text-xs">&gt;</span>
+                  <Badge variant="outline" className="text-xs">{plan.subcategory}</Badge>
+                </div>
               </div>
 
-              <h3 className="text-lg font-semibold pr-8">{plan.name}</h3>
-              <p className="text-xl font-bold text-primary">
-                {plan.amount.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
-              </p>
-              <p className="text-sm text-muted-foreground">{plan.type}</p>
-              <p className="text-sm text-muted-foreground">
-                Vence dia: {plan.paymentDay}
-              </p>
+              <div className="flex justify-between items-end mt-4">
+                <p className="text-sm text-muted-foreground">{plan.type}</p>
+                <p className="text-sm text-muted-foreground">
+                  Vence dia: {plan.paymentDay}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -191,7 +204,7 @@ export default function PlansList() {
         onOpenChange={setIsFormOpen}
         planToEdit={planToEdit}
       />
-      
+
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
