@@ -22,6 +22,7 @@ import {
   Loader2,
   FolderOpen,
   AlertCircle,
+  DollarSign,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -67,8 +68,8 @@ function PlanCard({
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
 
   return (
-    <div className="border p-4 rounded-lg shadow-sm relative group flex flex-col h-full">
-      <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full">
+      <div className="absolute top-1 right-1 flex items-center gap-1">
         {hasSubItems && (
           <Popover>
             <PopoverTrigger asChild>
@@ -109,6 +110,16 @@ function PlanCard({
             </PopoverContent>
           </Popover>
         )}
+        <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => {
+              /* Lógica de pagamento aqui */
+            }}
+          >
+            <DollarSign className="h-4 w-4 text-green-600" />
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
