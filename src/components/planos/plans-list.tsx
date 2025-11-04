@@ -51,6 +51,8 @@ import {
 } from '@/components/ui/collapsible';
 
 function PlanCard({ plan, onEdit, onDelete }: { plan: Plan, onEdit: (plan: Plan) => void, onDelete: (plan: Plan) => void }) {
+  const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
+
   const calculateTotalAmount = (plan: Plan) => {
     const subItemsTotal = plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
     return plan.amount + subItemsTotal;
@@ -104,7 +106,7 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: Plan, onEdit: (plan: Plan)
       </div>
       
       {plan.subItems && plan.subItems.length > 0 && (
-        <Collapsible className="mt-3">
+        <Collapsible open={isCollapsibleOpen} onOpenChange={setIsCollapsibleOpen} className="mt-3">
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="w-full justify-start px-0 text-xs text-muted-foreground">
                <Package className="mr-2 h-4 w-4" />

@@ -221,7 +221,7 @@ export default function PlanForm({
             className="space-y-4 max-h-[70vh] overflow-y-auto pr-4"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
+               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
@@ -372,8 +372,13 @@ export default function PlanForm({
             
             <Separator />
 
-            <div>
-              <FormLabel>Sub-Itens (para planos combo)</FormLabel>
+            <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                    <FormLabel>Planos com Combo</FormLabel>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+                    </Button>
+                </div>
               <div className="space-y-2 mt-2">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-end gap-2">
@@ -410,12 +415,7 @@ export default function PlanForm({
                   </div>
                 ))}
               </div>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ name: '', price: 0 })}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-              </Button>
             </div>
-            
-            <Separator />
             
             <div className="pt-4 flex justify-between items-center">
                 <div>
