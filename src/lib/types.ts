@@ -16,7 +16,7 @@ export type Expense = {
   paymentMethod: PaymentMethod;
   installments?: number;
   currentInstallment?: number;
-  originalExpenseId?: string; 
+  originalExpenseId?: string;
 };
 
 export type Income = {
@@ -39,6 +39,16 @@ export type Card = {
   closingDay: number;
   dueDay: number;
   createdAt: Timestamp;
+};
+
+export type Plan = {
+  id: string;
+  userId: string;
+  profile: Profile;
+  name: string;
+  amount: number;
+  type: 'Mensal' | 'Anual';
+  paymentDay: number;
 };
 
 export type BillPayment = {

@@ -365,5 +365,32 @@ export const text = {
   },
   plans: {
     newPlan: 'Novo Plano',
-  }
+    description: 'Gerencie seus planos e assinaturas recorrentes.',
+    noPlans: 'Nenhum plano cadastrado ainda.',
+    loading: 'Carregando planos...',
+    deletePlanConfirmation: 'Essa ação não pode ser desfeita. Isso excluirá permanentemente seu plano.',
+    form: {
+      title: 'Adicionar Novo Plano',
+      editTitle: 'Editar Plano',
+      description: 'Cadastre um novo plano ou assinatura.',
+      editDescription: 'Atualize as informações do seu plano.',
+      name: 'Nome do Plano',
+      namePlaceholder: 'Ex: Netflix, Spotify, etc.',
+      amount: 'Valor',
+      amountPlaceholder: '39,90',
+      type: 'Tipo',
+      typePlaceholder: 'Selecione o tipo',
+      types: {
+        monthly: 'Mensal',
+        yearly: 'Anual',
+      },
+      paymentDay: 'Dia do Pagamento/Vencimento',
+      add: 'Adicionar Plano',
+      save: 'Salvar Alterações',
+      updateSuccess: 'Plano atualizado com sucesso!',
+      addSuccess: 'Plano adicionado com sucesso!',
+      saveError: (isEditMode: boolean) => `Erro ao ${isEditMode ? 'atualizar' : 'adicionar'} o plano. Tente novamente.`,
+      notLoggedIn: 'Você precisa estar logado e ter um perfil ativo.',
+    },
+  },
 };
