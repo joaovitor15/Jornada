@@ -64,6 +64,20 @@ function PlanCard({
       plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
     return plan.amount + subItemsTotal;
   };
+  
+  const getVencimentoText = (plan: Plan) => {
+    const monthNames = [
+      "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    const currentMonthName = monthNames[new Date().getMonth()];
+
+    if (plan.type === 'Anual') {
+       return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
+    }
+    return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
+  };
+
 
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
 
@@ -111,14 +125,14 @@ function PlanCard({
           </Popover>
         )}
         <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={() => {
-              /* Lógica de pagamento aqui */
-            }}
-          >
-            <DollarSign className="h-4 w-4 text-green-600" />
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full"
+          onClick={() => {
+            /* Lógica de pagamento aqui */
+          }}
+        >
+          <DollarSign className="h-4 w-4 text-green-600" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -158,10 +172,10 @@ function PlanCard({
         </div>
       </div>
 
-      <div className="flex justify-between items-end mt-4 pt-2 border-t">
-        <p className="text-sm text-muted-foreground">{plan.type}</p>
+      <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t">
+        <p className="text-sm text-muted-foreground">Frequência: {plan.type}</p>
         <p className="text-sm text-muted-foreground">
-          Vence dia: {plan.paymentDay}
+           {getVencimentoText(plan)}
         </p>
       </div>
     </div>
