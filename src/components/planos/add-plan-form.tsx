@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2, CalendarIcon } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
 import { type Plan, type Profile, type Card } from '@/lib/types';
 import {
@@ -45,26 +45,6 @@ import {
 } from '@/lib/categories';
 import { Separator } from '../ui/separator';
 import { onSnapshot, query, where } from 'firebase/firestore';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-const getCategoryConfig = (profile: Profile) => {
-  switch (profile) {
-    case 'Personal':
-      return personalExpenseCategories;
-    case 'Home':
-      return homeExpenseCategories;
-    case 'Business':
-      return businessExpenseCategories;
-    default:
-      return {};
-  }
-};
-
-const basePaymentMethods = ['Débito', 'Pix'];
 
 const planSchema = z
   .object({
@@ -73,13 +53,10 @@ const planSchema = z
       .number()
       .positive('O custo base deve ser um número positivo.'),
     type: z.enum(['Mensal', 'Anual']),
-    paymentDay: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(31)
-      .optional(),
-    dueDate: z.date().optional(),
+    paymentDay: z.coerce.number().int().min(1).max(31).optional(),
+    dueDay: z.coerce.number().int().min(1, "O dia é obrigatório.").max(31, "Dia inválido.").optional(),
+    dueMonth: z.coerce.number().int().min(0).max(11).optional(),
+    dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
     paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
     mainCategory: z.string().min(1, 'Selecione uma categoria.'),
     subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
@@ -90,12 +67,14 @@ const planSchema = z
   })
   .refine(
     (data) => {
-      if (data.type === 'Anual') return !!data.dueDate;
+      if (data.type === 'Anual') {
+        return data.dueDay !== undefined && data.dueMonth !== undefined && data.dueYear !== undefined;
+      }
       return true;
     },
     {
-      message: 'A data de vencimento é obrigatória para planos anuais.',
-      path: ['dueDate'],
+      message: 'Para planos anuais, dia, mês e ano são obrigatórios.',
+      path: ['dueDay'], 
     }
   )
    .refine(
@@ -134,7 +113,6 @@ export default function PlanForm({
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
-      dueDate: undefined,
       paymentMethod: '',
       mainCategory: '',
       subcategory: '',
@@ -149,16 +127,39 @@ export default function PlanForm({
   });
 
   const planType = watch('type');
+  
+  const getCategoryConfig = (profile: Profile) => {
+    switch (profile) {
+      case 'Personal':
+        return personalExpenseCategories;
+      case 'Home':
+        return homeExpenseCategories;
+      case 'Business':
+        return businessExpenseCategories;
+      default:
+        return {};
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && planToEdit) {
+        let dueDay, dueMonth, dueYear;
+        if (planToEdit.type === 'Anual' && planToEdit.dueDate) {
+          const date = planToEdit.dueDate.toDate();
+          dueDay = date.getDate();
+          dueMonth = date.getMonth();
+          dueYear = date.getFullYear();
+        }
+        
         form.reset({
           planName: planToEdit.name,
           amount: planToEdit.amount,
           type: planToEdit.type,
           paymentDay: planToEdit.paymentDay,
-          dueDate: planToEdit.dueDate ? planToEdit.dueDate.toDate() : undefined,
+          dueDay: dueDay,
+          dueMonth: dueMonth,
+          dueYear: dueYear,
           paymentMethod: planToEdit.paymentMethod,
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
@@ -170,7 +171,9 @@ export default function PlanForm({
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
-          dueDate: undefined,
+          dueDay: undefined,
+          dueMonth: undefined,
+          dueYear: undefined,
           paymentMethod: '',
           mainCategory: '',
           subcategory: '',
@@ -214,7 +217,8 @@ export default function PlanForm({
       ? categoryConfig[selectedMainCategory] || []
       : [];
   }, [selectedMainCategory, categoryConfig]);
-
+  
+  const basePaymentMethods = ['Débito', 'Pix'];
   const paymentMethods = useMemo(() => {
     const cardMethods = cards.map((card) => `Cartão: ${card.name}`);
     return [...basePaymentMethods, ...cardMethods];
@@ -228,6 +232,16 @@ export default function PlanForm({
     return (watchedBaseAmount || 0) + subItemsTotal;
   }, [watchedSubItems, watchedBaseAmount]);
 
+  const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
+    value: index,
+    label: label,
+  }));
+
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 10 }, (_, i) => currentYear + i);
+  }, []);
+
   const handleSubmit = async (values: z.infer<typeof planSchema>) => {
     if (!user || !activeProfile) {
       toast({
@@ -238,7 +252,7 @@ export default function PlanForm({
       return;
     }
     
-    const { planName, ...rest } = values;
+    const { planName, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
 
     const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
         name: planName,
@@ -250,10 +264,10 @@ export default function PlanForm({
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
     };
     
-    if (rest.type === 'Anual') {
-        dataToSend.dueDate = Timestamp.fromDate(rest.dueDate!);
-    } else {
-        dataToSend.paymentDay = rest.paymentDay;
+    if (rest.type === 'Anual' && dueDay !== undefined && dueMonth !== undefined && dueYear !== undefined) {
+        dataToSend.dueDate = Timestamp.fromDate(new Date(dueYear, dueMonth, dueDay));
+    } else if (rest.type === 'Mensal') {
+        dataToSend.paymentDay = paymentDay;
     }
 
     try {
@@ -459,7 +473,7 @@ export default function PlanForm({
                         </FormItem>
                     )}
                     />
-                {planType === 'Mensal' && (
+                {planType === 'Mensal' ? (
                     <FormField
                       control={form.control}
                       name="paymentDay"
@@ -479,47 +493,77 @@ export default function PlanForm({
                         </FormItem>
                       )}
                     />
-                )}
-                {planType === 'Anual' && (
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Data do Vencimento</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP", { locale: ptBR })
-                                ) : (
-                                  <span>Escolha uma data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date("1900-01-01")}
-                              initialFocus
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="dueDay"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia</FormLabel>
+                          <FormControl>
+                             <Input
+                              type="number"
+                              min={1}
+                              max={31}
+                              placeholder='Dia'
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
                             />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="dueMonth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mês</FormLabel>
+                           <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Mês" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {monthOptions.map((month) => (
+                                  <SelectItem key={month.value} value={String(month.value)}>
+                                    {month.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="dueYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ano</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Ano" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {yearOptions.map((year) => (
+                                  <SelectItem key={year} value={String(year)}>
+                                    {year}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
               </div>
 
