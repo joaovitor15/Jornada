@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/tooltip';
 import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown, Wallet } from 'lucide-react';
 import { useTransactions } from '@/hooks/use-transactions';
-import { Timestamp } from 'firebase/firestore';
 import type { Income, Expense, BillPayment } from '@/lib/types';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 
@@ -1806,5 +1805,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    

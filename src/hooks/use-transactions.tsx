@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { Expense, Income, Profile } from '@/lib/types';
+import { Expense, Income, BillPayment, Profile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 
@@ -19,6 +19,7 @@ export function useTransactions(activeProfile: Profile | null) {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [billPayments, setBillPayments] = useState<BillPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -27,6 +28,7 @@ export function useTransactions(activeProfile: Profile | null) {
       setLoading(false);
       setExpenses([]);
       setIncomes([]);
+      setBillPayments([]);
       return;
     }
 
@@ -45,6 +47,13 @@ export function useTransactions(activeProfile: Profile | null) {
       where('profile', '==', activeProfile),
       orderBy('date', 'desc')
     );
+    
+    const billPaymentsQuery = query(
+      collection(db, 'billPayments'),
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
+      orderBy('date', 'desc')
+    );
 
     const unsubscribeExpenses = onSnapshot(
       expensesQuery,
@@ -57,7 +66,6 @@ export function useTransactions(activeProfile: Profile | null) {
           }
         });
         setExpenses(expensesData);
-        if (!loading) setLoading(false);
       },
       (error) => {
         console.error('Error fetching expenses: ', error);
@@ -81,7 +89,6 @@ export function useTransactions(activeProfile: Profile | null) {
           }
         });
         setIncomes(incomesData);
-        setLoading(false);
       },
       (error) => {
         console.error('Error fetching incomes: ', error);
@@ -93,12 +100,37 @@ export function useTransactions(activeProfile: Profile | null) {
         setLoading(false);
       }
     );
+    
+    const unsubscribeBillPayments = onSnapshot(billPaymentsQuery, (querySnapshot) => {
+       const paymentsData: BillPayment[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.date) {
+            paymentsData.push({ id: doc.id, ...data } as BillPayment);
+          }
+        });
+        setBillPayments(paymentsData);
+    },
+    (error) => {
+      console.error('Error fetching bill payments: ', error);
+    });
+
+    // Combine loading state management
+    Promise.all([
+      new Promise(resolve => onSnapshot(expensesQuery, () => resolve(true))),
+      new Promise(resolve => onSnapshot(incomesQuery, () => resolve(true))),
+      new Promise(resolve => onSnapshot(billPaymentsQuery, () => resolve(true)))
+    ]).then(() => {
+      setLoading(false);
+    });
+
 
     return () => {
       unsubscribeExpenses();
       unsubscribeIncomes();
+      unsubscribeBillPayments();
     };
   }, [user, activeProfile, toast]);
 
-  return { expenses, incomes, loading };
+  return { expenses, incomes, billPayments, loading };
 }

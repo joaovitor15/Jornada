@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { activeProfile } = useProfile();
   const router = useRouter();
-  const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
+  const { setIsFormOpen } = useAddTransactionModal();
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
 
   const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                 <Calculator className="h-5 w-5" />
               </Button>
             )}
-            <SplitAddButton onOpen={() => setIsTransactionFormOpen(true)} />
+            <SplitAddButton onOpen={() => setIsFormOpen(true)} />
           </div>
         </div>
 
@@ -357,5 +357,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
