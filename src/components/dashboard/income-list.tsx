@@ -1,12 +1,8 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
   doc,
   deleteDoc,
 } from 'firebase/firestore';
@@ -53,12 +49,12 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import { useTransactions } from '@/hooks/use-transactions';
 
 export default function IncomeList() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { incomes, loading } = useTransactions(activeProfile);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [incomeToDelete, setIncomeToDelete] = useState<Income | null>(null);
@@ -66,51 +62,11 @@ export default function IncomeList() {
   const { setTransactionToEdit } = useAddTransactionModal();
 
   const ITEMS_PER_PAGE = 10;
-
+  
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    setCurrentPage(1);
+  }, [activeProfile]);
 
-    setLoading(true);
-    const q = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      orderBy('date', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const incomesData: Income[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.date) {
-            incomesData.push({
-              id: doc.id,
-              ...data,
-              date: data.date,
-            } as Income);
-          }
-        });
-        setIncomes(incomesData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching incomes: ', error);
-        setLoading(false);
-        toast({
-          variant: 'destructive',
-          title: text.common.error,
-          description: text.incomesList.fetchError,
-        });
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, activeProfile, toast]);
 
   const handleDelete = async (id: string) => {
     try {

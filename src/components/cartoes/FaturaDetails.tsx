@@ -1,23 +1,15 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/use-profile';
+import { useState } from 'react';
 import { db } from '@/lib/firebase';
 import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
   doc,
   deleteDoc,
 } from 'firebase/firestore';
-import { Card as CardType, Expense, BillPayment } from '@/lib/types';
+import { Card as CardType, Expense } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { format, getMonth, getYear } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, TrendingUp, TrendingDown, Loader2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -28,12 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { text } from '@/lib/strings';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import { useFatura } from '@/hooks/use-fatura';
 
 interface FaturaDetailsProps {
   card: CardType;
@@ -42,125 +34,19 @@ interface FaturaDetailsProps {
   onAnticipateExpense: (expense: Expense) => void;
 }
 
-type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' };
-
 export default function FaturaDetails({
   card,
   selectedFatura,
   onFaturaSelect,
   onAnticipateExpense
 }: FaturaDetailsProps) {
-  const { user } = useAuth();
-  const { activeProfile } = useProfile();
-  const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState<FaturaTransaction[]>([]);
-  const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState('');
-  const [fechamento, setFechamento] = useState<Date | null>(null);
-  const [vencimento, setVencimento] = useState<Date | null>(null);
   const { toast } = useToast();
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { setTransactionToEdit } = useAddTransactionModal();
 
+  const { transactions, total, status, fechamento, vencimento, loading } = useFatura(card, selectedFatura);
 
-  useEffect(() => {
-    if (!user || !activeProfile || !card) return;
-
-    setLoading(true);
-    setTransactions([]); // Limpa transações anteriores ao trocar de fatura
-    
-    const { startDate, endDate, closingDate, dueDate } = getFaturaPeriod(
-      selectedFatura.year,
-      selectedFatura.month,
-      card.closingDay,
-      card.dueDay
-    );
-
-    setFechamento(closingDate);
-    setVencimento(dueDate);
-
-    const expensesQuery = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('paymentMethod', '==', `Cartão: ${card.name}`),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate)),
-      orderBy('date', 'desc')
-    );
-    
-    const nextFaturaPeriod = getFaturaPeriod(endDate.getFullYear(), endDate.getMonth() + 1, card.closingDay, card.dueDay);
-    const paymentsQuery = query(
-        collection(db, 'billPayments'),
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile),
-        where('cardId', '==', card.id),
-        where('date', '>=', Timestamp.fromDate(closingDate)),
-        where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
-    );
-
-    let localExpenses: FaturaTransaction[] = [];
-    let localPayments: FaturaTransaction[] = [];
-
-    const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-      localExpenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'expense' } as FaturaTransaction));
-      
-      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
-      const totalPaymentsAndRefunds = localPayments.reduce((acc, tx) => {
-        if(tx.type === 'refund') return acc + tx.amount; // Refund adds to payment total
-        if(tx.type === 'payment') return acc + tx.amount;
-        return acc;
-      }, 0);
-
-      const faturaValue = totalExpenses - localPayments.filter(p => p.type === 'refund').reduce((acc, p) => acc + p.amount, 0);
-
-      setTotal(faturaValue < 0 ? 0 : faturaValue);
-
-      const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
-      setTransactions(allTransactions);
-
-      const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
-      const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
-      const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
-      
-      const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaymentsAndRefunds, dueDate, closingDate, isCurrentFatura, isFutureFatura);
-      setStatus(faturaStatus);
-      
-      setLoading(false); 
-    }, (error) => {
-      console.error("Error fetching expenses: ", error);
-      setLoading(false);
-    });
-
-    const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
-      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: doc.data().type } as FaturaTransaction));
-      
-      const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
-      const totalPayments = localPayments.filter(p => p.type === 'payment').reduce((acc, p) => acc + p.amount, 0);
-      const totalRefunds = localPayments.filter(p => p.type === 'refund').reduce((acc, p) => acc + p.amount, 0);
-
-      const faturaValue = totalExpenses - totalRefunds;
-      const totalPaid = totalPayments;
-
-      const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
-      setTransactions(allTransactions);
-
-      const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
-      const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
-      const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
-
-      const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaid, dueDate, closingDate, isCurrentFatura, isFutureFatura);
-      setStatus(faturaStatus);
-    }, (error) => {
-      console.error("Error fetching payments: ", error);
-    });
-
-    return () => {
-      unsubscribeExpenses();
-      unsubscribePayments();
-    };
-  }, [user, activeProfile, card, selectedFatura]);
 
   const handleDeleteExpense = async () => {
     if (!expenseToDelete) return;
@@ -319,5 +205,3 @@ export default function FaturaDetails({
     </div>
   );
 }
-
-    

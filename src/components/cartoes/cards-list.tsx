@@ -2,8 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { type Card } from '@/lib/types';
@@ -13,7 +11,7 @@ import { text } from '@/lib/strings';
 import CardForm from './add-card-form';
 import CardDetails from './CardDetails';
 import { cn } from '@/lib/utils';
-
+import { useCards } from '@/hooks/use-cards';
 
 interface CardsListProps {
   selectedCardId: string | undefined;
@@ -23,54 +21,23 @@ interface CardsListProps {
 export default function CardsList({ selectedCardId, onCardSelect }: CardsListProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
-  const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cards, loading } = useCards();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
 
   useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      onCardSelect(null);
-      return;
-    }
-
-    setLoading(true);
-    const q = query(
-      collection(db, 'cards'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const userCards = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Card[];
-        setCards(userCards);
-        
-        // Auto-select first card if none is selected or selected is gone
-        if (userCards.length > 0) {
-          const currentSelectedCardExists = selectedCardId && userCards.some(c => c.id === selectedCardId);
-          if (!currentSelectedCardExists) {
-             onCardSelect(userCards[0]);
-          }
-        } else {
-          onCardSelect(null);
+    if (!loading) {
+      if (cards.length > 0) {
+        const currentSelectedCardExists = selectedCardId && cards.some(c => c.id === selectedCardId);
+        if (!currentSelectedCardExists) {
+          onCardSelect(cards[0]);
         }
-
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching cards: ', error);
-        setLoading(false);
+      } else {
+        onCardSelect(null);
       }
-    );
+    }
+  }, [loading, cards, selectedCardId, onCardSelect]);
 
-    return () => unsubscribe();
-  }, [user, activeProfile]);
 
   const handleAddClick = () => {
     setCardToEdit(null);
@@ -121,5 +88,3 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
     </div>
   );
 }
-
-    
