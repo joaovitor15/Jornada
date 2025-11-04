@@ -69,18 +69,18 @@ function PlanCard({
   };
   
   const getVencimentoText = (plan: Plan) => {
-    // Defensive check to prevent crash if dueDate is missing or not a timestamp
-    if (!plan.dueDate || typeof plan.dueDate.toDate !== 'function') {
-      return 'Vencimento: Data inválida';
-    }
+    const monthNames = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
 
-    const dueDate = plan.dueDate.toDate();
     if (plan.type === 'Anual') {
-       return `Vence em: ${format(dueDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
+       const monthName = plan.paymentMonth ? monthNames[plan.paymentMonth - 1] : '';
+       return `Vence em: ${plan.paymentDay} de ${monthName}`;
     }
     // For mensal
     const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
-    return `Vence dia: ${format(dueDate, 'dd')} de ${currentMonthName}`;
+    return `Vence dia: ${plan.paymentDay} de ${currentMonthName}`;
   };
 
 

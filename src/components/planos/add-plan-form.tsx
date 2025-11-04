@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select';
 import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2, CalendarIcon } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
 import { type Plan, type Profile, type Card } from '@/lib/types';
 import {
@@ -44,14 +44,7 @@ import {
   businessExpenseCategories,
 } from '@/lib/categories';
 import { Separator } from '../ui/separator';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { onSnapshot, query, where } from 'firebase/firestore';
 
 const getCategoryConfig = (profile: Profile) => {
   switch (profile) {
@@ -68,6 +61,12 @@ const getCategoryConfig = (profile: Profile) => {
 
 const basePaymentMethods = ['Débito', 'Pix'];
 
+const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
+    value: index + 1,
+    label: label,
+}));
+
+
 const subItemSchema = z.object({
   name: z.string().min(1, 'O nome do item é obrigatório.'),
   price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
@@ -83,10 +82,14 @@ const planSchema = z
     paymentDay: z.coerce
       .number()
       .int()
+      .min(1, 'O dia deve ser entre 1 e 31')
+      .max(31, 'O dia deve ser entre 1 e 31'),
+    paymentMonth: z.coerce
+      .number()
+      .int()
       .min(1)
-      .max(31)
+      .max(12)
       .optional(),
-    dueDate: z.date().optional(),
     paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
     mainCategory: z.string().min(1, 'Selecione uma categoria.'),
     subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
@@ -94,22 +97,12 @@ const planSchema = z
   })
   .refine(
     (data) => {
-      if (data.type === 'Anual') return !!data.dueDate;
+      if (data.type === 'Anual') return !!data.paymentMonth;
       return true;
     },
     {
-      message: 'A data de vencimento é obrigatória para planos anuais.',
-      path: ['dueDate'],
-    }
-  )
-  .refine(
-    (data) => {
-      if (data.type === 'Mensal') return !!data.paymentDay;
-      return true;
-    },
-    {
-      message: 'O dia do vencimento é obrigatório para planos mensais.',
-      path: ['paymentDay'],
+      message: 'O mês de vencimento é obrigatório para planos anuais.',
+      path: ['paymentMonth'],
     }
   );
 
@@ -137,7 +130,7 @@ export default function PlanForm({
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
-      dueDate: undefined,
+      paymentMonth: undefined,
       paymentMethod: '',
       mainCategory: '',
       subcategory: '',
@@ -156,13 +149,12 @@ export default function PlanForm({
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && planToEdit) {
-        const isAnnual = planToEdit.type === 'Anual';
         form.reset({
           planName: planToEdit.name,
           amount: planToEdit.amount,
           type: planToEdit.type,
-          paymentDay: isAnnual ? undefined : planToEdit.dueDate.toDate().getDate(),
-          dueDate: isAnnual ? planToEdit.dueDate.toDate() : undefined,
+          paymentDay: planToEdit.paymentDay,
+          paymentMonth: planToEdit.paymentMonth,
           paymentMethod: planToEdit.paymentMethod,
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
@@ -174,7 +166,7 @@ export default function PlanForm({
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
-          dueDate: undefined,
+          paymentMonth: undefined,
           paymentMethod: '',
           mainCategory: '',
           subcategory: '',
@@ -192,7 +184,7 @@ export default function PlanForm({
     });
     return () => subscription.unsubscribe();
   }, [watch, setValue]);
-  
+
   useEffect(() => {
     if (!user || !activeProfile) return;
     const cardsQuery = query(
@@ -201,7 +193,9 @@ export default function PlanForm({
       where('profile', '==', activeProfile)
     );
     const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
-      setCards(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Card)));
+      setCards(
+        snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Card))
+      );
     });
     return () => unsubscribe();
   }, [user, activeProfile]);
@@ -212,14 +206,15 @@ export default function PlanForm({
   const mainCategories = Object.keys(categoryConfig);
   const selectedMainCategory = watch('mainCategory');
   const subcategories = useMemo(() => {
-    return selectedMainCategory ? categoryConfig[selectedMainCategory] || [] : [];
+    return selectedMainCategory
+      ? categoryConfig[selectedMainCategory] || []
+      : [];
   }, [selectedMainCategory, categoryConfig]);
-  
+
   const paymentMethods = useMemo(() => {
-    const cardMethods = cards.map(card => `Cartão: ${card.name}`);
+    const cardMethods = cards.map((card) => `Cartão: ${card.name}`);
     return [...basePaymentMethods, ...cardMethods];
   }, [cards]);
-
 
   const watchedSubItems = watch('subItems');
   const watchedBaseAmount = watch('amount');
@@ -239,27 +234,20 @@ export default function PlanForm({
       return;
     }
 
-    let finalDueDate: Date;
-    if (values.type === 'Mensal' && values.paymentDay) {
-        finalDueDate = new Date();
-        finalDueDate.setDate(values.paymentDay);
-    } else if (values.type === 'Anual' && values.dueDate) {
-        finalDueDate = values.dueDate;
-    } else {
-        // Should not happen due to validation
-        toast({ variant: 'destructive', title: "Erro de Validação", description: "Data de vencimento inválida."});
-        return;
-    }
-
-    const { planName, paymentDay, dueDate, ...rest } = values;
-    const finalValues = {
+    const { planName, ...rest } = values;
+    const finalValues: Omit<Plan, 'id' | 'userId' | 'profile'> = {
       name: planName,
-      ...rest,
-      dueDate: Timestamp.fromDate(finalDueDate),
+      amount: rest.amount,
+      type: rest.type,
+      paymentDay: rest.paymentDay,
+      paymentMonth: rest.type === 'Anual' ? rest.paymentMonth : undefined,
+      paymentMethod: rest.paymentMethod,
+      mainCategory: rest.mainCategory,
+      subcategory: rest.subcategory,
       subItems:
         values.subItems && values.subItems.length > 0 ? values.subItems : [],
     };
-    
+
     try {
       if (isEditMode && planToEdit?.id) {
         const planRef = doc(db, 'plans', planToEdit.id);
@@ -404,7 +392,7 @@ export default function PlanForm({
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="paymentMethod"
@@ -414,12 +402,14 @@ export default function PlanForm({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
+                          <SelectValue
+                            placeholder={text.addExpenseForm.selectPaymentMethod}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {paymentMethods.map((method) => (
-                           <SelectItem key={method} value={method}>
+                          <SelectItem key={method} value={method}>
                             {method}
                           </SelectItem>
                         ))}
@@ -431,90 +421,78 @@ export default function PlanForm({
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>{text.plans.form.type}</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue
+                                placeholder={text.plans.form.typePlaceholder}
+                                />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Mensal">
+                                {text.plans.form.types.monthly}
+                            </SelectItem>
+                            <SelectItem value="Anual">
+                                {text.plans.form.types.yearly}
+                            </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 <FormField
                   control={form.control}
-                  name="type"
+                  name="paymentDay"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{text.plans.form.type}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={text.plans.form.typePlaceholder}
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Mensal">
-                            {text.plans.form.types.monthly}
-                          </SelectItem>
-                          <SelectItem value="Anual">
-                            {text.plans.form.types.yearly}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Dia do Vencimento</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.valueAsNumber)
+                          }
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                {planType === 'Mensal' ? (
-                   <FormField
+                {planType === 'Anual' && (
+                  <FormField
                     control={form.control}
-                    name="paymentDay"
+                    name="paymentMonth"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Dia do Vencimento</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={31}
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(e.target.valueAsNumber)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                   <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col pt-2">
-                        <FormLabel>Data de Vencimento</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
+                        <FormLabel>Mês do Vencimento</FormLabel>
+                         <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
                             <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className="pl-3 text-left font-normal"
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP", { locale: ptBR })
-                                ) : (
-                                  <span>Escolha uma data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o mês" />
+                                </SelectTrigger>
                             </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                            <SelectContent>
+                                {monthOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={String(opt.value)}>
+                                        {opt.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
