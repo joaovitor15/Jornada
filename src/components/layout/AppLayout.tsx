@@ -1,9 +1,8 @@
+
 'use client';
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
 import Header from '@/components/header';
-import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import SidebarNav from './SidebarNav';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +12,6 @@ import {
 } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
-import AddIncomeForm from '../dashboard/add-income-form';
 import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
 import PayBillForm from '../faturas/pay-bill-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
@@ -23,8 +20,6 @@ import AddTransactionForm from '../lancamentos/add-transaction-form';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { isFormOpen: isExpenseFormOpen, setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
-  const { isFormOpen: isIncomeFormOpen, setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
   const { isFormOpen: isPayBillFormOpen, setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
   const { isFormOpen: isTransactionFormOpen, setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const isMobile = useIsMobile();
@@ -68,16 +63,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         
           <main className="flex-1 p-4 sm:p-6 md:p-8 h-[calc(100vh-56px)] overflow-auto border-t">{children}</main>
         </div>
-
-        <AddExpenseForm
-          isOpen={isExpenseFormOpen}
-          onOpenChange={setIsExpenseFormOpen}
-        />
-
-        <AddIncomeForm
-          isOpen={isIncomeFormOpen}
-          onOpenChange={setIsIncomeFormOpen}
-        />
         
         <PayBillForm
           isOpen={isPayBillFormOpen}

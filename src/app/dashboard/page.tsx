@@ -33,8 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import AddIncomeForm from '@/components/dashboard/add-income-form';
-import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import FinancialChart from '@/components/dashboard/FinancialChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction } from '@/lib/types';
@@ -42,7 +40,7 @@ import { getYear, getMonth } from 'date-fns';
 import { BillPayment } from '@/lib/types';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
 import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
-
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -55,8 +53,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { activeProfile } = useProfile();
   const router = useRouter();
-  const [isIncomeFormOpen, setIsIncomeFormOpen] = useState(false);
-  const [isExpenseFormOpen, setIsExpenseFormOpen] = useState(false);
+  const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
@@ -257,14 +254,14 @@ export default function DashboardPage() {
               </Button>
             )}
              <Button
-              onClick={() => setIsExpenseFormOpen(true)}
+              onClick={() => setIsTransactionFormOpen(true)}
               size="icon"
               className="h-10 w-10 rounded-full bg-red-500 text-white hover:bg-red-600"
             >
               <ArrowDownLeft className="h-5 w-5" />
             </Button>
             <Button
-              onClick={() => setIsIncomeFormOpen(true)}
+              onClick={() => setIsTransactionFormOpen(true)}
               size="icon"
               className="h-10 w-10 rounded-full bg-green-500 text-white hover:bg-green-600"
             >
@@ -416,14 +413,6 @@ export default function DashboardPage() {
         <FaturasAtuais />
 
       </div>
-      <AddIncomeForm
-        isOpen={isIncomeFormOpen}
-        onOpenChange={setIsIncomeFormOpen}
-      />
-      <AddExpenseForm
-        isOpen={isExpenseFormOpen}
-        onOpenChange={setIsExpenseFormOpen}
-      />
       {(activeProfile === 'Home' || activeProfile === 'Business') && (
         <SumExpensesForm
           isOpen={isSumFormOpen}
