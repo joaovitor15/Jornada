@@ -13,6 +13,7 @@ import {
   where,
   writeBatch,
   doc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -57,6 +58,8 @@ import {
   type Card,
   type PaymentMethod,
   type Profile,
+  Expense,
+  Income,
 } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
@@ -68,6 +71,7 @@ import {
   businessIncomeCategories,
 } from '@/lib/categories';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 const basePaymentMethods: PaymentMethod[] = ['Dinheiro/Pix', 'Débito'];
 
@@ -90,7 +94,6 @@ const formSchema = z.object({
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
 }).refine(data => {
-    // Make paymentMethod required only if type is 'expense'
     if (data.type === 'expense') {
         return !!data.paymentMethod && data.paymentMethod.length > 0;
     }
@@ -100,10 +103,6 @@ const formSchema = z.object({
     path: ['paymentMethod'],
 });
 
-type AddTransactionFormProps = {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-};
 
 const getCategoryConfig = (profile: Profile, type: 'expense' | 'income') => {
   if (type === 'expense') {
@@ -123,15 +122,15 @@ const getCategoryConfig = (profile: Profile, type: 'expense' | 'income') => {
   }
 };
 
-export default function AddTransactionForm({
-  isOpen,
-  onOpenChange,
-}: AddTransactionFormProps) {
+export default function AddTransactionForm() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
   const [dateInput, setDateInput] = useState('');
+  const { isFormOpen, setIsFormOpen, transactionToEdit, setTransactionToEdit } = useAddTransactionModal();
+  
+  const isEditMode = !!transactionToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -143,32 +142,50 @@ export default function AddTransactionForm({
   const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
   
   useEffect(() => {
-     if (isOpen) {
+    if (isFormOpen) {
       const initialDate = new Date();
-      reset({
-        type: 'expense',
-        description: '',
-        amount: undefined,
-        mainCategory: '',
-        subcategory: '',
-        paymentMethod: '',
-        date: initialDate,
-        installments: 1,
-      });
-      setDateInput(format(initialDate, 'dd/MM/yyyy'));
+      
+      if (isEditMode && transactionToEdit) {
+         const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
+         reset({
+            type: type,
+            description: transactionToEdit.description,
+            amount: transactionToEdit.amount,
+            mainCategory: transactionToEdit.mainCategory,
+            subcategory: transactionToEdit.subcategory,
+            paymentMethod: type === 'expense' ? (transactionToEdit as Expense).paymentMethod : undefined,
+            date: transactionToEdit.date.toDate(),
+            installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
+        });
+        setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
+      } else {
+        reset({
+            type: 'expense',
+            description: '',
+            amount: undefined,
+            mainCategory: '',
+            subcategory: '',
+            paymentMethod: '',
+            date: initialDate,
+            installments: 1,
+        });
+        setDateInput(format(initialDate, 'dd/MM/yyyy'));
+      }
     }
-  }, [isOpen, reset]);
+  }, [isFormOpen, isEditMode, transactionToEdit, reset]);
 
   // Handle dynamic form changes based on transaction type
   useEffect(() => {
-    setValue('mainCategory', '');
-    setValue('subcategory', '');
+    if(!isEditMode) {
+      setValue('mainCategory', '');
+      setValue('subcategory', '');
+    }
     if (transactionType === 'income') {
         setValue('paymentMethod', undefined);
         setValue('installments', 1);
-        trigger('paymentMethod'); // Re-validate paymentMethod
+        trigger('paymentMethod');
     }
-  }, [transactionType, setValue, trigger]);
+  }, [transactionType, setValue, trigger, isEditMode]);
 
 
   useEffect(() => {
@@ -199,11 +216,11 @@ export default function AddTransactionForm({
         setDateInput(format(value.date, 'dd/MM/yyyy'));
       }
        if (name === 'mainCategory') {
-         setValue('subcategory', '');
+         if (!isEditMode) setValue('subcategory', '');
        }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+  }, [watch, setValue, isEditMode]);
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
@@ -220,73 +237,78 @@ export default function AddTransactionForm({
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
-      onOpenChange(open);
+      setIsFormOpen(open);
+      if (!open) {
+        setTransactionToEdit(null);
+      }
     }
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: 'Você precisa estar logado.',
-      });
+      toast({ variant: 'destructive', title: text.common.error, description: 'Você precisa estar logado.' });
       return;
     }
     
-    if (values.type === 'expense') {
-        const { installments = 1 } = values;
-        const batch = writeBatch(db);
-        const installmentAmount = values.amount / installments;
-        const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
-        
-        for (let i = 0; i < installments; i++) {
-          const installmentDate = addMonths(values.date, i);
-          const expenseData: any = {
-            userId: user.uid,
-            profile: activeProfile,
-            description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
-            amount: installmentAmount,
-            mainCategory: values.mainCategory,
-            subcategory: values.subcategory,
-            paymentMethod: values.paymentMethod,
-            date: Timestamp.fromDate(installmentDate),
-            installments: installments,
-            currentInstallment: i + 1,
-          };
-          
-          if (originalExpenseId) {
-            expenseData.originalExpenseId = originalExpenseId;
-          }
+    try {
+        if (isEditMode && transactionToEdit) {
+            // EDIT LOGIC
+            const collectionName = values.type === 'expense' ? 'expenses' : 'incomes';
+            const docRef = doc(db, collectionName, transactionToEdit.id);
+            
+            const dataToUpdate: Partial<Expense | Income> = {
+                description: values.description || '',
+                amount: values.amount,
+                mainCategory: values.mainCategory,
+                subcategory: values.subcategory,
+                date: Timestamp.fromDate(values.date),
+            };
 
-          const docRef = doc(collection(db, 'expenses'));
-          batch.set(docRef, expenseData);
+            if (values.type === 'expense') {
+                (dataToUpdate as Partial<Expense>).paymentMethod = values.paymentMethod;
+            }
+
+            await updateDoc(docRef, dataToUpdate);
+            toast({ title: text.common.success, description: "Lançamento atualizado com sucesso." });
+        } else {
+            // CREATE LOGIC
+            if (values.type === 'expense') {
+                const { installments = 1 } = values;
+                const batch = writeBatch(db);
+                const installmentAmount = values.amount / installments;
+                const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
+                
+                for (let i = 0; i < installments; i++) {
+                  const installmentDate = addMonths(values.date, i);
+                  const expenseData: any = {
+                    userId: user.uid, profile: activeProfile,
+                    description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
+                    amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
+                    paymentMethod: values.paymentMethod, date: Timestamp.fromDate(installmentDate),
+                    installments: installments, currentInstallment: i + 1,
+                  };
+                  
+                  if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
+                  const docRef = doc(collection(db, 'expenses'));
+                  batch.set(docRef, expenseData);
+                }
+                await batch.commit();
+                toast({ title: text.common.success, description: text.addExpenseForm.addSuccess });
+            } else { // 'income'
+                const incomeData = {
+                  userId: user.uid, profile: activeProfile, description: values.description || '',
+                  amount: values.amount, mainCategory: values.mainCategory, subcategory: values.subcategory,
+                  date: Timestamp.fromDate(values.date),
+                };
+                await addDoc(collection(db, 'incomes'), incomeData);
+                toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
+            }
         }
-        await batch.commit();
-
-        toast({
-          title: text.common.success,
-          description: text.addExpenseForm.addSuccess,
-        });
-
-    } else { // 'income'
-        const incomeData = {
-          userId: user.uid,
-          profile: activeProfile,
-          description: values.description || '',
-          amount: values.amount,
-          mainCategory: values.mainCategory,
-          subcategory: values.subcategory,
-          date: Timestamp.fromDate(values.date),
-        };
-        await addDoc(collection(db, 'incomes'), incomeData);
-        toast({
-          title: text.common.success,
-          description: text.addIncomeForm.addSuccess,
-        });
+        handleOpenChange(false);
+    } catch (error) {
+        console.error("Error saving transaction:", error);
+        toast({ variant: 'destructive', title: text.common.error, description: isEditMode ? "Falha ao atualizar lançamento." : "Falha ao criar lançamento." });
     }
-
-    handleOpenChange(false);
   }
 
   const handleDateInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -297,19 +319,13 @@ export default function AddTransactionForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="sm:max-w-md"
-        onInteractOutside={(e) => { if (isSubmitting) e.preventDefault(); }}
-      >
+    <Dialog open={isFormOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => { if (isSubmitting) e.preventDefault(); }}>
         <DialogHeader>
-          <DialogTitle>Novo Lançamento</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 py-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={control}
               name="type"
@@ -321,7 +337,7 @@ export default function AddTransactionForm({
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                       className="flex space-x-4 pt-2"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isEditMode}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl><RadioGroupItem value="expense" /></FormControl>
@@ -419,7 +435,7 @@ export default function AddTransactionForm({
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>{text.common.paymentMethod}</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || isEditMode}>
                             <FormControl>
                                 <SelectTrigger>
                                 <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
@@ -448,7 +464,7 @@ export default function AddTransactionForm({
                       <Input
                         type="number" min="1" {...field}
                         onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isEditMode}
                       />
                     </FormControl>
                     <FormMessage />
@@ -496,7 +512,7 @@ export default function AddTransactionForm({
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Adicionar Lançamento
+                {isEditMode ? 'Salvar Alterações' : 'Adicionar Lançamento'}
               </Button>
             </DialogFooter>
           </form>

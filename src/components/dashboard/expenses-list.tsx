@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -64,7 +63,7 @@ export default function ExpensesList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const { toast } = useToast();
-  const { setIsFormOpen } = useAddTransactionModal();
+  const { setTransactionToEdit } = useAddTransactionModal();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -132,8 +131,7 @@ export default function ExpensesList() {
   };
 
   const handleEditOpen = (expense: Expense) => {
-    // TODO: Re-implementar edição com o novo formulário unificado
-    setIsFormOpen(true);
+    setTransactionToEdit(expense);
   };
 
   const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);

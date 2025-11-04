@@ -63,7 +63,7 @@ export default function IncomeList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [incomeToDelete, setIncomeToDelete] = useState<Income | null>(null);
   const { toast } = useToast();
-  const { setIsFormOpen } = useAddTransactionModal();
+  const { setTransactionToEdit } = useAddTransactionModal();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -131,8 +131,7 @@ export default function IncomeList() {
   };
   
   const handleEditOpen = (income: Income) => {
-    // TODO: Re-implementar edição com o novo formulário unificado
-    setIsFormOpen(true);
+    setTransactionToEdit(income);
   };
 
   const totalPages = Math.ceil(incomes.length / ITEMS_PER_PAGE);
