@@ -8,6 +8,7 @@ import {
   CreditCard,
   ClipboardList,
   Shield,
+  ClipboardCheck,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -30,6 +31,11 @@ export default function SidebarNav() {
       href: '/relatorios',
       label: text.sidebar.reports,
       icon: BarChart,
+    },
+    {
+      href: '/planos-atuais',
+      label: text.sidebar.currentPlans,
+      icon: ClipboardCheck,
     },
     {
       href: '/cartoes',

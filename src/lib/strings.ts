@@ -20,6 +20,7 @@ export const text = {
     cards: 'Cartões',
     emergencyReserve: 'Reserva de Emergência',
     payBill: 'Pagar Fatura',
+    currentPlans: 'Planos Atuais',
   },
   dashboard: {
     title: 'Dashboard',
