@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -36,7 +37,7 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Plan, type Profile, SubItem } from '@/lib/types';
+import { type Plan, type Profile } from '@/lib/types';
 import {
   personalExpenseCategories,
   homeExpenseCategories,
@@ -220,227 +221,231 @@ export default function PlanForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 max-h-[70vh] overflow-y-auto pr-4"
+            className="flex flex-col max-h-[80vh]"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
-                control={form.control}
-                name="planName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.plans.form.name}</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Netflix, Meli+" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custo Base</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        placeholder={text.placeholders.amount}
-                        disabled={isSubmitting}
-                        value={field.value}
-                        onValueChange={(values) =>
-                          field.onChange(values?.floatValue)
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="mainCategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.common.mainCategory}</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting}
-                    >
+            <div className="space-y-4 overflow-y-auto pr-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="planName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.plans.form.name}</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.addExpenseForm.selectCategory}
-                          />
-                        </SelectTrigger>
+                        <Input placeholder="Ex: Netflix, Meli+" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {mainCategories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="subcategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.common.subcategory}</FormLabel>
-                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting || subcategories.length === 0}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.addExpenseForm.selectSubcategory}
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subcategories.map((sub) => (
-                          <SelectItem key={sub} value={sub}>
-                            {sub}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.plans.form.type}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.plans.form.typePlaceholder}
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Mensal">
-                          {text.plans.form.types.monthly}
-                        </SelectItem>
-                        <SelectItem value="Anual">
-                          {text.plans.form.types.yearly}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="paymentDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dia do Vencimento</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={31}
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(e.target.valueAsNumber)
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <FormLabel>Planos com Combo</FormLabel>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-                </Button>
-              </div>
-              <div className="space-y-2 mt-2">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-end gap-2">
-                    <FormField
-                      control={form.control}
-                      name={`subItems.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`subItems.${index}.price`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <CurrencyInput
-                                placeholder="Preço"
-                                className="w-32"
-                                value={field.value}
-                                onValueChange={(values) => field.onChange(values?.floatValue)}
-                             />
-                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="pt-4 space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
-                <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isSubmitting}
-                >
-                  {text.common.cancel}
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  {isEditMode ? text.plans.form.save : text.plans.form.add}
-                </Button>
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custo Base</FormLabel>
+                      <FormControl>
+                        <CurrencyInput
+                          placeholder={text.placeholders.amount}
+                          disabled={isSubmitting}
+                          value={field.value}
+                          onValueChange={(values) =>
+                            field.onChange(values?.floatValue)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="mainCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.common.mainCategory}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={text.addExpenseForm.selectCategory}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mainCategories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subcategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.common.subcategory}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting || subcategories.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={text.addExpenseForm.selectSubcategory}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {subcategories.map((sub) => (
+                            <SelectItem key={sub} value={sub}>
+                              {sub}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.plans.form.type}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={text.plans.form.typePlaceholder}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Mensal">
+                            {text.plans.form.types.monthly}
+                          </SelectItem>
+                          <SelectItem value="Anual">
+                            {text.plans.form.types.yearly}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="paymentDay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dia do Vencimento</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.valueAsNumber)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <FormLabel>Planos com Combo</FormLabel>
+                  <Button type="button" variant="outline" size="sm" onClick={() => append({ name: '', price: 0 })}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+                  </Button>
+                </div>
+                <div className="space-y-2 mt-2">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-end gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`subItems.${index}.name`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`subItems.${index}.price`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <CurrencyInput
+                                  placeholder="Preço"
+                                  className="w-32"
+                                  value={field.value}
+                                  onValueChange={(values) => field.onChange(values?.floatValue)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 mt-auto">
+              <div>
+                  <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
+                  <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+              </div>
+              <DialogFooter className="mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={isSubmitting}
+                  >
+                    {text.common.cancel}
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isEditMode ? text.plans.form.save : text.plans.form.add}
+                  </Button>
+              </DialogFooter>
             </div>
           </form>
         </Form>
