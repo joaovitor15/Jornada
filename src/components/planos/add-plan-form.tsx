@@ -15,8 +15,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -211,40 +209,34 @@ export default function PlanForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? text.plans.form.editTitle : text.plans.form.title}
           </DialogTitle>
-          <DialogDescription>
-            {isEditMode
-              ? text.plans.form.editDescription
-              : text.plans.form.description}
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{text.plans.form.name}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={text.placeholders.description}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.plans.form.name}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Netflix, Meli+"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
                <FormField
                 control={form.control}
                 name="amount"
@@ -265,60 +257,9 @@ export default function PlanForm({
                   </FormItem>
                 )}
               />
-               <div className="flex flex-col justify-end">
-                  <p className="text-sm font-medium">Valor Total do Plano</p>
-                  <p className="text-xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <FormLabel>Sub-Itens (para planos combo)</FormLabel>
-              <div className="space-y-2 mt-2">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-end gap-2">
-                    <FormField
-                      control={form.control}
-                      name={`subItems.${index}.name`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`subItems.${index}.price`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <CurrencyInput
-                                placeholder="Preço"
-                                className="w-28"
-                                value={field.value}
-                                onValueChange={(values) => field.onChange(values?.floatValue)}
-                             />
-                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ name: '', price: 0 })}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-              </Button>
             </div>
             
-            <Separator />
-            
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="mainCategory"
@@ -381,7 +322,7 @@ export default function PlanForm({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -414,7 +355,7 @@ export default function PlanForm({
                 name="paymentDay"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{text.plans.form.paymentDay}</FormLabel>
+                    <FormLabel>Dia do Vencimento</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -431,7 +372,57 @@ export default function PlanForm({
                 )}
               />
             </div>
-            <DialogFooter className="pt-4">
+            
+            <Separator className="my-6" />
+
+            <div>
+              <FormLabel>Sub-Itens (para planos combo)</FormLabel>
+              <div className="space-y-2 mt-2">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex items-end gap-2">
+                    <FormField
+                      control={form.control}
+                      name={`subItems.${index}.name`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl><Input {...field} placeholder="Nome do item (ex: Disney+)" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`subItems.${index}.price`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CurrencyInput
+                                placeholder="Preço"
+                                className="w-32"
+                                value={field.value}
+                                onValueChange={(values) => field.onChange(values?.floatValue)}
+                             />
+                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ name: '', price: 0 })}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+              </Button>
+            </div>
+             <div className="pt-4 text-right">
+                  <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
+                  <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+              </div>
+
+            <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -446,7 +437,7 @@ export default function PlanForm({
                 )}
                 {isEditMode ? text.plans.form.save : text.plans.form.add}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
