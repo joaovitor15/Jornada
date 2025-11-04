@@ -218,7 +218,7 @@ export default function PlanForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
+            className="space-y-4 max-h-[70vh] overflow-y-auto pr-4"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -370,7 +370,7 @@ export default function PlanForm({
               />
             </div>
             
-            <Separator className="my-6" />
+            <Separator />
 
             <div>
               <FormLabel>Sub-Itens (para planos combo)</FormLabel>
@@ -415,7 +415,9 @@ export default function PlanForm({
               </Button>
             </div>
             
-            <div className="pt-4 flex justify-between items-center bg-background sticky bottom-0 -mx-6 px-6 pb-6">
+            <Separator />
+            
+            <div className="pt-4 flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
                   <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
