@@ -1,17 +1,10 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 import {
   Loader2,
   TrendingUp,
@@ -33,13 +26,13 @@ import {
 } from '@/components/ui/select';
 import FinancialChart from '@/components/dashboard/FinancialChart';
 import { useProfile } from '@/hooks/use-profile';
-import { Transaction } from '@/lib/types';
+import { Transaction, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
-import { BillPayment } from '@/lib/types';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
 import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
+import { useTransactions } from '@/hooks/use-transactions';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -54,12 +47,14 @@ export default function DashboardPage() {
   const router = useRouter();
   const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
+
+  const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
+
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalVendas, setTotalVendas] = useState(0);
   const [totalAlimentacao, setTotalAlimentacao] = useState(0);
-  const [loadingBalance, setLoadingBalance] = useState(true);
 
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -74,112 +69,64 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoadingBalance(false);
-      return;
+    if (transactionsLoading) return;
+
+    const allTransactions = [...incomes, ...expenses, ...billPayments];
+    if (allTransactions.length > 0) {
+      const yearsWithData = new Set(
+        allTransactions
+          .map((t) => (t.date ? getYear((t.date as unknown as Timestamp).toDate()) : null))
+          .filter(Boolean) as number[]
+      );
+      const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
+      if (sortedYears.length > 0) {
+        setAvailableYears(sortedYears);
+        if (!yearsWithData.has(selectedYear)) {
+          setSelectedYear(sortedYears[0]);
+        }
+      }
+    } else {
+      setAvailableYears([currentYear]);
     }
 
-    setLoadingBalance(true);
+    const filterByMonthAndYear = (t: Omit<Transaction | BillPayment, 'id'>) => {
+      if (!t.date) return false;
+      const date = (t.date as unknown as Timestamp).toDate();
+      return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
+    };
 
-    const baseQuery = (collectionName: string) =>
-      query(
-        collection(db, collectionName),
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile)
-      );
+    const monthlyIncomes = incomes
+      .filter(filterByMonthAndYear)
+      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
+      .reduce((acc, curr) => acc + curr.amount, 0);
 
-    const incomesQuery = baseQuery('incomes');
-    const expensesQuery = baseQuery('expenses');
-    const billPaymentsQuery = baseQuery('billPayments');
+    const monthlyVendas = incomes
+      .filter(filterByMonthAndYear)
+      .filter(income => income.subcategory === text.businessCategories.pfpbSubcategory)
+      .reduce((acc, curr) => acc + curr.amount, 0);
+    
+    const monthlyAlimentacao = expenses
+      .filter(filterByMonthAndYear)
+      .filter(expense => expense.mainCategory === 'Alimentação')
+      .reduce((acc, curr) => acc + curr.amount, 0);
 
-    const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
-      const incomes = incomesSnapshot.docs.map((doc) => ({
-        ...(doc.data() as Omit<Transaction, 'id'>),
-        id: doc.id,
-      }));
+    const monthlyNonCardExpenses = expenses
+      .filter(filterByMonthAndYear)
+      .filter(e => !e.paymentMethod.startsWith('Cartão:'))
+      .reduce((acc, curr) => acc + curr.amount, 0);
+    
+    const monthlyBillPayments = billPayments
+      .filter(filterByMonthAndYear)
+      .reduce((acc, curr) => acc + curr.amount, 0);
 
-      const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
-        const expenses = expensesSnapshot.docs.map((doc) => ({
-          ...(doc.data() as Omit<Transaction, 'id'>),
-          id: doc.id,
-        }));
-        
-        const unsubscribeBillPayments = onSnapshot(billPaymentsQuery, (billPaymentsSnapshot) => {
-           const billPayments = billPaymentsSnapshot.docs.map((doc) => ({
-            ...(doc.data() as Omit<BillPayment, 'id'>),
-            id: doc.id,
-          }));
+    const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
 
-          const allTransactions = [...incomes, ...expenses];
-          if (allTransactions.length > 0) {
-            const yearsWithData = new Set(
-              allTransactions
-                .map((t) =>
-                  t.date ? getYear((t.date as unknown as Timestamp).toDate()) : null
-                )
-                .filter(Boolean) as number[]
-            );
-            const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
-            if (sortedYears.length > 0) {
-              setAvailableYears(sortedYears);
-              if (!yearsWithData.has(selectedYear)) {
-                setSelectedYear(sortedYears[0]);
-              }
-            }
-          } else {
-            setAvailableYears([currentYear]);
-          }
-
-          const filterByMonthAndYear = (t: Omit<Transaction | BillPayment, 'id'>) => {
-            if (!t.date) return false;
-            const date = (t.date as unknown as Timestamp).toDate();
-            return (
-              getYear(date) === selectedYear && getMonth(date) === selectedMonth
-            );
-          };
-
-          const monthlyIncomes = incomes
-            .filter(filterByMonthAndYear)
-            .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-          const monthlyVendas = incomes
-            .filter(filterByMonthAndYear)
-            .filter(income => income.subcategory === text.businessCategories.pfpbSubcategory)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-          
-          const monthlyAlimentacao = expenses
-            .filter(filterByMonthAndYear)
-            .filter(expense => expense.mainCategory === 'Alimentação')
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-          const monthlyNonCardExpenses = expenses
-            .filter(filterByMonthAndYear)
-            .filter(e => !e.paymentMethod.startsWith('Cartão:'))
-            .reduce((acc, curr) => acc + curr.amount, 0);
-          
-          const monthlyBillPayments = billPayments
-            .filter(filterByMonthAndYear)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-          const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
-
-          setTotalIncomes(monthlyIncomes);
-          setTotalExpenses(totalMonthlyExpenses);
-          setTotalVendas(monthlyVendas);
-          setTotalAlimentacao(monthlyAlimentacao);
-          setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
-          setLoadingBalance(false);
-        });
-
-        return () => unsubscribeBillPayments();
-      });
-
-      return () => unsubscribeExpenses();
-    });
-
-    return () => unsubscribeIncomes();
-  }, [user, activeProfile, selectedYear, selectedMonth, router]);
+    setTotalIncomes(monthlyIncomes);
+    setTotalExpenses(totalMonthlyExpenses);
+    setTotalVendas(monthlyVendas);
+    setTotalAlimentacao(monthlyAlimentacao);
+    setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
+  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth]);
 
   if (authLoading || !user) {
     return (
@@ -188,6 +135,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+  
+  const loading = authLoading || transactionsLoading;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -276,13 +225,13 @@ export default function DashboardPage() {
                 <CardTitle className="flex items-center justify-between">
                   {text.summary.totalBalance}
                   <span className="text-xs font-normal text-muted-foreground">
-                    ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                    ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
                     {selectedYear})
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                {loadingBalance ? (
+                {loading ? (
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 ) : (
                   <div className="flex flex-col items-center gap-6">
@@ -335,13 +284,13 @@ export default function DashboardPage() {
                   <CardTitle className="flex items-center justify-between">
                     {text.dashboard.pfpbProgram}
                      <span className="text-xs font-normal text-muted-foreground">
-                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                        ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
                         {selectedYear})
                     </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                   {loadingBalance ? (
+                   {loading ? (
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   ) : (
                     <div className="flex items-center gap-4">
@@ -367,13 +316,13 @@ export default function DashboardPage() {
                   <CardTitle className="flex items-center justify-between">
                     {text.dashboard.food}
                      <span className="text-xs font-normal text-muted-foreground">
-                        ({months.find((m) => m.value === selectedMonth)?.label} de {' '}
+                        ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
                         {selectedYear})
                     </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                   {loadingBalance ? (
+                   {loading ? (
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   ) : (
                     <div className="flex items-center gap-4">
@@ -408,3 +357,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

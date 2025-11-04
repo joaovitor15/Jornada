@@ -26,15 +26,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown, Wallet } from 'lucide-react';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
+import { useTransactions } from '@/hooks/use-transactions';
+import { Timestamp } from 'firebase/firestore';
 import type { Income, Expense, BillPayment } from '@/lib/types';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 
@@ -56,8 +49,9 @@ const months = Object.entries(text.dashboard.months).map(
 );
 
 export default function ReportsPage() {
-  const { user } = useAuth();
   const { activeProfile } = useProfile();
+  const { incomes: allIncomes, expenses: allExpenses, billPayments: allBillPayments, loading: dataLoading } = useTransactions(activeProfile);
+
   const yearOptions = generateYearOptions();
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
@@ -65,12 +59,6 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(
     new Date().getMonth()
   );
-
-  // States for data
-  const [allIncomes, setAllIncomes] = useState<Income[]>([]);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [allBillPayments, setAllBillPayments] = useState<BillPayment[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
 
   // View modes
   const [netRevenueViewMode, setNetRevenueViewMode] = useState('mensal');
@@ -140,62 +128,10 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-  // Main effect to fetch all data for the active profile
-  useEffect(() => {
-    if (!user) {
-      setAllIncomes([]);
-      setAllExpenses([]);
-      setAllBillPayments([]);
-      setLoadingData(false);
-      return;
-    }
-    setLoadingData(true);
-
-    const incomesQuery = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-    const expensesQuery = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-    const billPaymentsQuery = query(
-      collection(db, 'billPayments'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
-    const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
-      const incomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
-      setAllIncomes(incomes);
-      setLoadingData(false);
-    }, () => setLoadingData(false));
-
-    const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
-      const expenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
-      setAllExpenses(expenses);
-      setLoadingData(false);
-    }, () => setLoadingData(false));
-
-    const unsubBillPayments = onSnapshot(billPaymentsQuery, (snap) => {
-      const payments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BillPayment));
-      setAllBillPayments(payments);
-      setLoadingData(false);
-    }, () => setLoadingData(false));
-    
-
-    return () => {
-      unsubIncomes();
-      unsubExpenses();
-      unsubBillPayments();
-    };
-  }, [user, activeProfile]);
 
   // Effect for Personal Profile Total Income
   useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
     setLoadingPersonalTotalIncome(true);
   
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
@@ -217,11 +153,11 @@ export default function ReportsPage() {
     setPersonalTotalIncome(calculatedTotalIncome);
     setLoadingPersonalTotalIncome(false);
   
-  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode]);
+  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode, dataLoading]);
 
   // Effect for Personal Profile Investments
   useEffect(() => {
-    if (activeProfile !== 'Personal') return;
+    if (activeProfile !== 'Personal' || dataLoading) return;
     setLoadingInvestments(true);
 
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
@@ -245,11 +181,11 @@ export default function ReportsPage() {
     setInvestments(calculatedInvestments);
     setLoadingInvestments(false);
 
-  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode]);
+  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode, dataLoading]);
 
   // Effect for Personal Profile Outgoings
   useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
     setLoadingOutgoings(true);
   
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
@@ -285,11 +221,11 @@ export default function ReportsPage() {
     setOutgoings(calculatedOutgoings);
     setLoadingOutgoings(false);
   
-  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
+  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode, dataLoading]);
 
   // Effect for Personal Profile Final Balance
   useEffect(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return;
+    if (activeProfile !== 'Personal' && activeProfile !== 'Home' || dataLoading) return;
     setLoadingFinalBalance(true);
 
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
@@ -344,13 +280,13 @@ export default function ReportsPage() {
     setFinalBalance(calculatedFinalBalance);
     setLoadingFinalBalance(false);
 
-  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode]);
+  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode, dataLoading]);
 
 
 
   // Effect for Net Revenue
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingNetRevenue(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -373,12 +309,12 @@ export default function ReportsPage() {
     setNetRevenue(calculatedNetRevenue);
     setLoadingNetRevenue(false);
 
-  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile]);
+  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, dataLoading]);
 
 
   // Effect for Gross Profit and Gross Margin
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingGrossProfit(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -415,12 +351,12 @@ export default function ReportsPage() {
     setGrossMargin(calculatedGrossMargin);
     setLoadingGrossProfit(false);
 
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, dataLoading]);
 
 
   // Effect for Net Profit and Net Margin
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingNetProfit(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -453,11 +389,11 @@ export default function ReportsPage() {
     setNetProfit(calculatedNetProfit);
     setNetMargin(calculatedNetMargin);
     setLoadingNetProfit(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile, dataLoading]);
 
   // Effect for CMV and Cost Margin
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingCmv(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -491,11 +427,11 @@ export default function ReportsPage() {
     setCmv(calculatedCmv);
     setCostMargin(calculatedCostMargin);
     setLoadingCmv(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile, dataLoading]);
   
     // Effect for Personnel Cost
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingPersonnelCost(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -530,11 +466,11 @@ export default function ReportsPage() {
     setPersonnelCost(calculatedPersonnelCost);
     setPersonnelCostMargin(calculatedPersonnelCostMargin);
     setLoadingPersonnelCost(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile, dataLoading]);
 
   // Effect for Impostos
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingImpostos(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -568,11 +504,11 @@ export default function ReportsPage() {
     setImpostos(calculatedImpostos);
     setImpostosMargin(calculatedImpostosMargin);
     setLoadingImpostos(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile, dataLoading]);
 
   // Effect for Sistema
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingSistema(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -606,11 +542,11 @@ export default function ReportsPage() {
     setSistema(calculatedSistema);
     setSistemaMargin(calculatedSistemaMargin);
     setLoadingSistema(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile, dataLoading]);
 
   // Effect for Fixed Costs
   useEffect(() => {
-    if (activeProfile !== 'Business') return;
+    if (activeProfile !== 'Business' || dataLoading) return;
     setLoadingFixedCosts(true);
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
@@ -644,7 +580,7 @@ export default function ReportsPage() {
     setFixedCosts(calculatedFixedCosts);
     setFixedCostsMargin(calculatedFixedCostsMargin);
     setLoadingFixedCosts(false);
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile, dataLoading]);
 
 
   const periodLabel = useMemo(() => {
@@ -652,7 +588,7 @@ export default function ReportsPage() {
   }, [selectedMonth, selectedYear]);
 
   if (activeProfile === 'Personal') {
-    const isLoading = loadingData || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings || loadingFinalBalance;
+    const isLoading = dataLoading || loadingPersonalTotalIncome || loadingInvestments || loadingOutgoings || loadingFinalBalance;
     const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
     const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
     const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
@@ -913,7 +849,7 @@ export default function ReportsPage() {
   }
   
   if (activeProfile === 'Home') {
-    const isLoading = loadingData || loadingPersonalTotalIncome || loadingOutgoings || loadingFinalBalance;
+    const isLoading = dataLoading || loadingPersonalTotalIncome || loadingOutgoings || loadingFinalBalance;
     const homeIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
     const homeOutgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
     const homeFinalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
@@ -1127,7 +1063,7 @@ export default function ReportsPage() {
     );
   }
 
-  const isLoading = loadingData || loadingNetRevenue || loadingGrossProfit || loadingNetProfit || loadingCmv || loadingPersonnelCost || loadingImpostos || loadingSistema || loadingFixedCosts;
+  const isLoading = dataLoading || loadingNetRevenue || loadingGrossProfit || loadingNetProfit || loadingCmv || loadingPersonnelCost || loadingImpostos || loadingSistema || loadingFixedCosts;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
@@ -1870,3 +1806,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    

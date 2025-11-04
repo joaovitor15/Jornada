@@ -2,16 +2,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/use-profile';
 import { Transaction, BillPayment, Income } from '@/lib/types';
 import {
   format,
@@ -34,6 +24,9 @@ import {
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
+import { useProfile } from '@/hooks/use-profile';
+import { useTransactions } from '@/hooks/use-transactions';
+import { Timestamp } from 'firebase/firestore';
 
 interface ChartData {
   month: string;
@@ -70,36 +63,17 @@ export default function AnnualFinancialChart({
   year,
   onMonthSelect,
 }: AnnualFinancialChartProps) {
-  const { user } = useAuth();
   const { activeProfile } = useProfile();
+  const { incomes, expenses, billPayments, loading } = useTransactions(activeProfile);
   const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const animationKey = useMemo(() => `${year}-${activeProfile}`, [year, activeProfile]);
 
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      return;
-    }
+   useEffect(() => {
+    if (loading) return;
 
-    setLoading(true);
-    setError(null);
-
-    const baseQuery = (collectionName: string) =>
-      query(collection(db, collectionName), where('userId', '==', user.uid), where('profile', '==', activeProfile));
-      
-    const incomesQuery = baseQuery('incomes');
-    const expensesQuery = baseQuery('expenses');
-    const billPaymentsQuery = baseQuery('billPayments');
-
-    const handleSnapshots = (
-      incomesSnapshot: any,
-      expensesSnapshot: any,
-      billPaymentsSnapshot: any
-    ) => {
-      try {
+    try {
         const yearDate = setYear(new Date(), year);
         const startDate = startOfYear(yearDate);
         const endDate = endOfYear(yearDate);
@@ -119,9 +93,8 @@ export default function AnnualFinancialChart({
             });
         });
 
-        const processTransactions = (snapshot: any, type: 'income' | 'expense' | 'billPayment') => {
-            snapshot.docs.forEach((doc: any) => {
-                const transaction = { ...doc.data(), id: doc.id } as Transaction | BillPayment;
+        const processTransactions = (transactions: (Income | Expense | BillPayment)[], type: 'income' | 'expense' | 'billPayment') => {
+            transactions.forEach((transaction) => {
                 const date = (transaction.date as unknown as Timestamp).toDate();
                 if (getYear(date) !== year) return;
                 
@@ -143,9 +116,9 @@ export default function AnnualFinancialChart({
             });
         };
 
-        processTransactions(incomesSnapshot, 'income');
-        processTransactions(expensesSnapshot, 'expense');
-        processTransactions(billPaymentsSnapshot, 'billPayment');
+        processTransactions(incomes, 'income');
+        processTransactions(expenses, 'expense');
+        processTransactions(billPayments, 'billPayment');
 
         const sortedData = Array.from(monthlyData.values()).sort((a, b) =>
           a.monthKey.localeCompare(b.monthKey)
@@ -155,45 +128,8 @@ export default function AnnualFinancialChart({
       } catch (err) {
         console.error(err);
         setError(text.reports.chartError);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    const unsubscribeIncomes = onSnapshot(incomesQuery, (incomesSnapshot) => {
-      const unsubscribeExpenses = onSnapshot(
-        expensesQuery,
-        (expensesSnapshot) => {
-          const unsubscribeBillPayments = onSnapshot(
-            billPaymentsQuery,
-            (billPaymentsSnapshot) => {
-              handleSnapshots(incomesSnapshot, expensesSnapshot, billPaymentsSnapshot);
-            },
-            (err) => {
-              console.error(err);
-              setError(text.billPaymentsList.fetchError);
-              setLoading(false);
-            }
-          );
-          return () => unsubscribeBillPayments();
-        },
-        (err) => {
-          console.error(err);
-          setError(text.expensesList.fetchError);
-          setLoading(false);
-        }
-      );
-      return () => unsubscribeExpenses();
-    }, (err) => {
-      console.error(err);
-      setError(text.incomesList.fetchError);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeIncomes();
-    };
-  }, [user, activeProfile, year]);
+  }, [incomes, expenses, billPayments, loading, year]);
   
   const handleChartClick = (data: any) => {
     if (onMonthSelect && data && data.activePayload && data.activePayload.length > 0) {
@@ -290,3 +226,5 @@ export default function AnnualFinancialChart({
     </ResponsiveContainer>
   );
 }
+
+    
