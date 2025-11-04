@@ -272,7 +272,7 @@ export default function AddIncomeForm({
                   <FormLabel>{text.common.description}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={text.addIncomeForm.descriptionPlaceholder}
+                      placeholder={text.placeholders.description}
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -361,7 +361,7 @@ export default function AddIncomeForm({
                     <FormLabel>{text.common.amount}</FormLabel>
                     <FormControl>
                       <CurrencyInput
-                        placeholder={text.addIncomeForm.amountPlaceholder}
+                        placeholder={text.placeholders.amount}
                         disabled={isSubmitting}
                         value={field.value}
                         onValueChange={(values) => {

@@ -195,9 +195,6 @@ export default function AddReserveEntryForm({
       >
         <DialogHeader>
           <DialogTitle>{text.emergencyReserve.formTitle}</DialogTitle>
-          <DialogDescription>
-            {text.emergencyReserve.description}
-          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -243,7 +240,7 @@ export default function AddReserveEntryForm({
                   <FormLabel>{text.common.description}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={text.emergencyReserve.descriptionPlaceholder}
+                      placeholder={text.placeholders.description}
                       {...field}
                       disabled={isSubmitting}
                     />
@@ -350,7 +347,7 @@ export default function AddReserveEntryForm({
                     <FormLabel>{text.emergencyReserve.amountLabel}</FormLabel>
                     <FormControl>
                       <CurrencyInput
-                        placeholder={text.addExpenseForm.amountPlaceholder}
+                        placeholder={text.placeholders.amount}
                         disabled={isSubmitting}
                         value={field.value}
                         onValueChange={(values) => {

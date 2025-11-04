@@ -152,7 +152,7 @@ export default function PlanForm({ isOpen, onOpenChange, planToEdit }: PlanFormP
                 <FormItem>
                   <FormLabel>{text.plans.form.name}</FormLabel>
                   <FormControl>
-                    <Input placeholder={text.plans.form.namePlaceholder} {...field} />
+                    <Input placeholder={text.placeholders.description} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -166,7 +166,7 @@ export default function PlanForm({ isOpen, onOpenChange, planToEdit }: PlanFormP
                   <FormLabel>{text.plans.form.amount}</FormLabel>
                   <FormControl>
                     <CurrencyInput
-                      placeholder={text.plans.form.amountPlaceholder}
+                      placeholder={text.placeholders.amount}
                       disabled={isSubmitting}
                       value={field.value}
                       onValueChange={(values) => field.onChange(values?.floatValue)}

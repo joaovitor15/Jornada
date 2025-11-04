@@ -132,14 +132,14 @@ export default function SumExpensesForm({
         description: 'Alimentos',
         mainCategory: 'Alimentação',
         subcategory: 'Comida',
-        paymentMethod: 'Dinheiro',
+        paymentMethod: 'Dinheiro/Pix',
       };
     } else if (activeProfile === 'Business') {
       expenseData = {
         description: 'Pagamento de Fornecedores',
         mainCategory: 'Fornecedores',
         subcategory: 'Pagamentos Fonecedores',
-        paymentMethod: 'Pix',
+        paymentMethod: 'Dinheiro/Pix',
       };
     } else {
         toast({

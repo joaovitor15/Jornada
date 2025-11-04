@@ -69,7 +69,7 @@ import {
   businessExpenseCategories,
 } from '@/lib/categories';
 
-const basePaymentMethods: PaymentMethod[] = ['Pix', 'Dinheiro', 'Débito'];
+const basePaymentMethods: PaymentMethod[] = ['Dinheiro/Pix', 'Débito'];
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -365,7 +365,7 @@ export default function AddExpenseForm({
                   <FormLabel>{text.common.description}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={text.addExpenseForm.descriptionPlaceholder}
+                      placeholder={text.placeholders.description}
                       {...field}
                       disabled={isSubmitting || (isEditMode && getValues('installments') > 1)}
                     />
@@ -456,7 +456,7 @@ export default function AddExpenseForm({
                     <FormLabel>{text.common.amount}</FormLabel>
                     <FormControl>
                       <CurrencyInput
-                        placeholder={text.addExpenseForm.amountPlaceholder}
+                        placeholder={text.placeholders.amount}
                         disabled={isSubmitting || (isEditMode && getValues('installments') > 1)}
                         value={field.value}
                         onValueChange={(values) => {

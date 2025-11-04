@@ -72,7 +72,7 @@ export const text = {
     },
   },
   summary: {
-    totalBalance: 'Saldo Total',
+    totalBalance: 'Consolidação',
     goToDashboard: 'Ver Lançamentos',
     newTransaction: 'Nova Despesa',
     newIncome: 'Nova Receita',
@@ -100,7 +100,6 @@ export const text = {
     cardName: 'Nome do Cartão',
     cardNamePlaceholder: 'Ex: Nubank, Inter, etc.',
     limit: 'Limite',
-    limitPlaceholder: '5000,00',
     closingDay: 'Dia do Fechamento',
     dueDay: 'Dia do Vencimento',
     addCard: 'Adicionar Cartão',
@@ -115,12 +114,10 @@ export const text = {
     title: 'Adicionar Nova Despesa',
     description:
       'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
-    descriptionPlaceholder: 'Ex: Café (Opcional)',
-    amountPlaceholder: '0,00',
     selectCategory: 'Selecione uma categoria',
     selectSubcategory: 'Selecione uma subcategoria',
     noSubcategoryFound: 'Nenhuma subcategoria encontrada.',
-    selectPaymentMethod: 'Selecione um meio de pagamento',
+    selectPaymentMethod: 'Selecione uma forma de pagamento',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
     addExpense: 'Adicionar Despesa',
@@ -134,14 +131,12 @@ export const text = {
       amountRequired: 'O valor é obrigatório.',
       pleaseSelectCategory: 'Por favor, selecione uma categoria.',
       pleaseSelectSubcategory: 'Por favor, selecione uma subcategoria.',
-      pleaseSelectPaymentMethod: 'Por favor, selecione um meio de pagamento.',
+      pleaseSelectPaymentMethod: 'Por favor, selecione uma forma de pagamento.',
     },
   },
   addIncomeForm: {
     title: 'Adicionar Nova Receita',
     description: 'Preencha os detalhes para adicionar uma nova receita.',
-    descriptionPlaceholder: 'Ex: Salário (Opcional)',
-    amountPlaceholder: '0,00',
     selectCategory: 'Selecione uma categoria',
     selectSubcategory: 'Selecione uma subcategoria',
     incomeDate: 'Data da Receita',
@@ -221,7 +216,7 @@ export const text = {
     mainCategory: 'Categoria Principal',
     subcategory: 'Subcategoria',
     date: 'Data',
-    paymentMethod: 'Meio de Pagamento',
+    paymentMethod: 'Forma de Pagamento',
     actions: 'Ações',
     password: 'Senha',
     email: 'Email',
@@ -356,12 +351,10 @@ export const text = {
   emergencyReserve: {
     title: 'Adicionar à Reserva',
     formTitle: 'Movimentação da Reserva',
-    description: 'Registre uma nova contribuição para sua reserva de emergência.',
     amountLabel: 'Valor',
     dateLabel: 'Data',
     addSuccess: 'Movimentação registrada com sucesso.',
     addError: 'Falha ao registrar movimentação.',
-    descriptionPlaceholder: 'Ex: Poupança para viagem (Opcional)',
   },
   plans: {
     newPlan: 'Novo Plano',
@@ -375,9 +368,7 @@ export const text = {
       description: 'Cadastre um novo plano ou assinatura.',
       editDescription: 'Atualize as informações do seu plano.',
       name: 'Nome do Plano',
-      namePlaceholder: 'Ex: Netflix, Spotify, etc.',
       amount: 'Valor',
-      amountPlaceholder: '39,90',
       type: 'Tipo',
       typePlaceholder: 'Selecione o tipo',
       types: {
@@ -393,4 +384,8 @@ export const text = {
       notLoggedIn: 'Você precisa estar logado e ter um perfil ativo.',
     },
   },
+  placeholders: {
+    description: 'Descrição (Opcional)',
+    amount: '0,00',
+  }
 };
