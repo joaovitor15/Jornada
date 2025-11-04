@@ -221,23 +221,20 @@ export default function PlanForm({
             className="space-y-4 max-h-[70vh] overflow-y-auto pr-2"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
+              <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{text.plans.form.name}</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ex: Netflix, Meli+"
-                        {...field}
-                      />
+                      <Input placeholder="Ex: Netflix, Meli+" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="amount"
                 render={({ field }) => (
@@ -417,26 +414,29 @@ export default function PlanForm({
                 <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
               </Button>
             </div>
-             <div className="pt-4 text-right">
+            
+            <div className="pt-4 flex justify-between items-center bg-background sticky bottom-0 -mx-6 px-6 pb-6">
+                <div>
                   <p className="text-sm font-medium text-muted-foreground">Valor Total do Plano</p>
                   <p className="text-2xl font-bold">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
               </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-              >
-                {text.common.cancel}
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {isEditMode ? text.plans.form.save : text.plans.form.add}
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                >
+                  {text.common.cancel}
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isEditMode ? text.plans.form.save : text.plans.form.add}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
