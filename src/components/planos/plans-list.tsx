@@ -178,9 +178,9 @@ export default function PlansList() {
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                  <Badge variant="secondary" className="text-xs">{plan.mainCategory}</Badge>
+                  <Badge variant="secondary" className="text-xs shadow-none">{plan.mainCategory}</Badge>
                   <span className="text-muted-foreground text-xs">&gt;</span>
-                  <Badge variant="outline" className="text-xs">{plan.subcategory}</Badge>
+                  <Badge variant="outline" className="text-xs shadow-none">{plan.subcategory}</Badge>
                 </div>
               </div>
 
