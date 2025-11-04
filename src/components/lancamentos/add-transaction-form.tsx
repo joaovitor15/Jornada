@@ -142,9 +142,8 @@ export default function AddTransactionForm() {
   const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
   
   useEffect(() => {
+    const initialDate = new Date();
     if (isFormOpen) {
-      const initialDate = new Date();
-      
       if (isEditMode && transactionToEdit) {
          const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
          reset({
@@ -176,16 +175,32 @@ export default function AddTransactionForm() {
 
   // Handle dynamic form changes based on transaction type
   useEffect(() => {
-    if(!isEditMode) {
-      setValue('mainCategory', '');
-      setValue('subcategory', '');
-    }
-    if (transactionType === 'income') {
+    const subscription = watch((value, { name, type }) => {
+      // When transaction type changes, reset categories
+      if (name === 'type' && type === 'change' && !isEditMode) {
+          setValue('mainCategory', '');
+          setValue('subcategory', '');
+      }
+      
+      // When main category changes, reset subcategory
+      if (name === 'mainCategory' && type === 'change' && !isEditMode) {
+        setValue('subcategory', '');
+      }
+
+      // If type becomes income, clear payment method and installments
+      if (name === 'type' && value.type === 'income') {
         setValue('paymentMethod', undefined);
         setValue('installments', 1);
-        trigger('paymentMethod');
-    }
-  }, [transactionType, setValue, trigger, isEditMode]);
+        trigger('paymentMethod'); 
+      }
+      
+      // Update date input when form date changes
+      if (name === 'date' && value.date) {
+        setDateInput(format(value.date, 'dd/MM/yyyy'));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setValue, trigger, isEditMode]);
 
 
   useEffect(() => {
@@ -209,18 +224,6 @@ export default function AddTransactionForm() {
 
     return () => unsubscribe();
   }, [user, activeProfile]);
-
-  useEffect(() => {
-    const subscription = watch((value, { name }) => {
-      if (name === 'date' && value.date) {
-        setDateInput(format(value.date, 'dd/MM/yyyy'));
-      }
-       if (name === 'mainCategory') {
-         if (!isEditMode) setValue('subcategory', '');
-       }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setValue, isEditMode]);
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
@@ -435,7 +438,7 @@ export default function AddTransactionForm() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>{text.common.paymentMethod}</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || isEditMode}>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
                             <FormControl>
                                 <SelectTrigger>
                                 <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />

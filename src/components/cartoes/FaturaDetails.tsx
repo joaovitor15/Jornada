@@ -33,12 +33,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { text } from '@/lib/strings';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 interface FaturaDetailsProps {
   card: CardType;
   selectedFatura: { month: number; year: number };
   onFaturaSelect: () => void;
-  onEditExpense: (expense: Expense) => void;
   onAnticipateExpense: (expense: Expense) => void;
 }
 
@@ -48,7 +48,6 @@ export default function FaturaDetails({
   card,
   selectedFatura,
   onFaturaSelect,
-  onEditExpense,
   onAnticipateExpense
 }: FaturaDetailsProps) {
   const { user } = useAuth();
@@ -62,6 +61,7 @@ export default function FaturaDetails({
   const { toast } = useToast();
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { setTransactionToEdit } = useAddTransactionModal();
 
 
   useEffect(() => {
@@ -275,7 +275,7 @@ export default function FaturaDetails({
                                           {text.anticipateInstallments.title}
                                         </DropdownMenuItem>
                                       )}
-                                      <DropdownMenuItem onClick={() => onEditExpense(expense)}>
+                                      <DropdownMenuItem onClick={() => setTransactionToEdit(expense)}>
                                         <Pencil className="mr-2 h-4 w-4" />
                                         {text.common.rename}
                                       </DropdownMenuItem>
