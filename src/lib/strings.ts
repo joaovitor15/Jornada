@@ -2,7 +2,7 @@
 export const text = {
   header: {
     appName: 'A Jornada',
-    appDescription: 'Sua jornada do controle Financeiro',
+    appDescription: 'Sua jornada de controle Financeiro',
     profiles: 'Perfis',
     personal: 'Joao',
     home: 'Casa',
