@@ -52,8 +52,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
-import AddExpenseForm from './add-expense-form';
 import { cn } from '@/lib/utils';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -63,9 +63,8 @@ export default function ExpensesList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
-  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const { toast } = useToast();
+  const { setIsFormOpen } = useAddTransactionModal();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -133,15 +132,8 @@ export default function ExpensesList() {
   };
 
   const handleEditOpen = (expense: Expense) => {
-    setExpenseToEdit(expense);
-    setIsEditFormOpen(true);
-  };
-
-  const handleEditFormClose = (isOpen: boolean) => {
-    setIsEditFormOpen(isOpen);
-    if (!isOpen) {
-      setExpenseToEdit(null);
-    }
+    // TODO: Re-implementar edição com o novo formulário unificado
+    setIsFormOpen(true);
   };
 
   const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);
@@ -355,14 +347,6 @@ export default function ExpensesList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {expenseToEdit && (
-        <AddExpenseForm
-          isOpen={isEditFormOpen}
-          onOpenChange={handleEditFormClose}
-          expenseToEdit={expenseToEdit}
-        />
-      )}
     </>
   );
 }

@@ -8,8 +8,8 @@ import FaturaDetails from '@/components/cartoes/FaturaDetails';
 import { Card, Expense } from '@/lib/types';
 import FaturaSelector from '@/components/cartoes/FaturaSelector';
 import { getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
-import AddExpenseForm from '@/components/dashboard/add-expense-form';
 import AnteciparParcelasForm from '@/components/cartoes/AnteciparParcelasForm';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 
 export default function CardsPage() {
@@ -19,10 +19,9 @@ export default function CardsPage() {
     year: new Date().getFullYear(),
   });
   const [isFaturaSelectorOpen, setIsFaturaSelectorOpen] = useState(false);
-  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
-  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [expenseToAnticipate, setExpenseToAnticipate] = useState<Expense | null>(null);
   const [isAnticipateFormOpen, setIsAnticipateFormOpen] = useState(false);
+  const { setIsFormOpen } = useAddTransactionModal();
 
 
   const handleCardSelection = (card: Card | null) => {
@@ -43,8 +42,9 @@ export default function CardsPage() {
   }, [selectedCard]);
   
   const handleEditExpense = (expense: Expense) => {
-    setExpenseToEdit(expense);
-    setIsEditFormOpen(true);
+    // TODO: Implementar a edição de despesas com o novo formulário unificado.
+    // Atualmente, estamos apenas abrindo o formulário de adição.
+    setIsFormOpen(true);
   };
 
   const handleAnticipateExpense = (expense: Expense) => {
@@ -108,14 +108,6 @@ export default function CardsPage() {
           currentFatura={selectedFatura}
         />
       )}
-      
-       {expenseToEdit && (
-        <AddExpenseForm
-          isOpen={isEditFormOpen}
-          onOpenChange={setIsEditFormOpen}
-          expenseToEdit={expenseToEdit}
-        />
-      )}
 
       {expenseToAnticipate && selectedCard && (
         <AnteciparParcelasForm
@@ -128,5 +120,3 @@ export default function CardsPage() {
     </div>
   );
 }
-
-    
