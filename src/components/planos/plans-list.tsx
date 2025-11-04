@@ -70,16 +70,14 @@ function PlanCard({
   };
   
   const getVencimentoText = (plan: Plan) => {
-    // Defensive check for new annual plans with dueDate
-    if (plan.type === 'Anual' && plan.dueDate) {
-      const date = (plan.dueDate as Timestamp).toDate();
+    if (plan.type === 'Anual' && plan.dueDate && plan.dueDate.toDate) {
+      const date = plan.dueDate.toDate();
       return `Vence em: ${format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
     }
     
-    // Fallback for monthly plans or old data
-    if (plan.paymentDay) {
+    if (plan.type === 'Mensal' && plan.paymentDay) {
        const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
-       return `Vence dia: ${plan.paymentDay} de ${currentMonthName}`;
+       return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
     }
 
     return "Vencimento não definido";

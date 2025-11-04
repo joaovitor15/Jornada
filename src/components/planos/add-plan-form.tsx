@@ -240,7 +240,7 @@ export default function PlanForm({
     
     const { planName, ...rest } = values;
 
-    const finalValues: Omit<Plan, 'id' | 'userId' | 'profile'> & { dueDate?: Timestamp } = {
+    const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
         name: planName,
         amount: rest.amount,
         type: rest.type,
@@ -250,25 +250,23 @@ export default function PlanForm({
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
     };
     
-    if (rest.type === 'Anual' && rest.dueDate) {
-        finalValues.dueDate = Timestamp.fromDate(rest.dueDate);
-        finalValues.paymentDay = undefined; // Clear monthly payment day
+    if (rest.type === 'Anual') {
+        dataToSend.dueDate = Timestamp.fromDate(rest.dueDate!);
     } else {
-        finalValues.paymentDay = rest.paymentDay;
-        finalValues.dueDate = undefined; // Clear annual due date
+        dataToSend.paymentDay = rest.paymentDay;
     }
 
     try {
       if (isEditMode && planToEdit?.id) {
         const planRef = doc(db, 'plans', planToEdit.id);
-        await updateDoc(planRef, { ...finalValues });
+        await updateDoc(planRef, dataToSend);
         toast({
           title: text.common.success,
           description: text.plans.form.updateSuccess,
         });
       } else {
         await addDoc(collection(db, 'plans'), {
-          ...finalValues,
+          ...dataToSend,
           userId: user.uid,
           profile: activeProfile,
         });
