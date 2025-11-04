@@ -51,8 +51,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
-import AddIncomeForm from './add-income-form';
 import { cn } from '@/lib/utils';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 
 export default function IncomeList() {
   const { user } = useAuth();
@@ -62,9 +62,8 @@ export default function IncomeList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [incomeToDelete, setIncomeToDelete] = useState<Income | null>(null);
-  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const [incomeToEdit, setIncomeToEdit] = useState<Income | null>(null);
   const { toast } = useToast();
+  const { setIsFormOpen } = useAddTransactionModal();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -130,17 +129,10 @@ export default function IncomeList() {
     }
     setIncomeToDelete(null);
   };
-
+  
   const handleEditOpen = (income: Income) => {
-    setIncomeToEdit(income);
-    setIsEditFormOpen(true);
-  };
-
-  const handleEditFormClose = (isOpen: boolean) => {
-    setIsEditFormOpen(isOpen);
-    if (!isOpen) {
-      setIncomeToEdit(null);
-    }
+    // TODO: Re-implementar edição com o novo formulário unificado
+    setIsFormOpen(true);
   };
 
   const totalPages = Math.ceil(incomes.length / ITEMS_PER_PAGE);
@@ -346,14 +338,6 @@ export default function IncomeList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {incomeToEdit && (
-        <AddIncomeForm
-          isOpen={isEditFormOpen}
-          onOpenChange={handleEditFormClose}
-          incomeToEdit={incomeToEdit}
-        />
-      )}
     </>
   );
 }
