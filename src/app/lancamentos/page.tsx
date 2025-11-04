@@ -4,17 +4,15 @@ import ExpensesList from '@/components/dashboard/expenses-list';
 import IncomeList from '@/components/dashboard/income-list';
 import BillPaymentsList from '@/components/faturas/bill-payments-list';
 import { Button } from '@/components/ui/button';
-import { useAddExpenseModal } from '@/contexts/AddExpenseModalContext';
-import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { text } from '@/lib/strings';
-import { ArrowUpRight, ArrowDownLeft, Shield, PlusCircle } from 'lucide-react';
+import { Shield, PlusCircle } from 'lucide-react';
 import EmergencyReserveList from '@/components/lancamentos/emergency-reserve-list';
 import { useState } from 'react';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 
 export default function LancamentosPage() {
-  const { setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
-  const { setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
+  const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
 
   return (
@@ -32,20 +30,11 @@ export default function LancamentosPage() {
               Movimentar Reserva
             </Button>
             <Button
-              onClick={() => setIsIncomeFormOpen(true)}
+              onClick={() => setIsTransactionFormOpen(true)}
               size="sm"
-              className="bg-green-500 text-white hover:bg-green-600"
             >
-              <ArrowUpRight className="mr-2 h-4 w-4" />
-              {text.summary.newIncome}
-            </Button>
-            <Button
-              onClick={() => setIsExpenseFormOpen(true)}
-              size="sm"
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              <ArrowDownLeft className="mr-2 h-4 w-4" />
-              {text.summary.newTransaction}
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo Lançamento
             </Button>
           </div>
         </div>

@@ -17,6 +17,8 @@ import { useAddIncomeModal } from '@/contexts/AddIncomeModalContext';
 import AddIncomeForm from '../dashboard/add-income-form';
 import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
 import PayBillForm from '../faturas/pay-bill-form';
+import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import AddTransactionForm from '../lancamentos/add-transaction-form';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isFormOpen: isExpenseFormOpen, setIsFormOpen: setIsExpenseFormOpen } = useAddExpenseModal();
   const { isFormOpen: isIncomeFormOpen, setIsFormOpen: setIsIncomeFormOpen } = useAddIncomeModal();
   const { isFormOpen: isPayBillFormOpen, setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
+  const { isFormOpen: isTransactionFormOpen, setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const isMobile = useIsMobile();
 
   if (!user) {
@@ -80,6 +83,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           isOpen={isPayBillFormOpen}
           onOpenChange={setIsPayBillFormOpen}
         />
+
+        <AddTransactionForm
+          isOpen={isTransactionFormOpen}
+          onOpenChange={setIsTransactionFormOpen}
+        />
+
       </div>
     </Sheet>
   );
