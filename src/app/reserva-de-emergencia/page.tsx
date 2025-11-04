@@ -17,14 +17,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import {
   collection,
-  query,
-  where,
-  onSnapshot,
   addDoc,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { EmergencyReserveEntry } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -73,6 +69,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import ReserveAnalysisTabs from '@/components/reserva-de-emergencia/reserve-analysis-tabs';
+import { useEmergencyReserve } from '@/hooks/use-emergency-reserve';
 
 const diceFormSchema = z.object({
   amount: z.coerce
@@ -84,27 +81,22 @@ const diceFormSchema = z.object({
   location: z.string().min(1, 'Por favor, selecione um local.'),
 });
 
-interface SubcategoryTotal {
-  name: string;
-  mainCategory: string;
-  total: number;
-}
-
 export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
-  const [totalProtegido, setTotalProtegido] = useState(0);
-  const [totalReserva, setTotalReserva] = useState(0);
-  const [totalProgramado, setTotalProgramado] = useState(0);
-  const [subcategoryTotals, setSubcategoryTotals] = useState<
-    SubcategoryTotal[]
-  >([]);
-  const [loading, setLoading] = useState(true);
   const [showDiceResult, setShowDiceResult] = useState(false);
   const [diceResult, setDiceResult] = useState({ main: '', sub: '' });
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+
+  const {
+    loading,
+    totalProtegido,
+    totalReserva,
+    totalProgramado,
+    subcategoryTotals,
+  } = useEmergencyReserve();
 
   const form = useForm<z.infer<typeof diceFormSchema>>({
     resolver: zodResolver(diceFormSchema),
@@ -120,84 +112,6 @@ export default function ReservaDeEmergenciaPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const q = query(
-      collection(db, 'emergencyReserveEntries'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      let totalGeral = 0;
-      let totalCatReserva = 0;
-      let totalCatProgramado = 0;
-      const subTotals: { [key: string]: number } = {};
-
-      const entries = querySnapshot.docs.map(
-        (doc) => doc.data() as Omit<EmergencyReserveEntry, 'id'>
-      );
-
-      entries.forEach((entry) => {
-        totalGeral += entry.amount;
-
-        if (entry.mainCategory === 'Reserva de Emergencia') {
-          totalCatReserva += entry.amount;
-        } else if (entry.mainCategory === 'Reserva Programada') {
-          totalCatProgramado += entry.amount;
-        }
-
-        if (entry.subcategory) {
-          subTotals[entry.subcategory] =
-            (subTotals[entry.subcategory] || 0) + entry.amount;
-        }
-      });
-
-      const subcategoryToMainMap = new Map<string, string>();
-      Object.entries(reserveCategories).forEach(([main, subs]) => {
-        subs.forEach((sub) => subcategoryToMainMap.set(sub, main));
-      });
-
-      const populatedSubTotals: SubcategoryTotal[] = Object.entries(subTotals)
-        .map(([name, total]) => ({
-          name,
-          mainCategory: subcategoryToMainMap.get(name) || 'Desconhecida',
-          total,
-        }))
-        .filter((sub) => sub.total > 0)
-        .sort((a, b) => {
-          // Prioritize 'Reserva de Emergencia'
-          if (
-            a.mainCategory === 'Reserva de Emergencia' &&
-            b.mainCategory !== 'Reserva de Emergencia'
-          ) {
-            return -1;
-          }
-          if (
-            a.mainCategory !== 'Reserva de Emergencia' &&
-            b.mainCategory === 'Reserva de Emergencia'
-          ) {
-            return 1;
-          }
-          // Then sort by total descending
-          return b.total - a.total;
-        });
-
-      setTotalProtegido(totalGeral);
-      setTotalReserva(totalCatReserva);
-      setTotalProgramado(totalCatProgramado);
-      setSubcategoryTotals(populatedSubTotals);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user, activeProfile]);
 
   const subcategoryToMainCategoryMap = useMemo(() => {
     const map: { [key: string]: string } = {};
