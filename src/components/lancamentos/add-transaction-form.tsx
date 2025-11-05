@@ -15,6 +15,7 @@ import {
   writeBatch,
   doc,
   updateDoc,
+  getDocs,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -73,6 +74,7 @@ import {
 } from '@/lib/categories';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import TagInput from '../ui/tag-input';
 
 const basePaymentMethods: PaymentMethod[] = ['Dinheiro/Pix', 'Débito'];
 
@@ -96,6 +98,7 @@ const formSchema = z.object({
   paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
+  tags: z.array(z.string()).optional(),
 }).refine(data => {
     if (data.type === 'expense') {
         return !!data.paymentMethod && data.paymentMethod.length > 0;
@@ -130,6 +133,7 @@ export default function AddTransactionForm() {
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const [dateInput, setDateInput] = useState('');
   const { isFormOpen, closeForm, transactionToEdit } = useAddTransactionModal();
   
@@ -158,6 +162,7 @@ export default function AddTransactionForm() {
             paymentMethod: type === 'expense' ? (transactionToEdit as Expense).paymentMethod : undefined,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
+            tags: (transactionToEdit as Expense).tags || [],
         });
         setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
       } else {
@@ -170,6 +175,7 @@ export default function AddTransactionForm() {
             paymentMethod: '',
             date: initialDate,
             installments: 1,
+            tags: [],
         });
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
@@ -194,6 +200,7 @@ export default function AddTransactionForm() {
       if (name === 'type' && value.type === 'income') {
         setValue('paymentMethod', undefined);
         setValue('installments', 1);
+        setValue('tags', []);
         trigger('paymentMethod'); 
       }
       
@@ -227,6 +234,37 @@ export default function AddTransactionForm() {
 
     return () => unsubscribe();
   }, [user, activeProfile]);
+
+  useEffect(() => {
+    if (!user || !activeProfile || !isFormOpen) {
+      setAllTags([]);
+      return;
+    }
+
+    const fetchAllTags = async () => {
+      try {
+        const q = query(
+          collection(db, 'expenses'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile)
+        );
+        const querySnapshot = await getDocs(q);
+        const tagsSet = new Set<string>();
+        querySnapshot.forEach((doc) => {
+          const data = doc.data() as Expense;
+          if (data.tags && Array.isArray(data.tags)) {
+            data.tags.forEach((tag) => tagsSet.add(tag));
+          }
+        });
+        setAllTags(Array.from(tagsSet));
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        setAllTags([]);
+      }
+    };
+
+    fetchAllTags();
+  }, [user, activeProfile, isFormOpen]);
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
@@ -271,6 +309,7 @@ export default function AddTransactionForm() {
 
             if (values.type === 'expense') {
                 (dataToUpdate as Partial<Expense>).paymentMethod = values.paymentMethod;
+                (dataToUpdate as Partial<Expense>).tags = values.tags || [];
             }
 
             await updateDoc(docRef, dataToUpdate);
@@ -291,6 +330,7 @@ export default function AddTransactionForm() {
                     amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                     paymentMethod: values.paymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
+                    tags: values.tags || [],
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -458,6 +498,28 @@ export default function AddTransactionForm() {
                     />
                  )}
             </div>
+
+            {transactionType === 'expense' && (
+              <FormField
+                control={control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <FormControl>
+                      <TagInput
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        suggestions={allTags}
+                        placeholder="Adicionar tags..."
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {transactionType === 'expense' && isCreditCardPayment && (
               <FormField

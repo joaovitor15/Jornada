@@ -18,6 +18,7 @@ export type Expense = {
   installments?: number;
   currentInstallment?: number;
   originalExpenseId?: string;
+  tags?: string[];
 };
 
 export type Income = {
