@@ -1,21 +1,28 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
-import { X, Tag } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   Command,
+  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 import { useTags } from '@/hooks/use-tags';
 
-interface TagInputProps {
+interface MultiSelectProps {
   value: string[];
-  onChange: (tags: string[]) => void;
+  onChange: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -23,126 +30,87 @@ interface TagInputProps {
 export default function TagInput({
   value = [],
   onChange,
-  placeholder = 'Adicionar tags...',
+  placeholder = 'Selecione as tags...',
   disabled = false,
-}: TagInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [inputValue, setInputValue] = useState('');
+}: MultiSelectProps) {
+  const { tags: allTags, loading } = useTags();
   const [open, setOpen] = useState(false);
-  const { tags: allTags } = useTags();
 
-  const handleAddTag = (tag: string) => {
-    const newTag = tag.trim();
-    if (newTag && !value.includes(newTag)) {
-      onChange([...value, newTag]);
-    }
-    setInputValue('');
-    setOpen(false);
-    inputRef.current?.focus();
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    onChange(value.filter((tag) => tag !== tagToRemove));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      if (inputValue) {
-        handleAddTag(inputValue);
-      }
-    } else if (e.key === 'Backspace' && !inputValue && value.length > 0) {
-      e.preventDefault();
-      handleRemoveTag(value[value.length - 1]);
+  const handleSelect = (tag: string) => {
+    if (value.includes(tag)) {
+      handleRemove(tag);
+    } else {
+      onChange([...value, tag]);
     }
   };
 
-  const filteredTags = useMemo(() => {
-    return allTags.filter(
-      (tag) =>
-        !value.includes(tag) &&
-        tag.toLowerCase().includes(inputValue.toLowerCase())
-    );
-  }, [allTags, value, inputValue]);
+  const handleRemove = (tag: string) => {
+    onChange(value.filter((t) => t !== tag));
+  };
 
   return (
-    <Command
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          inputRef.current?.blur();
-        }
-      }}
-      className="overflow-visible bg-transparent"
-    >
-      <div
-        className={cn(
-          'group flex min-h-10 w-full items-center rounded-md border border-input px-3 py-1.5 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
-          disabled ? 'cursor-not-allowed opacity-50' : ''
-        )}
-        onClick={() => inputRef.current?.focus()}
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Tag className="h-4 w-4 text-muted-foreground mr-1" />
-          {value.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="flex items-center gap-1"
-            >
-              {tag}
-              {!disabled && (
-                <button
-                  type="button"
-                  className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    <div className="w-full">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between h-auto min-h-10"
+            disabled={disabled || loading}
+          >
+            <div className="flex flex-wrap items-center gap-1">
+              {value.length === 0 && (
+                <span className="text-muted-foreground font-normal">
+                  {placeholder}
+                </span>
+              )}
+              {value.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="mr-1"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleRemoveTag(tag);
+                    handleRemove(tag);
                   }}
-                  disabled={disabled}
                 >
-                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
-              )}
-            </Badge>
-          ))}
-          <CommandInput
-            ref={inputRef}
-            placeholder={placeholder}
-            value={inputValue}
-            onValueChange={setInputValue}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setOpen(true)}
-            onBlur={() => setOpen(false)}
-            disabled={disabled}
-            className="ml-2 flex-1 bg-transparent p-0 outline-none placeholder:text-muted-foreground focus:ring-0"
-          />
-        </div>
-      </div>
-      <div className="relative mt-2">
-        {open && filteredTags.length > 0 && (
-          <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+                  {tag}
+                  <X className="ml-1 h-3 w-3" />
+                </Badge>
+              ))}
+            </div>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+          <Command>
+            <CommandInput placeholder="Procurar tags..." />
             <CommandList>
+              <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
               <CommandGroup>
-                {filteredTags.map((tag) => (
+                {allTags.map((tag) => (
                   <CommandItem
                     key={tag}
                     value={tag}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
                     onSelect={() => {
-                      handleAddTag(tag);
+                      handleSelect(tag);
                     }}
                   >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value.includes(tag) ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
                     {tag}
                   </CommandItem>
                 ))}
               </CommandGroup>
             </CommandList>
-          </div>
-        )}
-      </div>
-    </Command>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
