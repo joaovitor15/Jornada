@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { collectionGroup, query, where, getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -46,11 +46,11 @@ export function useTags() {
 
     try {
       const tagSet = new Set<string>();
-      const collectionsToSearch = ['expenses', 'incomes', 'plans', 'profiles'];
+      const collectionsToSearch = ['expenses', 'incomes', 'plans'];
 
       for (const col of collectionsToSearch) {
         const q = query(
-          collectionGroup(db, col),
+          collection(db, col),
           where('userId', '==', user.uid),
           where('profile', '==', activeProfile)
         );
@@ -63,7 +63,6 @@ export function useTags() {
         });
       }
       
-      // Also check the specific profile document for pre-defined tags
       const profileDocQuery = query(collection(db, 'profiles'), where('id', '==', profileId));
       const profileSnap = await getDocs(profileDocQuery);
        if (!profileSnap.empty) {
@@ -78,7 +77,6 @@ export function useTags() {
       setCachedTags(profileId, allTags);
     } catch (error) {
       console.error('Failed to fetch tags from Firestore:', error);
-      // Fallback to cache if firestore fails
       setTags(getCachedTags(profileId));
     } finally {
       setLoading(false);
@@ -88,8 +86,12 @@ export function useTags() {
   useEffect(() => {
     if (user && activeProfile) {
         const profileId = `${user.uid}_${activeProfile}`;
-        setTags(getCachedTags(profileId)); // Load from cache immediately
-        fetchAndCacheTags(); // Then fetch fresh data
+        const cached = getCachedTags(profileId);
+        if (cached.length > 0) {
+          setTags(cached);
+          setLoading(false);
+        }
+        fetchAndCacheTags();
     }
   }, [user, activeProfile, fetchAndCacheTags]);
 

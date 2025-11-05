@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  collectionGroup,
   getDocs,
   query,
   where,
@@ -55,6 +54,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useTags } from '@/hooks/use-tags';
 
 interface TagInfo {
   name: string;
@@ -65,6 +65,8 @@ export default function ManageTagsPageClient() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
+  const { tags: allTags, loading: tagsLoading, refreshTags } = useTags();
+
 
   const [tags, setTags] = useState<TagInfo[]>([]);
   const [archivedTags, setArchivedTags] = useState<string[]>([]);
@@ -73,7 +75,7 @@ export default function ManageTagsPageClient() {
   const [isRenaming, setIsRenaming] = useState<TagInfo | null>(null);
   const [newTagName, setNewTagName] = useState('');
 
-  const fetchTags = useCallback(async () => {
+  const fetchTagUsage = useCallback(async () => {
     if (!user || !activeProfile) return;
     setLoading(true);
 
@@ -81,6 +83,11 @@ export default function ManageTagsPageClient() {
     const collectionsToSearch = ['expenses', 'incomes', 'plans'];
 
     try {
+      // Initialize counts for all known tags (including those with 0 usage)
+      allTags.forEach(tag => {
+        tagCounts[tag] = 0;
+      });
+
       for (const col of collectionsToSearch) {
         const q = query(
           collection(db, col),
@@ -92,7 +99,9 @@ export default function ManageTagsPageClient() {
           const data = doc.data();
           if (data.tags && Array.isArray(data.tags)) {
             data.tags.forEach((tag: string) => {
-              tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+              if (tagCounts.hasOwnProperty(tag)) {
+                tagCounts[tag]++;
+              }
             });
           }
         });
@@ -103,34 +112,19 @@ export default function ManageTagsPageClient() {
         query(collection(db, 'profiles'), where('id', '==', `${user.uid}_${activeProfile}`))
       );
       
-      let preDefinedTags: string[] = [];
       let archived: string[] = [];
-      
       if (!profileDoc.empty) {
         const profileData = profileDoc.docs[0].data();
-        preDefinedTags = profileData.tags || [];
         archived = profileData.archivedTags || [];
-      } else {
-        // If profile doc doesn't exist, it means no tags have been created for it yet
-        // This is fine, we just proceed with an empty array.
       }
 
-
-      preDefinedTags.forEach((tag) => {
-        if (!tagCounts[tag]) {
-          tagCounts[tag] = 0;
-        }
-      });
-
-      const allTags = Object.entries(tagCounts).map(([name, count]) => ({
-        name,
-        count,
-      }));
-
-      setTags(allTags.filter((t) => !archived.includes(t.name)));
+      const allTagInfos = allTags.map(name => ({ name, count: tagCounts[name] || 0 }));
+      
+      setTags(allTagInfos.filter((t) => !archived.includes(t.name)));
       setArchivedTags(archived);
+
     } catch (error) {
-      console.error('Error fetching tags:', error);
+      console.error('Error fetching tags usage:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
@@ -139,22 +133,25 @@ export default function ManageTagsPageClient() {
     } finally {
       setLoading(false);
     }
-  }, [user, activeProfile, toast]);
+  }, [user, activeProfile, toast, allTags]);
 
   useEffect(() => {
-    fetchTags();
-  }, [fetchTags]);
+    if (!tagsLoading) {
+        fetchTagUsage();
+    }
+  }, [tagsLoading, fetchTagUsage]);
 
   const handleCreateTag = async () => {
     if (!user || !activeProfile || !newTag.trim()) return;
     
-    const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
+    const profileId = `${user.uid}_${activeProfile}`;
+    const profileDocRef = doc(db, 'profiles', profileId);
     
     try {
       await setDoc(profileDocRef, { 
         userId: user.uid,
         profile: activeProfile,
-        id: `${user.uid}_${activeProfile}`,
+        id: profileId,
         tags: arrayUnion(newTag.trim()) 
       }, { merge: true });
 
@@ -163,7 +160,7 @@ export default function ManageTagsPageClient() {
         description: text.tags.createSuccess,
       });
       setNewTag('');
-      fetchTags();
+      refreshTags(); // This will trigger re-fetch in useTags, then fetchTagUsage
     } catch (error) {
       console.error('Error creating tag:', error);
       toast({
@@ -200,16 +197,15 @@ export default function ManageTagsPageClient() {
         });
       }
       
-      await batch.commit();
-
-      // Also update in pre-defined tags if it exists
       const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      await updateDoc(profileDocRef, { 
+      batch.update(profileDocRef, { 
         tags: arrayRemove(oldName) 
       });
-      await updateDoc(profileDocRef, { 
+      batch.update(profileDocRef, { 
         tags: arrayUnion(newName) 
       });
+
+      await batch.commit();
 
       toast({ title: text.common.success, description: text.tags.renameSuccess });
     } catch (error) {
@@ -218,7 +214,7 @@ export default function ManageTagsPageClient() {
     } finally {
       setIsRenaming(null);
       setNewTagName('');
-      fetchTags();
+      refreshTags();
     }
   };
 
@@ -227,18 +223,20 @@ export default function ManageTagsPageClient() {
     const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
     try {
       if (archive) {
-        await updateDoc(profileDocRef, { archivedTags: arrayUnion(tagName) });
+        await setDoc(profileDocRef, { archivedTags: arrayUnion(tagName) }, { merge: true });
         toast({ title: text.common.success, description: text.tags.archiveSuccess });
       } else {
         await updateDoc(profileDocRef, { archivedTags: arrayRemove(tagName) });
         toast({ title: text.common.success, description: text.tags.unarchiveSuccess });
       }
-      fetchTags();
+      fetchTagUsage();
     } catch (error) {
       console.error('Error archiving tag:', error);
       toast({ variant: 'destructive', title: text.common.error, description: text.tags.archiveError });
     }
   };
+
+  const isLoading = loading || tagsLoading;
 
   return (
     <div className="space-y-6">
@@ -273,7 +271,7 @@ export default function ManageTagsPageClient() {
                   <CardTitle>{text.tags.activeTags}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
+                  {isLoading ? (
                     <div className="flex justify-center items-center h-40">
                       <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
@@ -314,7 +312,7 @@ export default function ManageTagsPageClient() {
                 <CardTitle>{text.tags.archivedTags}</CardTitle>
               </CardHeader>
               <CardContent>
-                 {loading ? (
+                 {isLoading ? (
                     <div className="flex justify-center items-center h-40">
                       <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
