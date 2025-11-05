@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button'; // Importei o Button
 
 interface TagInputProps {
   value: string[];
@@ -40,11 +41,12 @@ export default function TagInput({
   const safeSuggestions = Array.isArray(suggestions) ? suggestions : [];
 
   const handleAddTag = (tag: string) => {
-    const newTag = tag.trim();
+    const newTag = tag.trim().replace(/,/g, ''); // Remove vírgulas
     if (newTag && !value.includes(newTag)) {
       onChange([...value, newTag]);
     }
     setInputValue('');
+    inputRef.current?.focus(); // Mantém o foco no input dentro do popover
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -52,7 +54,8 @@ export default function TagInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === ',' && inputValue) {
+    // Deixa o 'Enter' ser gerenciado pelo onSelect do CommandItem
+    if (e.key === ',') {
       e.preventDefault();
       handleAddTag(inputValue);
     } else if (e.key === 'Backspace' && !inputValue) {
@@ -67,68 +70,83 @@ export default function TagInput({
       !value.includes(suggestion)
   );
 
+  const hasContent = filteredSuggestions.length > 0 || inputValue.trim().length > 0;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Command
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            inputRef.current?.blur();
-          }
-        }}
-        className="overflow-visible bg-transparent"
-      >
-        <div
+      <PopoverTrigger asChild>
+        {/* Este é o "gatilho" que parece um input, mas apenas mostra as tags */}
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
           className={cn(
-            'group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+            'flex flex-wrap items-center gap-2 min-h-10 h-auto justify-start font-normal',
             disabled && 'cursor-not-allowed opacity-50'
           )}
+          onClick={() => setOpen(true)}
         >
-          <div className="flex flex-wrap gap-1">
-            {value.map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="flex items-center gap-1"
-              >
-                {tag}
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          {value.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {tag}
+              {!disabled && (
                 <button
                   type="button"
                   className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  onClick={() => handleRemoveTag(tag)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Impede que o clique abra/feche o popover
+                    handleRemoveTag(tag);
+                  }}
                   disabled={disabled}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                 </button>
-              </Badge>
-            ))}
-            <CommandInput
-              ref={inputRef}
-              value={inputValue}
-              onValueChange={setInputValue}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setOpen(true)}
-              onBlur={() => setOpen(false)}
-              placeholder={placeholder}
-              disabled={disabled}
-              className="ml-2 flex-1 bg-transparent p-0 outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
-        <div className="relative mt-2">
-          <PopoverContent
-            className="w-[--radix-popover-trigger-width] p-0"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            {open && (filteredSuggestions.length > 0 || inputValue.trim()) && (
-              <CommandList>
+              )}
+            </Badge>
+          ))}
+          {/* Mostra o placeholder se não houver tags */}
+          {value.length === 0 && (
+            <span className="text-sm text-muted-foreground ml-1">
+              {placeholder}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+
+      {/* Este é o conteúdo flutuante que contém o input real e as sugestões */}
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus(); // Foca o input dentro do popover
+        }}
+      >
+        <Command>
+          <CommandInput
+            ref={inputRef}
+            placeholder={placeholder}
+            value={inputValue}
+            onValueChange={setInputValue}
+            onKeyDown={handleKeyDown}
+          />
+          <CommandList>
+            {hasContent ? (
+              <>
                 <CommandEmpty>
-                  {inputValue.trim() && (
+                  {inputValue.trim() ? (
                     <CommandItem
                       onSelect={() => handleAddTag(inputValue)}
                       className="cursor-pointer"
                     >
                       Criar nova tag: "{inputValue}"
                     </CommandItem>
+                  ) : (
+                    'Nenhuma tag encontrada.'
                   )}
                 </CommandEmpty>
                 <CommandGroup>
@@ -142,11 +160,11 @@ export default function TagInput({
                     </CommandItem>
                   ))}
                 </CommandGroup>
-              </CommandList>
-            )}
-          </PopoverContent>
-        </div>
-      </Command>
+              </>
+            ) : null}
+          </CommandList>
+        </Command>
+      </PopoverContent>
     </Popover>
   );
 }
