@@ -45,8 +45,6 @@ export default function TagInput({
       onChange([...value, newTag]);
     }
     setInputValue('');
-    // Não fechamos o popover aqui, para o usuário poder adicionar mais tags
-    // setOpen(false); 
     inputRef.current?.focus();
   };
 
@@ -54,16 +52,22 @@ export default function TagInput({
     onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
-  // Handler para o CommandInput
+  // --- INÍCIO DA CORREÇÃO ---
+  // A lógica do 'Enter' foi removida daqui.
+  // Agora, o 'cmdk' (Command) vai gerenciar a tecla "Enter"
+  // e chamar o 'onSelect' do item correto (seja uma sugestão ou "Criar nova tag").
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === ',') && inputValue) {
+    // A vírgula ainda pode criar uma tag
+    if (e.key === ',' && inputValue) {
       e.preventDefault();
       handleAddTag(inputValue);
     } else if (e.key === 'Backspace' && !inputValue) {
+      // O Backspace continua deletando a tag anterior
       e.preventDefault();
       handleRemoveTag(value[value.length - 1]);
     }
   };
+  // --- FIM DA CORREÇÃO ---
 
   const filteredSuggestions = safeSuggestions.filter(
     (suggestion) =>
@@ -103,7 +107,7 @@ export default function TagInput({
               )}
             </Badge>
           ))}
-          {/* Mostra o placeholder se não houver tags */}
+          {/* Mostra o placeholder se não houver tags e nada digitado */}
           {value.length === 0 && !inputValue && (
             <span className="text-sm text-muted-foreground ml-1">
               {placeholder}
@@ -131,7 +135,7 @@ export default function TagInput({
           />
           <CommandList>
             <CommandEmpty>
-              {/* Permite criar uma nova tag */}
+              {/* Permite criar uma nova tag ao pressionar Enter */}
               {inputValue.trim() ? (
                 <CommandItem
                   onSelect={() => handleAddTag(inputValue)}
