@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,6 +14,7 @@ import {
   collection,
   setDoc,
   getDoc,
+  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -68,6 +70,7 @@ export default function ManageTagsPageClient() {
   const [newTag, setNewTag] = useState('');
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newTagName, setNewTagName] = useState('');
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const fetchArchivedTags = useCallback(async () => {
     if (!user || !activeProfile) return;
@@ -214,8 +217,8 @@ export default function ManageTagsPageClient() {
           description: text.tags.unarchiveSuccess,
         });
       }
-      refreshTags(); // Refreshes active tags
-      fetchArchivedTags(); // Refreshes archived tags
+      refreshTags(); 
+      fetchArchivedTags(); 
     } catch (error) {
       console.error('Error archiving/unarchiving tag:', error);
       toast({
@@ -223,6 +226,63 @@ export default function ManageTagsPageClient() {
         title: text.common.error,
         description: text.tags.archiveError,
       });
+    }
+  };
+  
+  const handleDeleteTag = async () => {
+    if (!isDeleting || !user || !activeProfile) return;
+    
+    setLoading(true);
+    const tagName = isDeleting;
+
+    try {
+        const collectionsToSearch = ['expenses', 'incomes', 'plans'];
+        let isTagInUse = false;
+
+        for (const col of collectionsToSearch) {
+            const q = query(
+                collection(db, col),
+                where('userId', '==', user.uid),
+                where('profile', '==', activeProfile),
+                where('tags', 'array-contains', tagName),
+                limit(1)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                isTagInUse = true;
+                break;
+            }
+        }
+
+        if (isTagInUse) {
+            toast({
+                variant: 'destructive',
+                title: 'Ação não permitida',
+                description: `A tag "${tagName}" está em uso e não pode ser excluída.`,
+            });
+        } else {
+            const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
+            await updateDoc(profileDocRef, {
+                tags: arrayRemove(tagName),
+                archivedTags: arrayRemove(tagName), 
+            });
+            toast({
+                title: text.common.success,
+                description: `A tag "${tagName}" foi excluída permanentemente.`,
+            });
+            refreshTags();
+            fetchArchivedTags();
+        }
+    } catch (error) {
+        console.error('Error deleting tag:', error);
+        toast({
+            variant: 'destructive',
+            title: text.common.error,
+            description: 'Erro ao tentar excluir a tag.',
+        });
+    } finally {
+        setIsDeleting(null);
+        setLoading(false);
     }
   };
 
@@ -301,6 +361,14 @@ export default function ManageTagsPageClient() {
                             onClick={() => handleArchiveTag(tag, true)}
                           >
                             <Archive className="h-4 w-4" />
+                          </Button>
+                           <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsDeleting(tag)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -383,6 +451,28 @@ export default function ManageTagsPageClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <AlertDialog
+        open={!!isDeleting}
+        onOpenChange={(open) => !open && setIsDeleting(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a tag "{isDeleting}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTag} className="bg-destructive hover:bg-destructive/90">
+              {text.common.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
+    
