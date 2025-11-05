@@ -1,9 +1,7 @@
-
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { X, Tag } from 'lucide-react';
 import {
   Command,
@@ -14,6 +12,11 @@ import {
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface TagInputProps {
   value: string[];
@@ -31,8 +34,8 @@ export default function TagInput({
   disabled = false,
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const safeSuggestions = Array.isArray(suggestions) ? suggestions : [];
 
@@ -42,7 +45,8 @@ export default function TagInput({
       onChange([...value, newTag]);
     }
     setInputValue('');
-    setShowSuggestions(false);
+    setOpen(false); // Fecha o popover
+    inputRef.current?.focus(); // Mantém o foco no input
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -64,65 +68,53 @@ export default function TagInput({
       !value.includes(suggestion)
   );
 
-  const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (
-      containerRef.current &&
-      !containerRef.current.contains(event.target as Node)
-    ) {
-      setShowSuggestions(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [handleClickOutside]);
-
   return (
-    <div className="relative" ref={containerRef}>
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-2 rounded-md border border-input p-2",
-          disabled && "cursor-not-allowed opacity-50"
-        )}
-      >
-        <Tag className="h-4 w-4 text-muted-foreground" />
-        {value.map((tag) => (
-          <Badge
-            key={tag}
-            variant="secondary"
-            className="flex items-center gap-1"
-          >
-            {tag}
-            {!disabled && (
-              <button
-                type="button"
-                className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                onClick={() => handleRemoveTag(tag)}
-              >
-                <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-              </button>
-            )}
-          </Badge>
-        ))}
-        <Input
-          type="text"
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setShowSuggestions(true)}
-          placeholder={placeholder}
-          disabled={disabled}
-          className="flex-1 border-0 shadow-none focus-visible:ring-0 p-0 h-auto bg-transparent"
-        />
-      </div>
-      {showSuggestions && inputValue && (
-        <Command className="absolute top-full mt-1 w-full z-10 rounded-md border bg-popover text-popover-foreground shadow-md">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-2 rounded-md border border-input p-2',
+            disabled && 'cursor-not-allowed opacity-50'
+          )}
+          onClick={() => inputRef.current?.focus()}
+        >
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          {value.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {tag}
+              {!disabled && (
+                <button
+                  type="button"
+                  className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  onClick={() => handleRemoveTag(tag)}
+                >
+                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
+              )}
+            </Badge>
+          ))}
+          <Input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setOpen(true);
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setOpen(true)}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="flex-1 border-0 shadow-none focus-visible:ring-0 p-0 h-auto bg-transparent"
+          />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
           <CommandList>
             {filteredSuggestions.length > 0 ? (
               <CommandGroup>
@@ -141,7 +133,7 @@ export default function TagInput({
             )}
           </CommandList>
         </Command>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
