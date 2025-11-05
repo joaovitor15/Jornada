@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button'; // Importei o Button
+import { Button } from '@/components/ui/button';
 
 interface TagInputProps {
   value: string[];
@@ -46,7 +46,6 @@ export default function TagInput({
       onChange([...value, newTag]);
     }
     setInputValue('');
-    inputRef.current?.focus(); // Mantém o foco no input dentro do popover
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -54,10 +53,11 @@ export default function TagInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Deixa o 'Enter' ser gerenciado pelo onSelect do CommandItem
-    if (e.key === ',') {
+    if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
-      handleAddTag(inputValue);
+      if (inputValue) {
+        handleAddTag(inputValue);
+      }
     } else if (e.key === 'Backspace' && !inputValue) {
       e.preventDefault();
       handleRemoveTag(value[value.length - 1]);
@@ -76,13 +76,10 @@ export default function TagInput({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {/* Este é o "gatilho" que parece um input, mas apenas mostra as tags */}
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
+        <div
           className={cn(
-            'flex flex-wrap items-center gap-2 min-h-10 h-auto justify-start font-normal',
-            disabled && 'cursor-not-allowed opacity-50'
+            'flex flex-wrap items-center gap-2 min-h-10 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background',
+            disabled ? 'cursor-not-allowed opacity-50' : 'cursor-text'
           )}
           onClick={() => setOpen(true)}
         >
@@ -109,13 +106,13 @@ export default function TagInput({
               )}
             </Badge>
           ))}
-          {/* Mostra o placeholder se não houver tags */}
+          {/* Mostra o placeholder se não houver tags e o input não estiver visível */}
           {value.length === 0 && (
             <span className="text-sm text-muted-foreground ml-1">
               {placeholder}
             </span>
           )}
-        </Button>
+        </div>
       </PopoverTrigger>
 
       {/* Este é o conteúdo flutuante que contém o input real e as sugestões */}
@@ -155,6 +152,7 @@ export default function TagInput({
                       key={suggestion}
                       onSelect={() => handleAddTag(suggestion)}
                       className="cursor-pointer"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
                       {suggestion}
                     </CommandItem>
