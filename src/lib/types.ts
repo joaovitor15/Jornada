@@ -30,6 +30,7 @@ export type Income = {
   mainCategory: string;
   subcategory: string;
   date: Timestamp;
+  tags?: string[];
 };
 
 export type Card = {

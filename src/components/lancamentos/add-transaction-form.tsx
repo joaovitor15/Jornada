@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -132,7 +133,6 @@ export default function AddTransactionForm() {
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
   const [dateInput, setDateInput] = useState('');
   const { isFormOpen, closeForm, transactionToEdit } = useAddTransactionModal();
   
@@ -164,7 +164,7 @@ export default function AddTransactionForm() {
             paymentMethod: type === 'expense' ? (transactionToEdit as Expense).paymentMethod : undefined,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
-            tags: (transactionToEdit as Expense).tags || [],
+            tags: (transactionToEdit as Expense | Income).tags || [],
         });
         setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
       } else {
@@ -199,10 +199,9 @@ export default function AddTransactionForm() {
       }
 
       // If type becomes income, clear payment method and installments
-      if (name === 'type' && value.type === 'income') {
+      if (name === 'type' && value.type === 'income' && !isEditMode) {
         setValue('paymentMethod', undefined);
         setValue('installments', 1);
-        setValue('tags', []);
         trigger('paymentMethod'); 
       }
       
@@ -237,36 +236,6 @@ export default function AddTransactionForm() {
     return () => unsubscribe();
   }, [user, activeProfile]);
 
-  useEffect(() => {
-    if (!user || !activeProfile || !isFormOpen || transactionType !== 'expense') {
-      setAllTags([]);
-      return;
-    }
-
-    const fetchAllTags = async () => {
-      try {
-        const q = query(
-          collection(db, 'expenses'),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile)
-        );
-        const querySnapshot = await getDocs(q);
-        const tagsSet = new Set<string>();
-        querySnapshot.forEach((doc) => {
-          const data = doc.data() as Expense;
-          if (data.tags && Array.isArray(data.tags)) {
-            data.tags.forEach((tag) => tagsSet.add(tag));
-          }
-        });
-        setAllTags(Array.from(tagsSet));
-      } catch (error) {
-        console.error('Error fetching tags:', error);
-        setAllTags([]); // Safeguard
-      }
-    };
-
-    fetchAllTags();
-  }, [user, activeProfile, isFormOpen, transactionType]);
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
@@ -307,11 +276,11 @@ export default function AddTransactionForm() {
                 mainCategory: values.mainCategory,
                 subcategory: values.subcategory,
                 date: Timestamp.fromDate(values.date),
+                tags: values.tags || [],
             };
 
             if (values.type === 'expense') {
                 (dataToUpdate as Partial<Expense>).paymentMethod = values.paymentMethod;
-                (dataToUpdate as Partial<Expense>).tags = values.tags || [];
             }
 
             await updateDoc(docRef, dataToUpdate);
@@ -346,6 +315,7 @@ export default function AddTransactionForm() {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
                   amount: values.amount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                   date: Timestamp.fromDate(values.date),
+                  tags: values.tags || [],
                 };
                 await addDoc(collection(db, 'incomes'), incomeData);
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
@@ -501,7 +471,7 @@ export default function AddTransactionForm() {
                  )}
             </div>
 
-            {transactionType === 'expense' && (
+            {transactionType && (
               <FormField
                 control={control}
                 name="tags"
@@ -512,7 +482,6 @@ export default function AddTransactionForm() {
                       <TagInput
                         value={field.value || []}
                         onChange={field.onChange}
-                        suggestions={allTags}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -589,5 +558,3 @@ export default function AddTransactionForm() {
     </Dialog>
   );
 }
-
-    

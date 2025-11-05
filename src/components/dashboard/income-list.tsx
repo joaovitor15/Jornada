@@ -50,6 +50,7 @@ import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { useTransactions } from '@/hooks/use-transactions';
+import { Badge } from '../ui/badge';
 
 export default function IncomeList() {
   const { user } = useAuth();
@@ -148,6 +149,9 @@ export default function IncomeList() {
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.description}
                         </TableHead>
+                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Tags
+                        </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.date}
                         </TableHead>
@@ -180,6 +184,15 @@ export default function IncomeList() {
                           </TableCell>
                           <TableCell className="font-medium py-2 px-2 align-middle">
                             {income.description || '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle">
+                            <div className="flex flex-wrap gap-1">
+                              {income.tags?.map((tag) => (
+                                <Badge key={tag} variant="secondary">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {format(income.date.toDate(), 'dd/MM/yyyy')}
