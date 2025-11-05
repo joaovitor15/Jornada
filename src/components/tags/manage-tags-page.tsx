@@ -12,6 +12,7 @@ import {
   arrayUnion,
   arrayRemove,
   collection,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -101,13 +102,19 @@ export default function ManageTagsPageClient() {
       const profileDoc = await getDocs(
         query(collection(db, 'profiles'), where('id', '==', `${user.uid}_${activeProfile}`))
       );
+      
       let preDefinedTags: string[] = [];
       let archived: string[] = [];
+      
       if (!profileDoc.empty) {
         const profileData = profileDoc.docs[0].data();
         preDefinedTags = profileData.tags || [];
         archived = profileData.archivedTags || [];
+      } else {
+        // If profile doc doesn't exist, it means no tags have been created for it yet
+        // This is fine, we just proceed with an empty array.
       }
+
 
       preDefinedTags.forEach((tag) => {
         if (!tagCounts[tag]) {
@@ -140,16 +147,16 @@ export default function ManageTagsPageClient() {
 
   const handleCreateTag = async () => {
     if (!user || !activeProfile || !newTag.trim()) return;
-
+    
     const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
+    
     try {
-      // Check if doc exists, if not, create it
-      const profileDoc = await getDocs(query(collection(db, 'profiles'), where('id', '==', `${user.uid}_${activeProfile}`)));
-      if (profileDoc.empty) {
-        await updateDoc(profileDocRef, { id: `${user.uid}_${activeProfile}`, tags: [newTag.trim()] }, { merge: true });
-      } else {
-        await updateDoc(profileDocRef, { tags: arrayUnion(newTag.trim()) });
-      }
+      await setDoc(profileDocRef, { 
+        userId: user.uid,
+        profile: activeProfile,
+        id: `${user.uid}_${activeProfile}`,
+        tags: arrayUnion(newTag.trim()) 
+      }, { merge: true });
 
       toast({
         title: text.common.success,
@@ -197,8 +204,12 @@ export default function ManageTagsPageClient() {
 
       // Also update in pre-defined tags if it exists
       const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      await updateDoc(profileDocRef, { tags: arrayRemove(oldName) });
-      await updateDoc(profileDocRef, { tags: arrayUnion(newName) });
+      await updateDoc(profileDocRef, { 
+        tags: arrayRemove(oldName) 
+      });
+      await updateDoc(profileDocRef, { 
+        tags: arrayUnion(newName) 
+      });
 
       toast({ title: text.common.success, description: text.tags.renameSuccess });
     } catch (error) {
