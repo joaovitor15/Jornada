@@ -37,16 +37,14 @@ export default function TagInput({
   const [open, setOpen] = useState(false);
 
   const handleSelect = (tag: string) => {
-    if (value.includes(tag)) {
-      handleRemove(tag);
-    } else {
-      onChange([...value, tag]);
-    }
+    onChange([...value, tag]);
   };
 
   const handleRemove = (tag: string) => {
     onChange(value.filter((t) => t !== tag));
   };
+  
+  const unselectedTags = allTags.filter(tag => !value.includes(tag));
 
   return (
     <div className="w-full space-y-2">
@@ -56,10 +54,10 @@ export default function TagInput({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between font-normal"
+            className="w-full justify-between font-normal min-h-10"
             disabled={disabled || loading}
           >
-            {value.length > 0
+             {value.length > 0
               ? `${value.length} tag(s) selecionada(s)`
               : placeholder}
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -71,14 +69,14 @@ export default function TagInput({
             <CommandList>
               <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
               <CommandGroup>
-                {allTags.map((tag) => (
+                {unselectedTags.map((tag) => (
                   <CommandItem
                     key={tag}
                     value={tag}
                     onSelect={() => {
                       handleSelect(tag);
                     }}
-                    onMouseDown={(e) => {
+                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                     }}
