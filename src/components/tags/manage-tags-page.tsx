@@ -11,6 +11,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  collection,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
