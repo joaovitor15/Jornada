@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { X, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Input } from './input';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -31,7 +29,7 @@ export default function TagInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
-  const { tags: allTags, loading } = useTags();
+  const { tags: allTags } = useTags();
 
   const handleAddTag = (tag: string) => {
     const newTag = tag.trim();
@@ -78,9 +76,10 @@ export default function TagInput({
     >
       <div
         className={cn(
-          'group rounded-md border border-input px-3 py-1.5 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          'group flex min-h-10 w-full items-center rounded-md border border-input px-3 py-1.5 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
           disabled ? 'cursor-not-allowed opacity-50' : ''
         )}
+        onClick={() => inputRef.current?.focus()}
       >
         <div className="flex flex-wrap items-center gap-1.5">
           <Tag className="h-4 w-4 text-muted-foreground mr-1" />
