@@ -21,6 +21,7 @@ export const text = {
     emergencyReserve: 'Reserva de Emergência',
     payBill: 'Pagar Fatura',
     currentPlans: 'Planos Atuais',
+    manageTags: 'Gerenciar Tags',
   },
   dashboard: {
     title: 'Dashboard',
@@ -387,5 +388,27 @@ export const text = {
   placeholders: {
     description: 'Descrição (Opcional)',
     amount: '0,00',
+  },
+  tags: {
+    description: 'Crie e gerencie suas tags para organizar suas transações.',
+    createTitle: 'Criar Nova Tag',
+    createDescription: 'Crie uma nova tag para usar em seus lançamentos.',
+    newTagPlaceholder: 'Nome da nova tag',
+    createButton: 'Criar Tag',
+    activeTags: 'Tags Ativas',
+    archivedTags: 'Tags Arquivadas',
+    tagName: 'Tag',
+    usageCount: 'Uso',
+    renameTitle: 'Renomear Tag',
+    renameDescription: (tagName: string) => `Renomear a tag "${tagName}" em todos os lugares.`,
+    renameButton: 'Renomear',
+    fetchError: 'Erro ao buscar as tags.',
+    createSuccess: 'Tag criada com sucesso.',
+    createError: 'Erro ao criar a tag.',
+    renameSuccess: 'Tag renomeada com sucesso.',
+    renameError: 'Erro ao renomear a tag.',
+    archiveSuccess: 'Tag arquivada com sucesso.',
+    archiveError: 'Erro ao arquivar a tag.',
+    unarchiveSuccess: 'Tag desarquivada com sucesso.',
   }
 };

@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Shield,
   ClipboardCheck,
+  Tags,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -46,6 +47,11 @@ export default function SidebarNav() {
       href: '/reserva-de-emergencia',
       label: text.sidebar.emergencyReserve,
       icon: Shield,
+    },
+    {
+      href: '/tags',
+      label: text.sidebar.manageTags,
+      icon: Tags,
     },
     {
       href: '/lancamentos',

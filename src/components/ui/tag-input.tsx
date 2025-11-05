@@ -1,10 +1,19 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Input } from './input';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { useTags } from '@/hooks/use-tags';
 
 interface TagInputProps {
   value: string[];
@@ -19,15 +28,19 @@ export default function TagInput({
   placeholder = 'Adicionar tags...',
   disabled = false,
 }: TagInputProps) {
-  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [open, setOpen] = useState(false);
+  const { tags: allTags, loading } = useTags();
 
   const handleAddTag = (tag: string) => {
-    const newTag = tag.trim().replace(/,/g, ''); // Remove vírgulas
+    const newTag = tag.trim();
     if (newTag && !value.includes(newTag)) {
       onChange([...value, newTag]);
     }
     setInputValue('');
+    setOpen(false);
+    inputRef.current?.focus();
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -46,47 +59,91 @@ export default function TagInput({
     }
   };
 
+  const filteredTags = useMemo(() => {
+    return allTags.filter(
+      (tag) =>
+        !value.includes(tag) &&
+        tag.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  }, [allTags, value, inputValue]);
+
   return (
-    <div
-      className={cn(
-        'flex flex-wrap items-center gap-1.5 min-h-10 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background',
-        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-text'
-      )}
-      onClick={() => inputRef.current?.focus()}
+    <Command
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          inputRef.current?.blur();
+        }
+      }}
+      className="overflow-visible bg-transparent"
     >
-      <Tag className="h-4 w-4 text-muted-foreground mr-1" />
-      {value.map((tag) => (
-        <Badge
-          key={tag}
-          variant="secondary"
-          className="flex items-center gap-1"
-        >
-          {tag}
-          {!disabled && (
-            <button
-              type="button"
-              className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemoveTag(tag);
-              }}
-              disabled={disabled}
+      <div
+        className={cn(
+          'group rounded-md border border-input px-3 py-1.5 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          disabled ? 'cursor-not-allowed opacity-50' : ''
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Tag className="h-4 w-4 text-muted-foreground mr-1" />
+          {value.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="flex items-center gap-1"
             >
-              <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-            </button>
-          )}
-        </Badge>
-      ))}
-      <Input
-        ref={inputRef}
-        type="text"
-        placeholder={value.length === 0 ? placeholder : ''}
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className="flex-1 bg-transparent border-none h-full p-0 text-sm shadow-none focus-visible:ring-0"
-      />
-    </div>
+              {tag}
+              {!disabled && (
+                <button
+                  type="button"
+                  className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveTag(tag);
+                  }}
+                  disabled={disabled}
+                >
+                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
+              )}
+            </Badge>
+          ))}
+          <CommandInput
+            ref={inputRef}
+            placeholder={placeholder}
+            value={inputValue}
+            onValueChange={setInputValue}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+            disabled={disabled}
+            className="ml-2 flex-1 bg-transparent p-0 outline-none placeholder:text-muted-foreground focus:ring-0"
+          />
+        </div>
+      </div>
+      <div className="relative mt-2">
+        {open && filteredTags.length > 0 && (
+          <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+            <CommandList>
+              <CommandGroup>
+                {filteredTags.map((tag) => (
+                  <CommandItem
+                    key={tag}
+                    value={tag}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onSelect={() => {
+                      handleAddTag(tag);
+                    }}
+                  >
+                    {tag}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </div>
+        )}
+      </div>
+    </Command>
   );
 }
