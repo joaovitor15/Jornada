@@ -32,7 +32,7 @@ export default function TagInput({
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const safeSuggestions = Array.isArray(suggestions) ? suggestions : [];
 
@@ -63,27 +63,31 @@ export default function TagInput({
       suggestion.toLowerCase().includes(inputValue.toLowerCase()) &&
       !value.includes(suggestion)
   );
-  
-  // Use a callback to handle clicks outside the component
+
   const handleClickOutside = useCallback((event: MouseEvent) => {
-    if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
-       setShowSuggestions(false);
+    if (
+      containerRef.current &&
+      !containerRef.current.contains(event.target as Node)
+    ) {
+      setShowSuggestions(false);
     }
   }, []);
 
   useEffect(() => {
-    // Add event listener when the component mounts
     document.addEventListener('mousedown', handleClickOutside);
-    // Remove event listener on cleanup
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [handleClickOutside]);
 
-
   return (
-    <div ref={inputRef}>
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-input p-2">
+    <div className="relative" ref={containerRef}>
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-2 rounded-md border border-input p-2",
+          disabled && "cursor-not-allowed opacity-50"
+        )}
+      >
         <Tag className="h-4 w-4 text-muted-foreground" />
         {value.map((tag) => (
           <Badge
@@ -108,19 +112,19 @@ export default function TagInput({
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
-            if (!showSuggestions) setShowSuggestions(true);
+            setShowSuggestions(true);
           }}
           onKeyDown={handleKeyDown}
           onFocus={() => setShowSuggestions(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
+          className="flex-1 border-0 shadow-none focus-visible:ring-0 p-0 h-auto bg-transparent"
         />
       </div>
-      {showSuggestions && inputValue && filteredSuggestions.length > 0 && (
-        <div className="relative">
-          <Command className="absolute top-1 w-full z-10 rounded-md border bg-popover text-popover-foreground shadow-md">
-            <CommandList>
+      {showSuggestions && inputValue && (
+        <Command className="absolute top-full mt-1 w-full z-10 rounded-md border bg-popover text-popover-foreground shadow-md">
+          <CommandList>
+            {filteredSuggestions.length > 0 ? (
               <CommandGroup>
                 {filteredSuggestions.map((suggestion) => (
                   <CommandItem
@@ -132,9 +136,11 @@ export default function TagInput({
                   </CommandItem>
                 ))}
               </CommandGroup>
-            </CommandList>
-          </Command>
-        </div>
+            ) : (
+              <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
+            )}
+          </CommandList>
+        </Command>
       )}
     </div>
   );
