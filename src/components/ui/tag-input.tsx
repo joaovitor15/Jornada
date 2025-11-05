@@ -49,37 +49,19 @@ export default function TagInput({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between h-auto min-h-10"
+            className="w-full justify-between font-normal"
             disabled={disabled || loading}
           >
-            <div className="flex flex-wrap items-center gap-1">
-              {value.length === 0 && (
-                <span className="text-muted-foreground font-normal">
-                  {placeholder}
-                </span>
-              )}
-              {value.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="mr-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemove(tag);
-                  }}
-                >
-                  {tag}
-                  <X className="ml-1 h-3 w-3" />
-                </Badge>
-              ))}
-            </div>
+            {value.length > 0
+              ? `${value.length} tag(s) selecionada(s)`
+              : placeholder}
             <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -96,6 +78,10 @@ export default function TagInput({
                     onSelect={() => {
                       handleSelect(tag);
                     }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
                     <Check
                       className={cn(
@@ -111,6 +97,27 @@ export default function TagInput({
           </Command>
         </PopoverContent>
       </Popover>
+      {value.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1">
+          {value.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => handleRemove(tag)}
+                className="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                aria-label={`Remover ${tag}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
