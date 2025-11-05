@@ -17,7 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 
 interface TagInputProps {
   value: string[];
@@ -78,12 +77,12 @@ export default function TagInput({
         {/* Este é o "gatilho" que parece um input, mas apenas mostra as tags */}
         <div
           className={cn(
-            'flex flex-wrap items-center gap-2 min-h-10 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background',
+            'flex flex-wrap items-center gap-1.5 min-h-10 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background',
             disabled ? 'cursor-not-allowed opacity-50' : 'cursor-text'
           )}
-          onClick={() => setOpen(true)}
+          onClick={() => !disabled && setOpen(true)}
         >
-          <Tag className="h-4 w-4 text-muted-foreground" />
+          <Tag className="h-4 w-4 text-muted-foreground mr-1" />
           {value.map((tag) => (
             <Badge
               key={tag}
@@ -130,6 +129,7 @@ export default function TagInput({
             value={inputValue}
             onValueChange={setInputValue}
             onKeyDown={handleKeyDown}
+            disabled={disabled}
           />
           <CommandList>
             {hasContent ? (
