@@ -139,6 +139,7 @@ export default function TagInput({
                     <CommandItem
                       onSelect={() => handleAddTag(inputValue)}
                       className="cursor-pointer"
+                      onMouseDown={(e) => e.preventDefault()}
                     >
                       Criar nova tag: "{inputValue}"
                     </CommandItem>
