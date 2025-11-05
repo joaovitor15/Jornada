@@ -12,6 +12,7 @@ import {
   arrayRemove,
   collection,
   setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -56,75 +57,33 @@ import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useTags } from '@/hooks/use-tags';
 
-interface TagInfo {
-  name: string;
-  count: number;
-}
-
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const { tags: allTags, loading: tagsLoading, refreshTags } = useTags();
+  const { tags: activeTags, loading: tagsLoading, refreshTags } = useTags();
 
-
-  const [tags, setTags] = useState<TagInfo[]>([]);
   const [archivedTags, setArchivedTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTag, setNewTag] = useState('');
-  const [isRenaming, setIsRenaming] = useState<TagInfo | null>(null);
+  const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newTagName, setNewTagName] = useState('');
 
-  const fetchTagUsage = useCallback(async () => {
+  const fetchArchivedTags = useCallback(async () => {
     if (!user || !activeProfile) return;
     setLoading(true);
-
-    const tagCounts: { [key: string]: number } = {};
-    const collectionsToSearch = ['expenses', 'incomes', 'plans'];
-
     try {
-      // Initialize counts for all known tags (including those with 0 usage)
-      allTags.forEach(tag => {
-        tagCounts[tag] = 0;
-      });
-
-      for (const col of collectionsToSearch) {
-        const q = query(
-          collection(db, col),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile)
-        );
-        const snapshot = await getDocs(q);
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.tags && Array.isArray(data.tags)) {
-            data.tags.forEach((tag: string) => {
-              if (tagCounts.hasOwnProperty(tag)) {
-                tagCounts[tag]++;
-              }
-            });
-          }
-        });
-      }
-
       const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      const profileDoc = await getDocs(
-        query(collection(db, 'profiles'), where('id', '==', `${user.uid}_${activeProfile}`))
-      );
+      const profileDoc = await getDoc(profileDocRef);
       
       let archived: string[] = [];
-      if (!profileDoc.empty) {
-        const profileData = profileDoc.docs[0].data();
+      if (profileDoc.exists()) {
+        const profileData = profileDoc.data();
         archived = profileData.archivedTags || [];
       }
-
-      const allTagInfos = allTags.map(name => ({ name, count: tagCounts[name] || 0 }));
-      
-      setTags(allTagInfos.filter((t) => !archived.includes(t.name)));
-      setArchivedTags(archived);
-
+      setArchivedTags(archived.sort());
     } catch (error) {
-      console.error('Error fetching tags usage:', error);
+      console.error('Error fetching archived tags:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
@@ -133,34 +92,38 @@ export default function ManageTagsPageClient() {
     } finally {
       setLoading(false);
     }
-  }, [user, activeProfile, toast, allTags]);
+  }, [user, activeProfile, toast]);
 
   useEffect(() => {
     if (!tagsLoading) {
-        fetchTagUsage();
+      fetchArchivedTags();
     }
-  }, [tagsLoading, fetchTagUsage]);
+  }, [tagsLoading, fetchArchivedTags]);
 
   const handleCreateTag = async () => {
     if (!user || !activeProfile || !newTag.trim()) return;
-    
+
     const profileId = `${user.uid}_${activeProfile}`;
     const profileDocRef = doc(db, 'profiles', profileId);
     
     try {
-      await setDoc(profileDocRef, { 
-        userId: user.uid,
-        profile: activeProfile,
-        id: profileId,
-        tags: arrayUnion(newTag.trim()) 
-      }, { merge: true });
+      await setDoc(
+        profileDocRef,
+        {
+          userId: user.uid,
+          profile: activeProfile,
+          id: profileId,
+          tags: arrayUnion(newTag.trim()),
+        },
+        { merge: true }
+      );
 
       toast({
         title: text.common.success,
         description: text.tags.createSuccess,
       });
       setNewTag('');
-      refreshTags(); // This will trigger re-fetch in useTags, then fetchTagUsage
+      refreshTags(); 
     } catch (error) {
       console.error('Error creating tag:', error);
       toast({
@@ -174,7 +137,7 @@ export default function ManageTagsPageClient() {
   const handleRenameTag = async () => {
     if (!isRenaming || !newTagName.trim() || !user || !activeProfile) return;
 
-    const oldName = isRenaming.name;
+    const oldName = isRenaming;
     const newName = newTagName.trim();
     setLoading(true);
 
@@ -192,25 +155,35 @@ export default function ManageTagsPageClient() {
         const snapshot = await getDocs(q);
         snapshot.forEach((doc) => {
           const currentTags = doc.data().tags || [];
-          const updatedTags = [...currentTags.filter((t: string) => t !== oldName), newName];
+          const updatedTags = [
+            ...currentTags.filter((t: string) => t !== oldName),
+            newName,
+          ];
           batch.update(doc.ref, { tags: updatedTags });
         });
       }
-      
+
       const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      batch.update(profileDocRef, { 
-        tags: arrayRemove(oldName) 
+      batch.update(profileDocRef, {
+        tags: arrayRemove(oldName),
       });
-      batch.update(profileDocRef, { 
-        tags: arrayUnion(newName) 
+      batch.update(profileDocRef, {
+        tags: arrayUnion(newName),
       });
 
       await batch.commit();
 
-      toast({ title: text.common.success, description: text.tags.renameSuccess });
+      toast({
+        title: text.common.success,
+        description: text.tags.renameSuccess,
+      });
     } catch (error) {
-      console.error("Error renaming tag:", error);
-      toast({ variant: 'destructive', title: text.common.error, description: text.tags.renameError });
+      console.error('Error renaming tag:', error);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: text.tags.renameError,
+      });
     } finally {
       setIsRenaming(null);
       setNewTagName('');
@@ -223,16 +196,33 @@ export default function ManageTagsPageClient() {
     const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
     try {
       if (archive) {
-        await setDoc(profileDocRef, { archivedTags: arrayUnion(tagName) }, { merge: true });
-        toast({ title: text.common.success, description: text.tags.archiveSuccess });
+        await updateDoc(profileDocRef, {
+          archivedTags: arrayUnion(tagName),
+          tags: arrayRemove(tagName),
+        });
+        toast({
+          title: text.common.success,
+          description: text.tags.archiveSuccess,
+        });
       } else {
-        await updateDoc(profileDocRef, { archivedTags: arrayRemove(tagName) });
-        toast({ title: text.common.success, description: text.tags.unarchiveSuccess });
+        await updateDoc(profileDocRef, {
+          archivedTags: arrayRemove(tagName),
+          tags: arrayUnion(tagName),
+        });
+        toast({
+          title: text.common.success,
+          description: text.tags.unarchiveSuccess,
+        });
       }
-      fetchTagUsage();
+      refreshTags(); // Refreshes active tags
+      fetchArchivedTags(); // Refreshes archived tags
     } catch (error) {
-      console.error('Error archiving tag:', error);
-      toast({ variant: 'destructive', title: text.common.error, description: text.tags.archiveError });
+      console.error('Error archiving/unarchiving tag:', error);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: text.tags.archiveError,
+      });
     }
   };
 
@@ -251,6 +241,9 @@ export default function ManageTagsPageClient() {
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder={text.tags.newTagPlaceholder}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreateTag();
+              }}
             />
             <Button onClick={handleCreateTag} disabled={!newTag.trim()}>
               {text.tags.createButton}
@@ -258,98 +251,121 @@ export default function ManageTagsPageClient() {
           </div>
         </CardContent>
       </Card>
-      
+
       <Tabs defaultValue="active">
         <TabsList>
-            <TabsTrigger value="active">{text.tags.activeTags}</TabsTrigger>
-            <TabsTrigger value="archived">{text.tags.archivedTags}</TabsTrigger>
+          <TabsTrigger value="active">{text.tags.activeTags}</TabsTrigger>
+          <TabsTrigger value="archived">{text.tags.archivedTags}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
-             <Card>
-                <CardHeader>
-                  <CardTitle>{text.tags.activeTags}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="flex justify-center items-center h-40">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{text.tags.tagName}</TableHead>
-                          <TableHead className="text-center">{text.tags.usageCount}</TableHead>
-                          <TableHead className="text-right">{text.common.actions}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tags.map((tag) => (
-                          <TableRow key={tag.name}>
-                            <TableCell><Badge variant="secondary">{tag.name}</Badge></TableCell>
-                            <TableCell className="text-center">{tag.count}</TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleArchiveTag(tag.name, true)}>
-                                <Archive className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{text.tags.activeTags}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{text.tags.tagName}</TableHead>
+                      <TableHead className="text-right">
+                        {text.common.actions}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeTags.map((tag) => (
+                      <TableRow key={tag}>
+                        <TableCell>
+                          <Badge variant="secondary">{tag}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setIsRenaming(tag);
+                              setNewTagName(tag);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleArchiveTag(tag, true)}
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="archived">
-            <Card>
-              <CardHeader>
-                <CardTitle>{text.tags.archivedTags}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 {isLoading ? (
-                    <div className="flex justify-center items-center h-40">
-                      <Loader2 className="h-8 w-8 animate-spin" />
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{text.tags.tagName}</TableHead>
-                          <TableHead className="text-right">{text.common.actions}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {archivedTags.map((tag) => (
-                          <TableRow key={tag}>
-                            <TableCell><Badge variant="outline">{tag}</Badge></TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => handleArchiveTag(tag, false)}>
-                                <ArchiveRestore className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{text.tags.archivedTags}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{text.tags.tagName}</TableHead>
+                      <TableHead className="text-right">
+                        {text.common.actions}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {archivedTags.map((tag) => (
+                      <TableRow key={tag}>
+                        <TableCell>
+                          <Badge variant="outline">{tag}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleArchiveTag(tag, false)}
+                          >
+                            <ArchiveRestore className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
-
-      <AlertDialog open={!!isRenaming} onOpenChange={(open) => !open && setIsRenaming(null)}>
+      <AlertDialog
+        open={!!isRenaming}
+        onOpenChange={(open) => !open && setIsRenaming(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{text.tags.renameTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              {text.tags.renameDescription(isRenaming?.name || '')}
+              {text.tags.renameDescription(isRenaming || '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
@@ -358,7 +374,10 @@ export default function ManageTagsPageClient() {
           />
           <AlertDialogFooter>
             <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRenameTag} disabled={!newTagName.trim() || newTagName.trim() === isRenaming?.name}>
+            <AlertDialogAction
+              onClick={handleRenameTag}
+              disabled={!newTagName.trim() || newTagName.trim() === isRenaming}
+            >
               {text.tags.renameButton}
             </AlertDialogAction>
           </AlertDialogFooter>
