@@ -140,6 +140,9 @@ export default function AddTransactionForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      tags: [],
+    },
   });
   
   const { watch, setValue, reset, control, formState: { isSubmitting }, trigger } = form;
@@ -258,7 +261,7 @@ export default function AddTransactionForm() {
         setAllTags(Array.from(tagsSet));
       } catch (error) {
         console.error('Error fetching tags:', error);
-        setAllTags([]);
+        setAllTags([]); // Safeguard
       }
     };
 
@@ -586,3 +589,5 @@ export default function AddTransactionForm() {
     </Dialog>
   );
 }
+
+    
