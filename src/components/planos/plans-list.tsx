@@ -169,7 +169,13 @@ function PlanCard({
             currency: 'BRL',
           })}
         </p>
-         <Badge variant="secondary">{plan.mainCategory} &gt; {plan.subcategory}</Badge>
+         <div className="flex flex-wrap gap-1 mt-2">
+            <Badge variant="secondary">{plan.mainCategory} &gt; {plan.subcategory}</Badge>
+            {plan.tags?.map(tag => (
+                <Badge key={tag} variant="outline">{tag}</Badge>
+            ))}
+         </div>
+
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t">

@@ -62,6 +62,7 @@ export type Plan = {
   mainCategory: string;
   subcategory: string;
   subItems?: SubItem[];
+  tags?: string[];
 };
 
 

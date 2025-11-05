@@ -45,6 +45,7 @@ import {
 } from '@/lib/categories';
 import { Separator } from '../ui/separator';
 import { onSnapshot, query, where } from 'firebase/firestore';
+import TagInput from '../ui/tag-input';
 
 const planSchema = z
   .object({
@@ -64,6 +65,7 @@ const planSchema = z
       name: z.string().min(1, 'O nome do item é obrigatório.'),
       price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
     })).optional(),
+    tags: z.array(z.string()).optional(),
   })
   .refine(
     (data) => {
@@ -117,6 +119,7 @@ export default function PlanForm({
       mainCategory: '',
       subcategory: '',
       subItems: [],
+      tags: [],
     },
   });
 
@@ -164,6 +167,7 @@ export default function PlanForm({
           mainCategory: planToEdit.mainCategory,
           subcategory: planToEdit.subcategory,
           subItems: planToEdit.subItems || [],
+          tags: planToEdit.tags || [],
         });
       } else {
         form.reset({
@@ -178,6 +182,7 @@ export default function PlanForm({
           mainCategory: '',
           subcategory: '',
           subItems: [],
+          tags: [],
         });
       }
     }
@@ -262,6 +267,7 @@ export default function PlanForm({
         mainCategory: rest.mainCategory,
         subcategory: rest.subcategory,
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
+        tags: values.tags || [],
     };
     
     if (rest.type === 'Anual' && dueDay !== undefined && dueMonth !== undefined && dueYear !== undefined) {
@@ -414,6 +420,24 @@ export default function PlanForm({
                   )}
                 />
               </div>
+
+              <FormField
+                  control={control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <TagInput
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
               <FormField
                 control={form.control}
