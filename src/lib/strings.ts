@@ -4,7 +4,7 @@ export const text = {
     appName: 'A Jornada',
     appDescription: 'Sua jornada de controle Financeiro',
     profiles: 'Perfis',
-    personal: 'Joao',
+    personal: 'Joao.',
     home: 'Casa',
     business: 'Farmacia',
     profileTypes: {
