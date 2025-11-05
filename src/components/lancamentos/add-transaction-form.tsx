@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -236,7 +235,7 @@ export default function AddTransactionForm() {
   }, [user, activeProfile]);
 
   useEffect(() => {
-    if (!user || !activeProfile || !isFormOpen) {
+    if (!user || !activeProfile || !isFormOpen || transactionType !== 'expense') {
       setAllTags([]);
       return;
     }
@@ -264,7 +263,7 @@ export default function AddTransactionForm() {
     };
 
     fetchAllTags();
-  }, [user, activeProfile, isFormOpen]);
+  }, [user, activeProfile, isFormOpen, transactionType]);
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
@@ -511,7 +510,6 @@ export default function AddTransactionForm() {
                         value={field.value || []}
                         onChange={field.onChange}
                         suggestions={allTags}
-                        placeholder="Adicionar tags..."
                         disabled={isSubmitting}
                       />
                     </FormControl>
