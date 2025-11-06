@@ -199,6 +199,10 @@ export default function ManageTagsPageClient() {
     }
   };
 
+  const handleSelectTag = (tagId: string) => {
+    setSelectedTagId(prevId => prevId === tagId ? null : tagId);
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -223,7 +227,7 @@ export default function ManageTagsPageClient() {
             hierarchicalTags.map((tag) => (
               <div
                 key={tag.id}
-                onClick={() => setSelectedTagId(tag.id)}
+                onClick={() => handleSelectTag(tag.id)}
                 className={cn(
                   'p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center',
                   selectedTagId === tag.id
@@ -271,7 +275,6 @@ export default function ManageTagsPageClient() {
         <div className="md:col-span-2">
             {selectedTag ? (
                 <div className="space-y-4">
-                    <h2 className="text-xl font-bold">Tags Vinculadas a "{selectedTag.name}"</h2>
                     {selectedTag.children.length > 0 ? (
                          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {selectedTag.children.map(child => (
