@@ -113,12 +113,6 @@ export default function AddTagForm({
     try {
       const newTagRef = doc(collection(db, 'tags'));
       
-      let order = 0;
-      if (values.type === 'principal') {
-          const snapshot = await getCountFromServer(collection(db, 'tags'));
-          order = snapshot.data().count;
-      }
-
       const newTagData: RawTag = {
         id: newTagRef.id,
         userId: user.uid,
@@ -126,7 +120,7 @@ export default function AddTagForm({
         name: values.name.trim(),
         isPrincipal: values.type === 'principal',
         parent: values.parentId || null,
-        order: order,
+        order: 0,
       };
 
       await setDoc(newTagRef, newTagData);

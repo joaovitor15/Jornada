@@ -46,6 +46,7 @@ service cloud.firestore {
     
     // Rule for the 'tags' collection
     match /tags/{tagId} {
+      allow list: if request.auth != null;
       allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
