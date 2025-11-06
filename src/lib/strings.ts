@@ -24,7 +24,7 @@ export const text = {
     manageTags: 'Gerenciar Tags',
   },
   dashboard: {
-    title: 'Dashboard',
+    title: 'Dashboard.',
     annualSummaryTitle: 'Resumo Financeiro Anual',
     monthLabel: 'Mês',
     yearLabel: 'Ano',
