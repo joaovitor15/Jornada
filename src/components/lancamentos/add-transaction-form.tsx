@@ -368,182 +368,180 @@ export default function AddTransactionForm() {
               )}
             />
 
-            {transactionType && (
-              <>
-                <FormField
-                  control={control} name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.description}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={text.placeholders.description} {...field} disabled={isSubmitting} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={control} name="mainCategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{text.common.mainCategory}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={text.addExpenseForm.selectCategory} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {allCategories.map((category) => (
-                              <SelectItem key={category} value={category}>{category}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={control} name="subcategory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{text.common.subcategory}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || subcategories.length === 0}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={text.addExpenseForm.selectSubcategory} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {subcategories.map((sub) => (
-                              <SelectItem key={sub} value={sub}>{sub}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                     <FormField
-                        control={control} name="amount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{text.common.amount}</FormLabel>
-                            <FormControl>
-                              <CurrencyInput
-                                placeholder={text.placeholders.amount}
-                                disabled={isSubmitting} value={field.value}
-                                onValueChange={(values) => { field.onChange(values?.floatValue); }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                     {transactionType === 'expense' && (
-                        <FormField
-                            control={control} name="paymentMethod"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>{text.common.paymentMethod}</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {paymentMethods.map((method) => (
-                                    <SelectItem key={method} value={method as string}>{method as string}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                     )}
-                </div>
-
-                {transactionType === 'expense' && isCreditCardPayment && !isEditMode && (
-                  <FormField
-                    control={control} name="installments"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{text.addExpenseForm.installments}</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number" min="1" {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
-                            disabled={isSubmitting || isEditMode}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <>
+              <FormField
+                control={control} name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.common.description}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={text.placeholders.description} {...field} disabled={isSubmitting || !transactionType} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
-                  control={control} name="tags"
+                  control={control} name="mainCategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tags</FormLabel>
-                      <FormControl>
-                        <TagInput
-                            placeholder="Selecione as tags..."
-                            value={field.value || []}
-                            onChange={field.onChange}
-                            disabled={isSubmitting}
-                        />
-                      </FormControl>
+                      <FormLabel>{text.common.mainCategory}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || !transactionType}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={text.addExpenseForm.selectCategory} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {allCategories.map((category) => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
-                  control={control} name="date"
+                  control={control} name="subcategory"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Data do Lançamento</FormLabel>
-                      <Popover>
-                        <div className="flex items-center gap-2">
+                    <FormItem>
+                      <FormLabel>{text.common.subcategory}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || subcategories.length === 0 || !transactionType}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={text.addExpenseForm.selectSubcategory} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {subcategories.map((sub) => (
+                            <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={control} name="amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{text.common.amount}</FormLabel>
                           <FormControl>
-                            <Input
-                              className="pr-8" disabled={isSubmitting}
-                              value={dateInput} onChange={(e) => setDateInput(e.target.value)}
-                              onBlur={handleDateInputBlur} placeholder="DD/MM/AAAA"
+                            <CurrencyInput
+                              placeholder={text.placeholders.amount}
+                              disabled={isSubmitting || !transactionType} value={field.value}
+                              onValueChange={(values) => { field.onChange(values?.floatValue); }}
                             />
                           </FormControl>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={'outline'} size="icon" className="h-10 w-10 rounded-full" disabled={isSubmitting}
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                              <span className="sr-only">{text.addExpenseForm.pickDate}</span>
-                            </Button>
-                          </PopoverTrigger>
-                        </div>
-                        <FormMessage />
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single" selected={field.value}
-                            onSelect={(date) => { if (date) field.onChange(date); }}
-                            initialFocus disabled={isSubmitting} locale={ptBR}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {transactionType === 'expense' && (
+                      <FormField
+                          control={control} name="paymentMethod"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>{text.common.paymentMethod}</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment) || !transactionType}>
+                              <FormControl>
+                                  <SelectTrigger>
+                                  <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
+                                  </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                  {paymentMethods.map((method) => (
+                                  <SelectItem key={method} value={method as string}>{method as string}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                              </Select>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                    )}
+              </div>
+
+              {transactionType === 'expense' && isCreditCardPayment && !isEditMode && (
+                <FormField
+                  control={control} name="installments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.addExpenseForm.installments}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number" min="1" {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
+                          disabled={isSubmitting || isEditMode || !transactionType}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </>
-            )}
+              )}
+
+              <FormField
+                control={control} name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <FormControl>
+                      <TagInput
+                          placeholder="Selecione as tags..."
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          disabled={isSubmitting || !transactionType}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control} name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data do Lançamento</FormLabel>
+                    <Popover>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Input
+                            className="pr-8" disabled={isSubmitting || !transactionType}
+                            value={dateInput} onChange={(e) => setDateInput(e.target.value)}
+                            onBlur={handleDateInputBlur} placeholder="DD/MM/AAAA"
+                          />
+                        </FormControl>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={'outline'} size="icon" className="h-10 w-10 rounded-full" disabled={isSubmitting || !transactionType}
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                            <span className="sr-only">{text.addExpenseForm.pickDate}</span>
+                          </Button>
+                        </PopoverTrigger>
+                      </div>
+                      <FormMessage />
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single" selected={field.value}
+                          onSelect={(date) => { if (date) field.onChange(date); }}
+                          initialFocus disabled={isSubmitting} locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                )}
+              />
+            </>
             
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting || !transactionType} className="w-full">
