@@ -47,6 +47,7 @@ import { Badge } from '../ui/badge';
 import { useTags } from '@/hooks/use-tags';
 import { HierarchicalTag, RawTag } from '@/lib/types';
 import AddTagForm from './add-tag-form';
+import { cn } from '@/lib/utils';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
@@ -58,6 +59,7 @@ export default function ManageTagsPageClient() {
   const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
   const [newTagName, setNewTagName] = useState('');
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
   const hierarchicalTags = useMemo((): HierarchicalTag[] => {
     const principals = rawTags
@@ -83,6 +85,10 @@ export default function ManageTagsPageClient() {
       a.name.localeCompare(b.name)
     );
   }, [rawTags]);
+  
+  const selectedTag = useMemo(() => {
+    return hierarchicalTags.find(tag => tag.id === selectedTagId) || null;
+  }, [selectedTagId, hierarchicalTags]);
 
   const principalTagsForForm = useMemo(() => {
     return rawTags.filter((t) => t.isPrincipal);
@@ -178,6 +184,9 @@ export default function ManageTagsPageClient() {
         description: `A tag "${isDeleting.name}" foi excluída.`,
       });
       refreshTags();
+      if(isDeleting.id === selectedTagId) {
+        setSelectedTagId(null);
+      }
     } catch (error) {
       console.error('Error deleting tag:', error);
       toast({
@@ -199,7 +208,7 @@ export default function ManageTagsPageClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full">
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -207,18 +216,25 @@ export default function ManageTagsPageClient() {
         </Button>
       </div>
 
-      {hierarchicalTags.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hierarchicalTags.map((tag) => (
-            <Card key={tag.id} className="flex flex-col">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-bold">{tag.name}</CardTitle>
-                <DropdownMenu>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+        {/* Coluna de Tags Principais */}
+        <div className="md:col-span-1 space-y-3 overflow-y-auto">
+          {hierarchicalTags.length > 0 ? (
+            hierarchicalTags.map((tag) => (
+              <div
+                key={tag.id}
+                onClick={() => setSelectedTagId(tag.id)}
+                className={cn(
+                  'p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center',
+                  selectedTagId === tag.id
+                    ? 'bg-primary/10 ring-2 ring-primary'
+                    : 'hover:bg-muted/50'
+                )}
+              >
+                <span className="font-semibold">{tag.name}</span>
+                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 p-0 rounded-full"
-                    >
+                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full" onClick={(e) => e.stopPropagation()}>
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -241,31 +257,59 @@ export default function ManageTagsPageClient() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                {tag.children.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {tag.children.map((child) => (
-                      <Badge key={child.id} variant="secondary">
-                        {child.name}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma tag vinculada.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
+              <p className="text-lg font-semibold">Nenhuma tag criada.</p>
+              <p>Clique em "Nova Tag" para começar.</p>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg text-center text-muted-foreground">
-          <p className="text-lg font-semibold">Nenhuma tag criada ainda.</p>
-          <p>Clique em "Nova Tag" para começar a organizar suas finanças.</p>
+
+        {/* Coluna de Tags Vinculadas */}
+        <div className="md:col-span-2">
+            {selectedTag ? (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold">Tags Vinculadas a "{selectedTag.name}"</h2>
+                    {selectedTag.children.length > 0 ? (
+                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {selectedTag.children.map(child => (
+                                <Card key={child.id}>
+                                    <CardHeader className="flex flex-row items-center justify-between p-3">
+                                         <CardTitle className="text-base">{child.name}</CardTitle>
+                                         <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                                                <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onSelect={() => { setIsRenaming(child); setNewTagName(child.name); }}>
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    {text.common.rename}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => setIsDeleting(child)} className="text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    {text.common.delete}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </CardHeader>
+                                </Card>
+                            ))}
+                         </div>
+                    ) : (
+                        <p className="text-muted-foreground">Nenhuma tag vinculada a esta tag principal.</p>
+                    )}
+                </div>
+            ) : (
+                 <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
+                    <p>Selecione uma Tag Principal à esquerda para ver suas tags vinculadas.</p>
+                </div>
+            )}
         </div>
-      )}
+      </div>
 
       <AddTagForm
         isOpen={isAddFormOpen}
