@@ -395,10 +395,6 @@ export const text = {
     createDescription: 'Crie uma nova tag para usar em seus lançamentos.',
     newTagPlaceholder: 'Nome da nova tag',
     createButton: 'Criar Tag',
-    activeTags: 'Tags Ativas',
-    archivedTags: 'Tags Arquivadas',
-    tagName: 'Tag',
-    usageCount: 'Uso',
     renameTitle: 'Renomear Tag',
     renameDescription: (tagName: string) => `Renomear a tag "${tagName}" em todos os lugares.`,
     renameButton: 'Renomear',
@@ -410,5 +406,10 @@ export const text = {
     archiveSuccess: 'Tag arquivada com sucesso.',
     archiveError: 'Erro ao arquivar a tag.',
     unarchiveSuccess: 'Tag desarquivada com sucesso.',
+    filters: {
+      inUse: 'Em Uso',
+      registered: 'Cadastradas',
+      notUsed: 'Não Utilizadas',
+    }
   }
 };

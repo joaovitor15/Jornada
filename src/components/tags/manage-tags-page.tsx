@@ -57,7 +57,7 @@ import {
   SelectValue,
 } from '../ui/select';
 
-type FilterType = 'all' | 'active' | 'inactive';
+type FilterType = 'inUse' | 'registered' | 'notUsed';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
@@ -70,17 +70,16 @@ export default function ManageTagsPageClient() {
   const [newTagName, setNewTagName] = useState('');
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>('active');
+  const [filter, setFilter] = useState<FilterType>('inUse');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
-    if (filter === 'all') {
+    if (filter === 'registered') {
       return hierarchicalTags;
     }
-    if (filter === 'active') {
+    if (filter === 'inUse') {
       return hierarchicalTags
         .map(tag => {
           const activeChildren = tag.children.filter(child => usedTagNames.has(child.name));
-          // Show principal if it's used itself, or if it has active children
           if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
             return { ...tag, children: activeChildren };
           }
@@ -88,14 +87,24 @@ export default function ManageTagsPageClient() {
         })
         .filter((tag): tag is HierarchicalTag => tag !== null);
     }
-    if (filter === 'inactive') {
+    if (filter === 'notUsed') {
       return hierarchicalTags
-        .filter(tag => {
-            // A principal is inactive if it's not used AND all its children are not used
-            const isPrincipalUsed = usedTagNames.has(tag.name);
-            const areAnyChildrenUsed = tag.children.some(child => usedTagNames.has(child.name));
-            return !isPrincipalUsed && !areAnyChildrenUsed;
-        });
+        .map(tag => {
+          const inactiveChildren = tag.children.filter(child => !usedTagNames.has(child.name));
+           // A principal é inativa se ela própria não for usada e se todas as suas filhas também não forem.
+          if (!usedTagNames.has(tag.name) && tag.children.every(child => !usedTagNames.has(child.name))) {
+            return { ...tag, children: inactiveChildren };
+          }
+          // Se a principal for usada, mas tiver filhos inativos.
+          if (usedTagNames.has(tag.name) && inactiveChildren.length > 0 && tag.children.length === inactiveChildren.length) {
+             return null;
+          }
+           if (inactiveChildren.length > 0) {
+             return { ...tag, children: inactiveChildren };
+           }
+          return null;
+        })
+        .filter((tag): tag is HierarchicalTag => tag !== null && (tag.children.length > 0 || !usedTagNames.has(tag.name)));
     }
     return [];
   }, [hierarchicalTags, filter, usedTagNames]);
@@ -200,9 +209,9 @@ export default function ManageTagsPageClient() {
   };
   
   const filterOptions: { label: string, value: FilterType }[] = [
-    { label: 'Todas', value: 'all' },
-    { label: 'Ativas', value: 'active' },
-    { label: 'Inativas', value: 'inactive' },
+    { label: text.tags.filters.inUse, value: 'inUse' },
+    { label: text.tags.filters.registered, value: 'registered' },
+    { label: text.tags.filters.notUsed, value: 'notUsed' },
   ];
 
   if (loading) {
@@ -215,9 +224,9 @@ export default function ManageTagsPageClient() {
 
   return (
     <>
-      <div className="flex flex-col mb-4 gap-4">
+       <div className="flex flex-col mb-4 gap-4">
         <div className="flex justify-between items-start">
-          <div>
+           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
             <p className="text-muted-foreground">{text.tags.description}</p>
           </div>
@@ -287,9 +296,9 @@ export default function ManageTagsPageClient() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                    {selectedTagId === tag.id ? (
-                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+                    <ChevronLeft className="h-5 w-5 text-muted-foreground transition-transform" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform" />
                   )}
                 </div>
               </div>

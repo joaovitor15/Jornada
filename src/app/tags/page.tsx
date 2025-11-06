@@ -6,12 +6,6 @@ import { text } from '@/lib/strings';
 export default function TagsPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
-          <p className="text-muted-foreground">{text.tags.description}</p>
-        </div>
-      </div>
       <ManageTagsPageClient />
     </div>
   );
