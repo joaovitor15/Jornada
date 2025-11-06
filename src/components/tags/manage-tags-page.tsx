@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   collection,
   query,
@@ -9,8 +8,6 @@ import {
   writeBatch,
   doc,
   updateDoc,
-  arrayUnion,
-  arrayRemove,
   getDocs,
   limit,
   deleteDoc,
@@ -32,7 +29,6 @@ import {
   Pencil,
   Trash2,
   PlusCircle,
-  ChevronRight,
   MoreVertical,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -51,7 +47,6 @@ import { Badge } from '../ui/badge';
 import { useTags } from '@/hooks/use-tags';
 import { HierarchicalTag, RawTag } from '@/lib/types';
 import AddTagForm from './add-tag-form';
-import { cn } from '@/lib/utils';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
@@ -59,14 +54,10 @@ export default function ManageTagsPageClient() {
   const { toast } = useToast();
   const { rawTags, loading, refreshTags } = useTags();
 
-  const [selectedTag, setSelectedTag] = useState<HierarchicalTag | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
-  
   const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
   const [newTagName, setNewTagName] = useState('');
-  
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
-
 
   const hierarchicalTags = useMemo((): HierarchicalTag[] => {
     const principals = rawTags
@@ -79,7 +70,6 @@ export default function ManageTagsPageClient() {
       );
 
     const children = rawTags.filter((tag) => !tag.isPrincipal && tag.parent);
-
     const tagMap = new Map(principals.map((tag) => [tag.id, tag]));
 
     children.forEach((child) => {
@@ -89,28 +79,19 @@ export default function ManageTagsPageClient() {
       }
     });
 
-    return Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(tagMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
   }, [rawTags]);
-  
+
   const principalTagsForForm = useMemo(() => {
-    return rawTags.filter(t => t.isPrincipal);
+    return rawTags.filter((t) => t.isPrincipal);
   }, [rawTags]);
-  
-  useEffect(() => {
-    if (selectedTag) {
-        const updatedSelectedTag = hierarchicalTags.find(t => t.id === selectedTag.id);
-        setSelectedTag(updatedSelectedTag || null);
-    } else if (hierarchicalTags.length > 0) {
-        setSelectedTag(hierarchicalTags[0]);
-    } else {
-        setSelectedTag(null);
-    }
-  }, [hierarchicalTags, selectedTag]);
 
   const handleTagCreated = () => {
     refreshTags();
   };
-  
+
   const handleRenameSubmit = async () => {
     if (!isRenaming || !newTagName.trim() || !user) return;
 
@@ -140,14 +121,14 @@ export default function ManageTagsPageClient() {
       setNewTagName('');
     }
   };
-  
+
   const handleDeleteSubmit = async () => {
     if (!isDeleting || !user) return;
-  
+
     try {
       const collectionsToSearch = ['expenses', 'incomes', 'plans'];
       let isTagInUse = false;
-  
+
       for (const col of collectionsToSearch) {
         const q = query(
           collection(db, col),
@@ -162,7 +143,7 @@ export default function ManageTagsPageClient() {
           break;
         }
       }
-  
+
       if (isTagInUse) {
         toast({
           variant: 'destructive',
@@ -172,15 +153,14 @@ export default function ManageTagsPageClient() {
         setIsDeleting(null);
         return;
       }
-      
+
       const batch = writeBatch(db);
       const tagRef = doc(db, 'tags', isDeleting.id);
-      
+
       if (isDeleting.isPrincipal) {
-        // Find children in the rawTags state instead of querying again
-        const children = rawTags.filter(tag => tag.parent === isDeleting.id);
+        const children = rawTags.filter((tag) => tag.parent === isDeleting.id);
         if (children.length > 0) {
-           toast({
+          toast({
             variant: 'destructive',
             title: 'Ação não permitida',
             description: `A tag "${isDeleting.name}" possui tags vinculadas e não pode ser excluída.`,
@@ -189,20 +169,15 @@ export default function ManageTagsPageClient() {
           return;
         }
       }
-  
+
       batch.delete(tagRef);
       await batch.commit();
-  
+
       toast({
         title: text.common.success,
         description: `A tag "${isDeleting.name}" foi excluída.`,
       });
-      
-      if (selectedTag && isDeleting.id === selectedTag.id) {
-        setSelectedTag(null);
-      }
       refreshTags();
-  
     } catch (error) {
       console.error('Error deleting tag:', error);
       toast({
@@ -224,115 +199,85 @@ export default function ManageTagsPageClient() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-      <div className="md:col-span-1 flex flex-col h-full">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Tags Principais</h2>
-          <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova Tag
-          </Button>
-        </div>
-        <Card className="flex-1">
-          <CardContent className="p-2 h-full overflow-y-auto">
-            {hierarchicalTags.length > 0 ? (
-              <div className="space-y-1">
-                {hierarchicalTags.map((tag) => (
-                  <div
-                    key={tag.id}
-                    className={cn(
-                      'w-full text-left p-2 rounded-lg transition-colors flex items-center justify-between group',
-                      selectedTag?.id === tag.id
-                        ? 'bg-primary/10'
-                        : 'hover:bg-muted'
-                    )}
-                  >
-                    <button
-                      onClick={() => setSelectedTag(tag)}
-                      className="flex-grow flex items-center justify-between text-left"
-                    >
-                      <span className="font-semibold">{tag.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={selectedTag?.id === tag.id ? "default" : "secondary"}>{tag.children.length}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          {text.common.rename}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setIsDeleting(tag)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {text.common.delete}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
-                <p>Nenhuma tag principal criada. Clique em "Nova Tag" para começar.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Nova Tag
+        </Button>
       </div>
 
-      <div className="md:col-span-2 flex flex-col h-full">
-         <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">
-              {selectedTag ? `Tags Vinculadas a "${selectedTag.name}"` : 'Selecione uma Tag Principal'}
-            </h2>
+      {hierarchicalTags.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hierarchicalTags.map((tag) => (
+            <Card key={tag.id} className="flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-bold">{tag.name}</CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="h-8 w-8 p-0 rounded-full"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setIsRenaming(tag);
+                        setNewTagName(tag.name);
+                      }}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      {text.common.rename}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => setIsDeleting(tag)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {text.common.delete}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                {tag.children.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {tag.children.map((child) => (
+                      <Badge key={child.id} variant="secondary">
+                        {child.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma tag vinculada.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <Card className="flex-1">
-          <CardContent className="p-4 h-full overflow-y-auto">
-             {selectedTag ? (
-                 selectedTag.children.length > 0 ? (
-                    <div className="space-y-2">
-                         {selectedTag.children.map((child) => (
-                             <div key={child.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
-                                 <Badge variant="outline">{child.name}</Badge>
-                                 <div className="flex items-center">
-                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setIsRenaming(child); setNewTagName(child.name); }}>
-                                        <Pencil className="h-4 w-4" />
-                                     </Button>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setIsDeleting(child)}>
-                                        <Trash2 className="h-4 w-4" />
-                                     </Button>
-                                 </div>
-                             </div>
-                         ))}
-                    </div>
-                 ) : (
-                     <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
-                        <p>Nenhuma tag vinculada. Adicione uma usando o formulário.</p>
-                    </div>
-                 )
-             ) : (
-                 <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
-                    <p>Selecione uma tag principal na lista à esquerda para ver suas tags vinculadas.</p>
-                </div>
-             )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      <AddTagForm 
+      ) : (
+        <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+          <p className="text-lg font-semibold">Nenhuma tag criada ainda.</p>
+          <p>Clique em "Nova Tag" para começar a organizar suas finanças.</p>
+        </div>
+      )}
+
+      <AddTagForm
         isOpen={isAddFormOpen}
         onOpenChange={setIsAddFormOpen}
         principalTags={principalTagsForForm}
         onTagCreated={handleTagCreated}
       />
-      
-      <AlertDialog open={!!isRenaming} onOpenChange={(open) => !open && setIsRenaming(null)}>
+
+      <AlertDialog
+        open={!!isRenaming}
+        onOpenChange={(open) => !open && setIsRenaming(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Renomear Tag</AlertDialogTitle>
@@ -340,33 +285,49 @@ export default function ManageTagsPageClient() {
               Renomear a tag "{isRenaming?.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} />
+          <Input
+            value={newTagName}
+            onChange={(e) => setNewTagName(e.target.value)}
+          />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRenameSubmit} disabled={!newTagName.trim() || newTagName.trim() === isRenaming?.name}>
+            <AlertDialogAction
+              onClick={handleRenameSubmit}
+              disabled={
+                !newTagName.trim() || newTagName.trim() === isRenaming?.name
+              }
+            >
               Renomear
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!isDeleting} onOpenChange={(open) => !open && setIsDeleting(null)}>
+      <AlertDialog
+        open={!!isDeleting}
+        onOpenChange={(open) => !open && setIsDeleting(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso e se não tiver outras tags vinculadas a ela.
+              Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta
+              ação não pode ser desfeita. A tag só será excluída se não estiver
+              em uso e, no caso de uma tag principal, se não tiver outras tags
+              vinculadas a ela.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSubmit} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteSubmit}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }
