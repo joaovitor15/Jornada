@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -21,11 +22,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Loader2,
   Pencil,
   Trash2,
   PlusCircle,
   ChevronRight,
+  MoreVertical,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -94,8 +102,10 @@ export default function ManageTagsPageClient() {
         setSelectedTag(updatedSelectedTag || null);
     } else if (hierarchicalTags.length > 0) {
         setSelectedTag(hierarchicalTags[0]);
+    } else {
+        setSelectedTag(null);
     }
-  }, [hierarchicalTags, selectedTag]);
+  }, [hierarchicalTags]);
 
   const handleTagCreated = () => {
     refreshTags();
@@ -159,6 +169,7 @@ export default function ManageTagsPageClient() {
           title: 'Ação não permitida',
           description: `A tag "${isDeleting.name}" está em uso e não pode ser excluída.`,
         });
+        setIsDeleting(null);
         return;
       }
       
@@ -174,6 +185,7 @@ export default function ManageTagsPageClient() {
             title: 'Ação não permitida',
             description: `A tag "${isDeleting.name}" possui tags vinculadas e não pode ser excluída.`,
           });
+          setIsDeleting(null);
           return;
         }
       }
@@ -185,11 +197,11 @@ export default function ManageTagsPageClient() {
         title: text.common.success,
         description: `A tag "${isDeleting.name}" foi excluída.`,
       });
-      refreshTags();
       
       if (isDeleting.id === selectedTag?.id) {
         setSelectedTag(null);
       }
+      refreshTags();
 
     } catch (error) {
       console.error('Error deleting tag:', error);
@@ -213,7 +225,6 @@ export default function ManageTagsPageClient() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-      {/* Coluna de Tags Principais */}
       <div className="md:col-span-1 flex flex-col h-full">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Tags Principais</h2>
@@ -225,24 +236,45 @@ export default function ManageTagsPageClient() {
         <Card className="flex-1">
           <CardContent className="p-2 h-full overflow-y-auto">
             {hierarchicalTags.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {hierarchicalTags.map((tag) => (
-                  <button
+                  <div
                     key={tag.id}
-                    onClick={() => setSelectedTag(tag)}
                     className={cn(
-                      'w-full text-left p-3 rounded-lg transition-colors flex items-center justify-between',
+                      'w-full text-left p-2 rounded-lg transition-colors flex items-center justify-between group',
                       selectedTag?.id === tag.id
                         ? 'bg-primary/10'
                         : 'hover:bg-muted'
                     )}
                   >
-                    <span className="font-semibold">{tag.name}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{tag.children.length}</Badge>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => setSelectedTag(tag)}
+                      className="flex-grow flex items-center justify-between text-left"
+                    >
+                      <span className="font-semibold">{tag.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={selectedTag?.id === tag.id ? "default" : "secondary"}>{tag.children.length}</Badge>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          {text.common.rename}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setIsDeleting(tag)} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {text.common.delete}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -254,7 +286,6 @@ export default function ManageTagsPageClient() {
         </Card>
       </div>
 
-      {/* Coluna de Tags Vinculadas */}
       <div className="md:col-span-2 flex flex-col h-full">
          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">
@@ -324,7 +355,7 @@ export default function ManageTagsPageClient() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso.
+              Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso e se não tiver outras tags vinculadas a ela.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
