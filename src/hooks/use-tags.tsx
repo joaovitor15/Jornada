@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -26,7 +26,8 @@ export function useTags() {
     const q = query(
       collection(db, 'tags'),
       where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
+      where('profile', '==', activeProfile),
+      orderBy('order', 'asc')
     );
 
     const unsubscribe = onSnapshot(
@@ -94,9 +95,7 @@ export function useTags() {
       }
     });
 
-    return Array.from(tagMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
+    return Array.from(tagMap.values());
   }, [rawTags]);
   
   const tags = useMemo(() => {

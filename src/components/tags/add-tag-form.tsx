@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, getCountFromServer } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -112,6 +112,13 @@ export default function AddTagForm({
 
     try {
       const newTagRef = doc(collection(db, 'tags'));
+      
+      let order = 0;
+      if (values.type === 'principal') {
+          const snapshot = await getCountFromServer(collection(db, 'tags'));
+          order = snapshot.data().count;
+      }
+
       const newTagData: RawTag = {
         id: newTagRef.id,
         userId: user.uid,
@@ -119,6 +126,7 @@ export default function AddTagForm({
         name: values.name.trim(),
         isPrincipal: values.type === 'principal',
         parent: values.parentId || null,
+        order: order,
       };
 
       await setDoc(newTagRef, newTagData);

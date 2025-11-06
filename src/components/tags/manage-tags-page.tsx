@@ -34,6 +34,8 @@ import {
   ChevronRight,
   Archive,
   ArchiveX,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -88,32 +90,26 @@ export default function ManageTagsPageClient() {
         .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'registered') {
-        return allTags.map(tag => {
-            if (tag.isArchived) return null;
+      return allTags
+        .map((tag) => {
+          if (tag.isArchived) return null;
 
-            // Filtra as tags filhas que não estão arquivadas e não foram usadas
-            const unusedChildren = tag.children.filter(child => !child.isArchived && !usedTagNames.has(child.name));
+          const unusedChildren = tag.children.filter(
+            (child) => !child.isArchived && !usedTagNames.has(child.name)
+          );
+          const isPrincipalUnused = !usedTagNames.has(tag.name);
 
-            // A tag principal é considerada "cadastrada" se ela mesma não foi usada E se tem filhas não usadas,
-            // OU se é uma tag principal sem filhas que nunca foi usada.
-            const isPrincipalUnused = !usedTagNames.has(tag.name);
+          if (isPrincipalUnused && unusedChildren.length === 0 && tag.children.length === 0) {
+             return { ...tag, children: [] };
+          }
+          
+          if (unusedChildren.length > 0) {
+            return { ...tag, children: unusedChildren };
+          }
 
-            if (isPrincipalUnused && unusedChildren.length > 0) {
-                 // Se a principal não foi usada, e tem filhas não usadas, mostra a principal com as filhas não usadas.
-                return { ...tag, children: unusedChildren };
-            }
-            if (isPrincipalUnused && tag.children.length === 0) {
-                // Se a principal não foi usada e não tem filhas, mostra ela.
-                return { ...tag, children: [] };
-            }
-            if (!isPrincipalUnused && unusedChildren.length > 0) {
-                 // Se a principal JÁ foi usada, mas ainda tem filhas não usadas,
-                 // ela também deve aparecer aqui, mas mostrando apenas as filhas não usadas.
-                return { ...tag, children: unusedChildren };
-            }
-
-            return null;
-        }).filter((tag): tag is HierarchicalTag => tag !== null);
+          return null;
+        })
+        .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'archived') {
        return allTags
@@ -170,6 +166,37 @@ export default function ManageTagsPageClient() {
       setNewTagName('');
     }
   };
+  
+   const handleReorder = async (tagId: string, direction: 'up' | 'down') => {
+    const currentIndex = filteredTags.findIndex(t => t.id === tagId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= filteredTags.length) return;
+
+    const currentTag = filteredTags[currentIndex];
+    const targetTag = filteredTags[targetIndex];
+
+    try {
+      const batch = writeBatch(db);
+      const currentTagRef = doc(db, 'tags', currentTag.id);
+      const targetTagRef = doc(db, 'tags', targetTag.id);
+
+      batch.update(currentTagRef, { order: targetTag.order });
+      batch.update(targetTagRef, { order: currentTag.order });
+
+      await batch.commit();
+      refreshTags();
+    } catch (error) {
+      console.error("Error reordering tags:", error);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'Falha ao reordenar as tags.'
+      })
+    }
+  };
+
 
   const handleDeleteSubmit = async () => {
     if (!isDeleting || !user) return;
@@ -359,7 +386,7 @@ export default function ManageTagsPageClient() {
         {/* Coluna de Tags Principais */}
         <div className="md:col-span-1 space-y-3 overflow-y-auto pr-2">
           {filteredTags.length > 0 ? (
-            filteredTags.map((tag) => (
+            filteredTags.map((tag, index) => (
               <div
                 key={tag.id}
                 onClick={() => handleSelectTag(tag.id)}
@@ -379,6 +406,14 @@ export default function ManageTagsPageClient() {
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleReorder(tag.id, 'up'); }} disabled={index === 0}>
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleReorder(tag.id, 'down'); }} disabled={index === filteredTags.length - 1}>
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

@@ -102,6 +102,7 @@ export interface RawTag {
   isPrincipal: boolean;
   parent: string | null;
   isArchived?: boolean;
+  order?: number;
 }
 
 export interface HierarchicalTag extends RawTag {
