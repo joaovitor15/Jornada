@@ -241,6 +241,7 @@ export default function AddTagForm({
                       }
                       {...field}
                       disabled={isSubmitting}
+                      autoComplete="off"
                     />
                   </FormControl>
                   <FormMessage />
