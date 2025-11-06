@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -234,8 +235,8 @@ export default function AddTagForm({
                   <FormLabel>Nome da Nova Tag</FormLabel>
                   <FormControl>
                     <Input
-                      id="tagNameInput"
-                      name="tagNameInput"
+                      id="newTagInput"
+                      name="newTagInput"
                       placeholder={
                         tagType === 'principal'
                           ? 'Ex: Conta de Luz, Supermercado'
@@ -272,3 +273,5 @@ export default function AddTagForm({
     </Dialog>
   );
 }
+
+    

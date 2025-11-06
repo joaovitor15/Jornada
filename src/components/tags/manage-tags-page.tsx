@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
@@ -510,6 +511,9 @@ export default function ManageTagsPageClient() {
           <Input
             value={newTagName}
             onChange={(e) => setNewTagName(e.target.value)}
+            id="tagNameInput"
+            name="tagNameInput"
+            autoComplete="off"
           />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -585,3 +589,5 @@ export default function ManageTagsPageClient() {
     </>
   );
 }
+
+    
