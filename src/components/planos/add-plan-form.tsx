@@ -38,11 +38,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
 import { type Plan, type Profile, type Card } from '@/lib/types';
-import {
-  personalExpenseCategories,
-  homeExpenseCategories,
-  businessExpenseCategories,
-} from '@/lib/categories';
 import { Separator } from '../ui/separator';
 import { onSnapshot, query, where } from 'firebase/firestore';
 import TagInput from '../ui/tag-input';
@@ -59,8 +54,6 @@ const planSchema = z
     dueMonth: z.coerce.number().int().min(0).max(11).optional(),
     dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
     paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
-    mainCategory: z.string().min(1, 'Selecione uma categoria.'),
-    subcategory: z.string().min(1, 'Selecione uma subcategoria.'),
     subItems: z.array(z.object({
       name: z.string().min(1, 'O nome do item é obrigatório.'),
       price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
@@ -116,8 +109,6 @@ export default function PlanForm({
       type: 'Mensal',
       paymentDay: undefined,
       paymentMethod: '',
-      mainCategory: '',
-      subcategory: '',
       subItems: [],
       tags: [],
     },
@@ -131,19 +122,6 @@ export default function PlanForm({
 
   const planType = watch('type');
   
-  const getCategoryConfig = (profile: Profile) => {
-    switch (profile) {
-      case 'Personal':
-        return personalExpenseCategories;
-      case 'Home':
-        return homeExpenseCategories;
-      case 'Business':
-        return businessExpenseCategories;
-      default:
-        return {};
-    }
-  };
-
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && planToEdit) {
@@ -164,8 +142,6 @@ export default function PlanForm({
           dueMonth: dueMonth,
           dueYear: dueYear,
           paymentMethod: planToEdit.paymentMethod,
-          mainCategory: planToEdit.mainCategory,
-          subcategory: planToEdit.subcategory,
           subItems: planToEdit.subItems || [],
           tags: planToEdit.tags || [],
         });
@@ -179,8 +155,6 @@ export default function PlanForm({
           dueMonth: undefined,
           dueYear: undefined,
           paymentMethod: '',
-          mainCategory: '',
-          subcategory: '',
           subItems: [],
           tags: [],
         });
@@ -188,14 +162,6 @@ export default function PlanForm({
     }
   }, [isOpen, isEditMode, planToEdit, form]);
 
-  useEffect(() => {
-    const subscription = watch((value, { name }) => {
-      if (name === 'mainCategory') {
-        setValue('subcategory', '');
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setValue]);
 
   useEffect(() => {
     if (!user || !activeProfile) return;
@@ -214,15 +180,6 @@ export default function PlanForm({
 
   const { isSubmitting } = form.formState;
 
-  const categoryConfig = getCategoryConfig(activeProfile);
-  const mainCategories = Object.keys(categoryConfig);
-  const selectedMainCategory = watch('mainCategory');
-  const subcategories = useMemo(() => {
-    return selectedMainCategory
-      ? categoryConfig[selectedMainCategory] || []
-      : [];
-  }, [selectedMainCategory, categoryConfig]);
-  
   const basePaymentMethods = ['Débito', 'Pix'];
   const paymentMethods = useMemo(() => {
     const cardMethods = cards.map((card) => `Cartão: ${card.name}`);
@@ -259,13 +216,11 @@ export default function PlanForm({
     
     const { planName, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
 
-    const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
+    const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile' | 'mainCategory' | 'subcategory'>> & { name: string; } = {
         name: planName,
         amount: rest.amount,
         type: rest.type,
         paymentMethod: rest.paymentMethod,
-        mainCategory: rest.mainCategory,
-        subcategory: rest.subcategory,
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
         tags: values.tags || [],
     };
@@ -279,7 +234,7 @@ export default function PlanForm({
     try {
       if (isEditMode && planToEdit?.id) {
         const planRef = doc(db, 'plans', planToEdit.id);
-        await updateDoc(planRef, dataToSend);
+        await updateDoc(planRef, dataToSend as { [x: string]: any });
         toast({
           title: text.common.success,
           description: text.plans.form.updateSuccess,
@@ -356,71 +311,6 @@ export default function PlanForm({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="mainCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.mainCategory}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={text.addExpenseForm.selectCategory}
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {mainCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="subcategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.subcategory}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isSubmitting || subcategories.length === 0}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                text.addExpenseForm.selectSubcategory
-                              }
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {subcategories.map((sub) => (
-                            <SelectItem key={sub} value={sub}>
-                              {sub}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
               <FormField
                   control={form.control}
                   name="tags"
@@ -692,5 +582,3 @@ export default function PlanForm({
     </Dialog>
   );
 }
-
-    

@@ -59,8 +59,6 @@ export type Plan = {
   paymentMethod: string;
   paymentDay?: number;
   dueDate?: Timestamp;
-  mainCategory: string;
-  subcategory: string;
   subItems?: SubItem[];
   tags?: string[];
 };

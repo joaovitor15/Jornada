@@ -170,7 +170,6 @@ function PlanCard({
           })}
         </p>
          <div className="flex flex-wrap gap-1 mt-2">
-            <Badge variant="secondary">{plan.mainCategory} &gt; {plan.subcategory}</Badge>
             {plan.tags?.map(tag => (
                 <Badge key={tag} variant="outline">{tag}</Badge>
             ))}
