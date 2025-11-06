@@ -62,7 +62,7 @@ export default function ManageTagsPageClient() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const { hierarchicalTags, loading, refreshTags, usedTagNames } = useTags();
+  const { hierarchicalTags, loading, refreshTags, usedTagNames, updateTagOrder } = useTags();
 
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
@@ -172,30 +172,13 @@ export default function ManageTagsPageClient() {
     const currentIndex = filteredTags.findIndex(t => t.id === tagId);
     if (currentIndex === -1) return;
 
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= filteredTags.length) return;
-
-    const currentTag = filteredTags[currentIndex];
-    const targetTag = filteredTags[targetIndex];
-
-    try {
-      const batch = writeBatch(db);
-      const currentTagRef = doc(db, 'tags', currentTag.id);
-      const targetTagRef = doc(db, 'tags', targetTag.id);
-
-      batch.update(currentTagRef, { order: targetTag.order });
-      batch.update(targetTagRef, { order: currentTag.order });
-
-      await batch.commit();
-      refreshTags();
-    } catch (error) {
-      console.error("Error reordering tags:", error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: 'Falha ao reordenar as tags.'
-      })
-    }
+    const newTags = Array.from(filteredTags);
+    const [movedTag] = newTags.splice(currentIndex, 1);
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    newTags.splice(newIndex, 0, movedTag);
+    
+    const newOrderIds = newTags.map(t => t.id);
+    await updateTagOrder(newOrderIds);
   };
 
 
@@ -406,7 +389,7 @@ export default function ManageTagsPageClient() {
                         </Badge>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0">
                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleReorder(tag.id, 'up'); }} disabled={index === 0}>
                       <ArrowUp className="h-4 w-4" />
@@ -589,5 +572,3 @@ export default function ManageTagsPageClient() {
     </>
   );
 }
-
-    
