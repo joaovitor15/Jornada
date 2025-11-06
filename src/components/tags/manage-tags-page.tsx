@@ -105,7 +105,7 @@ export default function ManageTagsPageClient() {
     } else {
         setSelectedTag(null);
     }
-  }, [hierarchicalTags]);
+  }, [hierarchicalTags, selectedTag]);
 
   const handleTagCreated = () => {
     refreshTags();
@@ -143,11 +143,11 @@ export default function ManageTagsPageClient() {
   
   const handleDeleteSubmit = async () => {
     if (!isDeleting || !user) return;
-
+  
     try {
       const collectionsToSearch = ['expenses', 'incomes', 'plans'];
       let isTagInUse = false;
-
+  
       for (const col of collectionsToSearch) {
         const q = query(
           collection(db, col),
@@ -162,7 +162,7 @@ export default function ManageTagsPageClient() {
           break;
         }
       }
-
+  
       if (isTagInUse) {
         toast({
           variant: 'destructive',
@@ -177,9 +177,9 @@ export default function ManageTagsPageClient() {
       const tagRef = doc(db, 'tags', isDeleting.id);
       
       if (isDeleting.isPrincipal) {
-        const childrenQuery = query(collection(db, 'tags'), where('parent', '==', isDeleting.id));
-        const childrenSnap = await getDocs(childrenQuery);
-        if (!childrenSnap.empty) {
+        // Find children in the rawTags state instead of querying again
+        const children = rawTags.filter(tag => tag.parent === isDeleting.id);
+        if (children.length > 0) {
            toast({
             variant: 'destructive',
             title: 'Ação não permitida',
@@ -189,20 +189,20 @@ export default function ManageTagsPageClient() {
           return;
         }
       }
-
+  
       batch.delete(tagRef);
       await batch.commit();
-
+  
       toast({
         title: text.common.success,
         description: `A tag "${isDeleting.name}" foi excluída.`,
       });
       
-      if (isDeleting.id === selectedTag?.id) {
+      if (selectedTag && isDeleting.id === selectedTag.id) {
         setSelectedTag(null);
       }
       refreshTags();
-
+  
     } catch (error) {
       console.error('Error deleting tag:', error);
       toast({
