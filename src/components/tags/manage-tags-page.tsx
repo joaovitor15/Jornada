@@ -30,8 +30,8 @@ import {
   Trash2,
   PlusCircle,
   MoreVertical,
-  ChevronRight,
   ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -45,56 +45,68 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '../ui/badge';
 import { useTags } from '@/hooks/use-tags';
 import { HierarchicalTag, RawTag } from '@/lib/types';
 import AddTagForm from './add-tag-form';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+
+type FilterType = 'all' | 'active' | 'inactive';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const { rawTags, loading, refreshTags } = useTags();
+  const { hierarchicalTags, loading, refreshTags, usedTagNames } = useTags();
 
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
   const [newTagName, setNewTagName] = useState('');
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>('all');
 
-  const hierarchicalTags = useMemo((): HierarchicalTag[] => {
-    const principals = rawTags
-      .filter((tag) => tag.isPrincipal)
-      .map(
-        (tag): HierarchicalTag => ({
-          ...tag,
-          children: [],
+  const filteredTags = useMemo((): HierarchicalTag[] => {
+    if (filter === 'all') {
+      return hierarchicalTags;
+    }
+    if (filter === 'active') {
+      return hierarchicalTags
+        .map(tag => {
+          const activeChildren = tag.children.filter(child => usedTagNames.has(child.name));
+          // Show principal if it's used itself, or if it has active children
+          if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
+            return { ...tag, children: activeChildren };
+          }
+          return null;
         })
-      );
+        .filter((tag): tag is HierarchicalTag => tag !== null);
+    }
+    if (filter === 'inactive') {
+      return hierarchicalTags
+        .filter(tag => {
+            // A principal is inactive if it's not used AND all its children are not used
+            const isPrincipalUsed = usedTagNames.has(tag.name);
+            const areAnyChildrenUsed = tag.children.some(child => usedTagNames.has(child.name));
+            return !isPrincipalUsed && !areAnyChildrenUsed;
+        });
+    }
+    return [];
+  }, [hierarchicalTags, filter, usedTagNames]);
 
-    const children = rawTags.filter((tag) => !tag.isPrincipal && tag.parent);
-    const tagMap = new Map(principals.map((tag) => [tag.id, tag]));
-
-    children.forEach((child) => {
-      const parent = tagMap.get(child.parent!);
-      if (parent) {
-        parent.children.push(child);
-      }
-    });
-
-    return Array.from(tagMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-  }, [rawTags]);
-  
   const selectedTag = useMemo(() => {
-    return hierarchicalTags.find(tag => tag.id === selectedTagId) || null;
-  }, [selectedTagId, hierarchicalTags]);
+    return filteredTags.find((tag) => tag.id === selectedTagId) || null;
+  }, [selectedTagId, filteredTags]);
 
   const principalTagsForForm = useMemo(() => {
-    return rawTags.filter((t) => t.isPrincipal);
-  }, [rawTags]);
+    return hierarchicalTags.filter((t) => t.isPrincipal);
+  }, [hierarchicalTags]);
 
   const handleTagCreated = () => {
     refreshTags();
@@ -134,25 +146,7 @@ export default function ManageTagsPageClient() {
     if (!isDeleting || !user) return;
 
     try {
-      const collectionsToSearch = ['expenses', 'incomes', 'plans'];
-      let isTagInUse = false;
-
-      for (const col of collectionsToSearch) {
-        const q = query(
-          collection(db, col),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('tags', 'array-contains', isDeleting.name),
-          limit(1)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          isTagInUse = true;
-          break;
-        }
-      }
-
-      if (isTagInUse) {
+       if (usedTagNames.has(isDeleting.name)) {
         toast({
           variant: 'destructive',
           title: 'Ação não permitida',
@@ -161,17 +155,17 @@ export default function ManageTagsPageClient() {
         setIsDeleting(null);
         return;
       }
-
+      
       const batch = writeBatch(db);
       const tagRef = doc(db, 'tags', isDeleting.id);
 
       if (isDeleting.isPrincipal) {
-        const children = rawTags.filter((tag) => tag.parent === isDeleting.id);
+        const children = hierarchicalTags.find(t => t.id === isDeleting.id)?.children || [];
         if (children.length > 0) {
           toast({
             variant: 'destructive',
             title: 'Ação não permitida',
-            description: `A tag "${isDeleting.name}" possui tags vinculadas e não pode ser excluída.`,
+            description: `A tag "${isDeleting.name}" possui tags vinculadas e não pode ser excluída. Primeiro, remova ou reatribua as tags filhas.`,
           });
           setIsDeleting(null);
           return;
@@ -202,8 +196,8 @@ export default function ManageTagsPageClient() {
   };
 
   const handleSelectTag = (tagId: string) => {
-    setSelectedTagId(prevId => prevId === tagId ? null : tagId);
-  }
+    setSelectedTagId((prevId) => (prevId === tagId ? null : tagId));
+  };
 
   if (loading) {
     return (
@@ -214,19 +208,35 @@ export default function ManageTagsPageClient() {
   }
 
   return (
-    <div className="space-y-6 h-full">
-      <div className="flex justify-end">
-        <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nova Tag
-        </Button>
+    <>
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
+          <p className="text-muted-foreground">{text.tags.description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+            <Select value={filter} onValueChange={(value) => setFilter(value as FilterType)}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar tags" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todas as Tags</SelectItem>
+                    <SelectItem value="active">Tags Ativas</SelectItem>
+                    <SelectItem value="inactive">Tags Inativas</SelectItem>
+                </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nova Tag
+            </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-100px)]">
         {/* Coluna de Tags Principais */}
-        <div className="md:col-span-1 space-y-3 overflow-y-auto">
-          {hierarchicalTags.length > 0 ? (
-            hierarchicalTags.map((tag) => (
+        <div className="md:col-span-1 space-y-3 overflow-y-auto pr-2">
+          {filteredTags.length > 0 ? (
+            filteredTags.map((tag) => (
               <div
                 key={tag.id}
                 onClick={() => handleSelectTag(tag.id)}
@@ -269,61 +279,74 @@ export default function ManageTagsPageClient() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {selectedTagId === tag.id ? (
-                     <ChevronLeft className='h-5 w-5 text-muted-foreground' />
+                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                     <ChevronRight className='h-5 w-5 text-muted-foreground' />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
               </div>
             ))
           ) : (
             <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
-              <p className="text-lg font-semibold">Nenhuma tag criada.</p>
-              <p>Clique em "Nova Tag" para começar.</p>
+              <p className="text-lg font-semibold">Nenhuma tag encontrada.</p>
+               <p>Tente um filtro diferente ou crie uma nova tag.</p>
             </div>
           )}
         </div>
 
         {/* Coluna de Tags Vinculadas */}
-        <div className="md:col-span-2">
-            {selectedTag ? (
-                <div className="space-y-4">
-                    {selectedTag.children.length > 0 ? (
-                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {selectedTag.children.map(child => (
-                                <Card key={child.id}>
-                                    <CardHeader className="flex flex-row items-center justify-between p-3">
-                                         <CardTitle className="text-base">{child.name}</CardTitle>
-                                         <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
-                                                <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={() => { setIsRenaming(child); setNewTagName(child.name); }}>
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    {text.common.rename}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => setIsDeleting(child)} className="text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    {text.common.delete}
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </CardHeader>
-                                </Card>
-                            ))}
-                         </div>
-                    ) : (
-                        <p className="text-muted-foreground">Nenhuma tag vinculada a esta tag principal.</p>
-                    )}
+        <div className="md:col-span-2 overflow-y-auto pr-2">
+          {selectedTag ? (
+            <div className="space-y-4">
+              {selectedTag.children.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {selectedTag.children.map((child) => (
+                    <Card key={child.id}>
+                      <CardHeader className="flex flex-row items-center justify-between p-3">
+                        <CardTitle className="text-base">{child.name}</CardTitle>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 rounded-full"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setIsRenaming(child);
+                                setNewTagName(child.name);
+                              }}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              {text.common.rename}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => setIsDeleting(child)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {text.common.delete}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </CardHeader>
+                    </Card>
+                  ))}
                 </div>
-            ) : (
-                 <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
-                    <p>Selecione uma Tag Principal à esquerda para ver suas tags vinculadas.</p>
-                </div>
-            )}
+              ) : (
+                <p className="text-muted-foreground mt-4">
+                  Nenhuma tag vinculada a esta tag principal.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
+              <p>Selecione uma Tag Principal à esquerda para ver suas tags vinculadas.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -388,6 +411,6 @@ export default function ManageTagsPageClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
