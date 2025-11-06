@@ -88,19 +88,32 @@ export default function ManageTagsPageClient() {
         .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'registered') {
-       return allTags
-        .map((tag) => {
-          if (tag.isArchived) return null;
-          // Check if the parent tag itself is used
-          if(usedTagNames.has(tag.name)) return null;
-          // Check if any of the children are used
-          const isAnyChildUsed = tag.children.some(child => usedTagNames.has(child.name));
-          if(isAnyChildUsed) return null;
-          
-          const unarchivedChildren = tag.children.filter(child => !child.isArchived);
-          return { ...tag, children: unarchivedChildren };
-        })
-        .filter((tag): tag is HierarchicalTag => tag !== null);
+        return allTags.map(tag => {
+            if (tag.isArchived) return null;
+
+            // Filtra as tags filhas que não estão arquivadas e não foram usadas
+            const unusedChildren = tag.children.filter(child => !child.isArchived && !usedTagNames.has(child.name));
+
+            // A tag principal é considerada "cadastrada" se ela mesma não foi usada E se tem filhas não usadas,
+            // OU se é uma tag principal sem filhas que nunca foi usada.
+            const isPrincipalUnused = !usedTagNames.has(tag.name);
+
+            if (isPrincipalUnused && unusedChildren.length > 0) {
+                 // Se a principal não foi usada, e tem filhas não usadas, mostra a principal com as filhas não usadas.
+                return { ...tag, children: unusedChildren };
+            }
+            if (isPrincipalUnused && tag.children.length === 0) {
+                // Se a principal não foi usada e não tem filhas, mostra ela.
+                return { ...tag, children: [] };
+            }
+            if (!isPrincipalUnused && unusedChildren.length > 0) {
+                 // Se a principal JÁ foi usada, mas ainda tem filhas não usadas,
+                 // ela também deve aparecer aqui, mas mostrando apenas as filhas não usadas.
+                return { ...tag, children: unusedChildren };
+            }
+
+            return null;
+        }).filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'archived') {
        return allTags
