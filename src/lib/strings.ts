@@ -409,7 +409,7 @@ export const text = {
     filters: {
       inUse: 'Em Uso',
       registered: 'Cadastradas',
-      notUsed: 'Não Utilizadas',
+      archived: 'Arquivadas',
     }
   }
 };

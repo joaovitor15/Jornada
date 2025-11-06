@@ -1,7 +1,6 @@
 'use client';
 
 import ManageTagsPageClient from '@/components/tags/manage-tags-page';
-import { text } from '@/lib/strings';
 
 export default function TagsPage() {
   return (

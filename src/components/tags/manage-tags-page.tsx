@@ -57,7 +57,7 @@ import {
   SelectValue,
 } from '../ui/select';
 
-type FilterType = 'inUse' | 'registered' | 'notUsed';
+type FilterType = 'inUse' | 'registered' | 'archived';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
@@ -73,41 +73,39 @@ export default function ManageTagsPageClient() {
   const [filter, setFilter] = useState<FilterType>('inUse');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
-    if (filter === 'registered') {
-      return hierarchicalTags;
-    }
     if (filter === 'inUse') {
-      return hierarchicalTags
-        .map(tag => {
-          const activeChildren = tag.children.filter(child => usedTagNames.has(child.name));
-          if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
-            return { ...tag, children: activeChildren };
-          }
-          return null;
-        })
-        .filter((tag): tag is HierarchicalTag => tag !== null);
+        return hierarchicalTags
+            .map(tag => {
+                // Filtra as filhas que estão em uso
+                const activeChildren = tag.children.filter(child => usedTagNames.has(child.name));
+                // A tag principal aparece se ela mesma estiver em uso OU se tiver alguma filha em uso
+                if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
+                    return { ...tag, children: activeChildren };
+                }
+                return null;
+            })
+            .filter((tag): tag is HierarchicalTag => tag !== null);
     }
-    if (filter === 'notUsed') {
-      return hierarchicalTags
-        .map(tag => {
-          const inactiveChildren = tag.children.filter(child => !usedTagNames.has(child.name));
-           // A principal é inativa se ela própria não for usada e se todas as suas filhas também não forem.
-          if (!usedTagNames.has(tag.name) && tag.children.every(child => !usedTagNames.has(child.name))) {
-            return { ...tag, children: inactiveChildren };
-          }
-          // Se a principal for usada, mas tiver filhos inativos.
-          if (usedTagNames.has(tag.name) && inactiveChildren.length > 0 && tag.children.length === inactiveChildren.length) {
-             return null;
-          }
-           if (inactiveChildren.length > 0) {
-             return { ...tag, children: inactiveChildren };
-           }
-          return null;
-        })
-        .filter((tag): tag is HierarchicalTag => tag !== null && (tag.children.length > 0 || !usedTagNames.has(tag.name)));
+    if (filter === 'registered') {
+        return hierarchicalTags
+            .map(tag => {
+                // Nenhuma filha pode estar em uso
+                const hasUsedChildren = tag.children.some(child => usedTagNames.has(child.name));
+                // A tag principal não pode estar em uso e nenhuma filha pode estar em uso
+                if (!usedTagNames.has(tag.name) && !hasUsedChildren) {
+                    return { ...tag, children: tag.children.filter(child => !usedTagNames.has(child.name)) };
+                }
+                return null;
+            })
+            .filter((tag): tag is HierarchicalTag => tag !== null);
     }
-    return [];
+    if (filter === 'archived') {
+      // Lógica para tags arquivadas (futura implementação)
+      return [];
+    }
+    return hierarchicalTags;
   }, [hierarchicalTags, filter, usedTagNames]);
+
 
   const selectedTag = useMemo(() => {
     return filteredTags.find((tag) => tag.id === selectedTagId) || null;
@@ -211,7 +209,7 @@ export default function ManageTagsPageClient() {
   const filterOptions: { label: string, value: FilterType }[] = [
     { label: text.tags.filters.inUse, value: 'inUse' },
     { label: text.tags.filters.registered, value: 'registered' },
-    { label: text.tags.filters.notUsed, value: 'notUsed' },
+    { label: text.tags.filters.archived, value: 'archived' },
   ];
 
   if (loading) {
@@ -265,12 +263,12 @@ export default function ManageTagsPageClient() {
                 )}
               >
                 <span className="font-semibold">{tag.name}</span>
-                <div className="flex items-center">
+                 <div className="flex items-center gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="h-8 w-8 p-0 rounded-full"
+                        className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -295,7 +293,7 @@ export default function ManageTagsPageClient() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                   {selectedTagId === tag.id ? (
+                  {selectedTagId === tag.id ? (
                     <ChevronLeft className="h-5 w-5 text-muted-foreground transition-transform" />
                   ) : (
                     <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform" />
