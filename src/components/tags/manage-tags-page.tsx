@@ -368,7 +368,7 @@ export default function ManageTagsPageClient() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-140px)]">
         {/* Coluna de Tags Principais */}
-        <div className="md:col-span-1 space-y-3 overflow-y-auto pr-2">
+        <div className="md:col-span-1 space-y-3 overflow-y-auto">
           {filteredTags.length > 0 ? (
             filteredTags.map((tag, index) => (
               <div
