@@ -35,9 +35,11 @@ export default function TagInput({
 }: MultiSelectProps) {
   const { tags: allTags, loading } = useTags();
   const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   const handleSelect = (tag: string) => {
     onChange([...value, tag]);
+    setInputValue(''); // Limpa o input após a seleção
   };
 
   const handleRemove = (tag: string) => {
@@ -65,7 +67,11 @@ export default function TagInput({
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
           <Command>
-            <CommandInput placeholder="Procurar tags..." />
+            <CommandInput 
+              placeholder="Procurar tags..." 
+              value={inputValue}
+              onValueChange={setInputValue}
+            />
             <CommandList>
               <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
               <CommandGroup>
