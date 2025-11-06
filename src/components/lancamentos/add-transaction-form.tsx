@@ -149,7 +149,6 @@ export default function AddTransactionForm() {
   const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
   
   useEffect(() => {
-    const initialDate = new Date();
     if (isFormOpen) {
       if (isEditMode && transactionToEdit) {
          const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
@@ -166,6 +165,7 @@ export default function AddTransactionForm() {
         });
         setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
       } else {
+        const initialDate = new Date();
         reset({
             type: undefined,
             description: '',
