@@ -470,7 +470,7 @@ export default function AddTransactionForm() {
                      )}
                 </div>
 
-                {transactionType === 'expense' && isCreditCardPayment && (
+                {transactionType === 'expense' && isCreditCardPayment && !isEditMode && (
                   <FormField
                     control={control} name="installments"
                     render={({ field }) => (
