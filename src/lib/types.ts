@@ -95,3 +95,16 @@ export type EmergencyReserveEntry = {
   mainCategory: string;
   subcategory: string;
 };
+
+export interface RawTag {
+  id: string;
+  userId: string;
+  profile: Profile;
+  name: string;
+  isPrincipal: boolean;
+  parent: string | null;
+}
+
+export interface HierarchicalTag extends RawTag {
+  children: RawTag[];
+}

@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  getDocs,
+  collection,
   query,
   where,
   writeBatch,
@@ -11,37 +10,22 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
-  collection,
-  setDoc,
-  getDoc,
+  getDocs,
   limit,
+  deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Loader2,
   Pencil,
   Trash2,
-  Archive,
-  ArchiveRestore,
+  PlusCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -56,130 +40,84 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useTags } from '@/hooks/use-tags';
+import { HierarchicalTag, RawTag } from '@/lib/types';
+import AddTagForm from './add-tag-form';
+import { cn } from '@/lib/utils';
 
 export default function ManageTagsPageClient() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const { tags: activeTags, loading: tagsLoading, refreshTags } = useTags();
+  const { rawTags, loading, refreshTags } = useTags();
 
-  const [archivedTags, setArchivedTags] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newTag, setNewTag] = useState('');
-  const [isRenaming, setIsRenaming] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<HierarchicalTag | null>(null);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  
+  const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
   const [newTagName, setNewTagName] = useState('');
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
 
-  const fetchArchivedTags = useCallback(async () => {
-    if (!user || !activeProfile) return;
-    setLoading(true);
-    try {
-      const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      const profileDoc = await getDoc(profileDocRef);
-      
-      let archived: string[] = [];
-      if (profileDoc.exists()) {
-        const profileData = profileDoc.data();
-        archived = profileData.archivedTags || [];
-      }
-      setArchivedTags(archived.sort());
-    } catch (error) {
-      console.error('Error fetching archived tags:', error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: text.tags.fetchError,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [user, activeProfile, toast]);
 
-  useEffect(() => {
-    if (!tagsLoading) {
-      fetchArchivedTags();
-    }
-  }, [tagsLoading, fetchArchivedTags]);
-
-  const handleCreateTag = async () => {
-    if (!user || !activeProfile || !newTag.trim()) return;
-
-    const profileId = `${user.uid}_${activeProfile}`;
-    const profileDocRef = doc(db, 'profiles', profileId);
-    
-    try {
-      await setDoc(
-        profileDocRef,
-        {
-          userId: user.uid,
-          profile: activeProfile,
-          id: profileId,
-          tags: arrayUnion(newTag.trim()),
-        },
-        { merge: true }
+  const hierarchicalTags = useMemo((): HierarchicalTag[] => {
+    const principals = rawTags
+      .filter((tag) => tag.isPrincipal)
+      .map(
+        (tag): HierarchicalTag => ({
+          ...tag,
+          children: [],
+        })
       );
 
-      toast({
-        title: text.common.success,
-        description: text.tags.createSuccess,
-      });
-      setNewTag('');
-      refreshTags(); 
-    } catch (error) {
-      console.error('Error creating tag:', error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: text.tags.createError,
-      });
+    const children = rawTags.filter((tag) => !tag.isPrincipal && tag.parent);
+
+    const tagMap = new Map(principals.map((tag) => [tag.id, tag]));
+
+    children.forEach((child) => {
+      const parent = tagMap.get(child.parent!);
+      if (parent) {
+        parent.children.push(child);
+      }
+    });
+
+    return Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawTags]);
+  
+  const principalTagsForForm = useMemo(() => {
+    return rawTags.filter(t => t.isPrincipal);
+  }, [rawTags]);
+  
+  useEffect(() => {
+    if (selectedTag) {
+        const updatedSelectedTag = hierarchicalTags.find(t => t.id === selectedTag.id);
+        setSelectedTag(updatedSelectedTag || null);
+    } else if (hierarchicalTags.length > 0) {
+        setSelectedTag(hierarchicalTags[0]);
     }
+  }, [hierarchicalTags, selectedTag]);
+
+  const handleTagCreated = () => {
+    refreshTags();
   };
+  
+  const handleRenameSubmit = async () => {
+    if (!isRenaming || !newTagName.trim() || !user) return;
 
-  const handleRenameTag = async () => {
-    if (!isRenaming || !newTagName.trim() || !user || !activeProfile) return;
-
-    const oldName = isRenaming;
     const newName = newTagName.trim();
-    setLoading(true);
+    if (newName === isRenaming.name) {
+      setIsRenaming(null);
+      return;
+    }
 
     try {
-      const batch = writeBatch(db);
-      const collectionsToSearch = ['expenses', 'incomes', 'plans'];
-
-      for (const col of collectionsToSearch) {
-        const q = query(
-          collection(db, col),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('tags', 'array-contains', oldName)
-        );
-        const snapshot = await getDocs(q);
-        snapshot.forEach((doc) => {
-          const currentTags = doc.data().tags || [];
-          const updatedTags = [
-            ...currentTags.filter((t: string) => t !== oldName),
-            newName,
-          ];
-          batch.update(doc.ref, { tags: updatedTags });
-        });
-      }
-
-      const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-      batch.update(profileDocRef, {
-        tags: arrayRemove(oldName),
-      });
-      batch.update(profileDocRef, {
-        tags: arrayUnion(newName),
-      });
-
-      await batch.commit();
-
+      const tagRef = doc(db, 'tags', isRenaming.id);
+      await updateDoc(tagRef, { name: newName });
       toast({
         title: text.common.success,
-        description: text.tags.renameSuccess,
+        description: `Tag "${isRenaming.name}" renomeada para "${newName}".`,
       });
+      refreshTags();
     } catch (error) {
       console.error('Error renaming tag:', error);
       toast({
@@ -190,289 +128,214 @@ export default function ManageTagsPageClient() {
     } finally {
       setIsRenaming(null);
       setNewTagName('');
-      refreshTags();
-    }
-  };
-
-  const handleArchiveTag = async (tagName: string, archive = true) => {
-    if (!user || !activeProfile) return;
-    const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-    try {
-      if (archive) {
-        await updateDoc(profileDocRef, {
-          archivedTags: arrayUnion(tagName),
-          tags: arrayRemove(tagName),
-        });
-        toast({
-          title: text.common.success,
-          description: text.tags.archiveSuccess,
-        });
-      } else {
-        await updateDoc(profileDocRef, {
-          archivedTags: arrayRemove(tagName),
-          tags: arrayUnion(tagName),
-        });
-        toast({
-          title: text.common.success,
-          description: text.tags.unarchiveSuccess,
-        });
-      }
-      refreshTags(); 
-      fetchArchivedTags(); 
-    } catch (error) {
-      console.error('Error archiving/unarchiving tag:', error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: text.tags.archiveError,
-      });
     }
   };
   
-  const handleDeleteTag = async () => {
-    if (!isDeleting || !user || !activeProfile) return;
-    
-    setLoading(true);
-    const tagName = isDeleting;
+  const handleDeleteSubmit = async () => {
+    if (!isDeleting || !user) return;
 
     try {
-        const collectionsToSearch = ['expenses', 'incomes', 'plans'];
-        let isTagInUse = false;
+      const collectionsToSearch = ['expenses', 'incomes', 'plans'];
+      let isTagInUse = false;
 
-        for (const col of collectionsToSearch) {
-            const q = query(
-                collection(db, col),
-                where('userId', '==', user.uid),
-                where('profile', '==', activeProfile),
-                where('tags', 'array-contains', tagName),
-                limit(1)
-            );
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                isTagInUse = true;
-                break;
-            }
+      for (const col of collectionsToSearch) {
+        const q = query(
+          collection(db, col),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('tags', 'array-contains', isDeleting.name),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          isTagInUse = true;
+          break;
         }
+      }
 
-        if (isTagInUse) {
-            toast({
-                variant: 'destructive',
-                title: 'Ação não permitida',
-                description: `A tag "${tagName}" está em uso e não pode ser excluída.`,
-            });
-        } else {
-            const profileDocRef = doc(db, 'profiles', `${user.uid}_${activeProfile}`);
-            await updateDoc(profileDocRef, {
-                tags: arrayRemove(tagName),
-                archivedTags: arrayRemove(tagName), 
-            });
-            toast({
-                title: text.common.success,
-                description: `A tag "${tagName}" foi excluída permanentemente.`,
-            });
-            refreshTags();
-            fetchArchivedTags();
-        }
-    } catch (error) {
-        console.error('Error deleting tag:', error);
+      if (isTagInUse) {
         toast({
-            variant: 'destructive',
-            title: text.common.error,
-            description: 'Erro ao tentar excluir a tag.',
+          variant: 'destructive',
+          title: 'Ação não permitida',
+          description: `A tag "${isDeleting.name}" está em uso e não pode ser excluída.`,
         });
+        return;
+      }
+      
+      const batch = writeBatch(db);
+      const tagRef = doc(db, 'tags', isDeleting.id);
+      
+      if (isDeleting.isPrincipal) {
+        const childrenQuery = query(collection(db, 'tags'), where('parent', '==', isDeleting.id));
+        const childrenSnap = await getDocs(childrenQuery);
+        if (!childrenSnap.empty) {
+           toast({
+            variant: 'destructive',
+            title: 'Ação não permitida',
+            description: `A tag "${isDeleting.name}" possui tags vinculadas e não pode ser excluída.`,
+          });
+          return;
+        }
+      }
+
+      batch.delete(tagRef);
+      await batch.commit();
+
+      toast({
+        title: text.common.success,
+        description: `A tag "${isDeleting.name}" foi excluída.`,
+      });
+      refreshTags();
+      
+      if (isDeleting.id === selectedTag?.id) {
+        setSelectedTag(null);
+      }
+
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'Erro ao tentar excluir a tag.',
+      });
     } finally {
-        setIsDeleting(null);
-        setLoading(false);
+      setIsDeleting(null);
     }
   };
 
-  const isLoading = loading || tagsLoading;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{text.tags.createTitle}</CardTitle>
-          <CardDescription>{text.tags.createDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              placeholder={text.tags.newTagPlaceholder}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateTag();
-              }}
-            />
-            <Button onClick={handleCreateTag} disabled={!newTag.trim()}>
-              {text.tags.createButton}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+      {/* Coluna de Tags Principais */}
+      <div className="md:col-span-1 flex flex-col h-full">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Tags Principais</h2>
+          <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nova Tag
+          </Button>
+        </div>
+        <Card className="flex-1">
+          <CardContent className="p-2 h-full overflow-y-auto">
+            {hierarchicalTags.length > 0 ? (
+              <div className="space-y-2">
+                {hierarchicalTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTag(tag)}
+                    className={cn(
+                      'w-full text-left p-3 rounded-lg transition-colors flex items-center justify-between',
+                      selectedTag?.id === tag.id
+                        ? 'bg-primary/10'
+                        : 'hover:bg-muted'
+                    )}
+                  >
+                    <span className="font-semibold">{tag.name}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{tag.children.length}</Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
+                <p>Nenhuma tag principal criada. Clique em "Nova Tag" para começar.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <Tabs defaultValue="active">
-        <TabsList>
-          <TabsTrigger value="active">{text.tags.activeTags}</TabsTrigger>
-          <TabsTrigger value="archived">{text.tags.archivedTags}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="active">
-          <Card>
-            <CardHeader>
-              <CardTitle>{text.tags.activeTags}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+      {/* Coluna de Tags Vinculadas */}
+      <div className="md:col-span-2 flex flex-col h-full">
+         <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">
+              {selectedTag ? `Tags Vinculadas a "${selectedTag.name}"` : 'Selecione uma Tag Principal'}
+            </h2>
+        </div>
+        <Card className="flex-1">
+          <CardContent className="p-4 h-full overflow-y-auto">
+             {selectedTag ? (
+                 selectedTag.children.length > 0 ? (
+                    <div className="space-y-2">
+                         {selectedTag.children.map((child) => (
+                             <div key={child.id} className="flex justify-between items-center p-2 rounded-md hover:bg-muted/50">
+                                 <Badge variant="outline">{child.name}</Badge>
+                                 <div className="flex items-center">
+                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setIsRenaming(child); setNewTagName(child.name); }}>
+                                        <Pencil className="h-4 w-4" />
+                                     </Button>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setIsDeleting(child)}>
+                                        <Trash2 className="h-4 w-4" />
+                                     </Button>
+                                 </div>
+                             </div>
+                         ))}
+                    </div>
+                 ) : (
+                     <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
+                        <p>Nenhuma tag vinculada. Adicione uma usando o formulário.</p>
+                    </div>
+                 )
+             ) : (
+                 <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
+                    <p>Selecione uma tag principal na lista à esquerda para ver suas tags vinculadas.</p>
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.tags.tagName}</TableHead>
-                      <TableHead className="text-right">
-                        {text.common.actions}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activeTags.map((tag) => (
-                      <TableRow key={tag}>
-                        <TableCell>
-                          <Badge variant="secondary">{tag}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setIsRenaming(tag);
-                              setNewTagName(tag);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleArchiveTag(tag, true)}
-                          >
-                            <Archive className="h-4 w-4" />
-                          </Button>
-                           <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsDeleting(tag)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="archived">
-          <Card>
-            <CardHeader>
-              <CardTitle>{text.tags.archivedTags}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{text.tags.tagName}</TableHead>
-                      <TableHead className="text-right">
-                        {text.common.actions}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {archivedTags.map((tag) => (
-                      <TableRow key={tag}>
-                        <TableCell>
-                          <Badge variant="outline">{tag}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleArchiveTag(tag, false)}
-                          >
-                            <ArchiveRestore className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      <AlertDialog
-        open={!!isRenaming}
-        onOpenChange={(open) => !open && setIsRenaming(null)}
-      >
+             )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      <AddTagForm 
+        isOpen={isAddFormOpen}
+        onOpenChange={setIsAddFormOpen}
+        principalTags={principalTagsForForm}
+        onTagCreated={handleTagCreated}
+      />
+      
+      <AlertDialog open={!!isRenaming} onOpenChange={(open) => !open && setIsRenaming(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{text.tags.renameTitle}</AlertDialogTitle>
+            <AlertDialogTitle>Renomear Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              {text.tags.renameDescription(isRenaming || '')}
+              Renomear a tag "{isRenaming?.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Input
-            value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
-          />
+          <Input value={newTagName} onChange={(e) => setNewTagName(e.target.value)} />
           <AlertDialogFooter>
-            <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRenameTag}
-              disabled={!newTagName.trim() || newTagName.trim() === isRenaming}
-            >
-              {text.tags.renameButton}
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRenameSubmit} disabled={!newTagName.trim() || newTagName.trim() === isRenaming?.name}>
+              Renomear
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      <AlertDialog
-        open={!!isDeleting}
-        onOpenChange={(open) => !open && setIsDeleting(null)}
-      >
+
+      <AlertDialog open={!!isDeleting} onOpenChange={(open) => !open && setIsDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a tag "{isDeleting}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso.
+              Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta ação não pode ser desfeita. A tag só será excluída se não estiver em uso.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{text.common.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTag} className="bg-destructive hover:bg-destructive/90">
-              {text.common.delete}
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSubmit} className="bg-destructive hover:bg-destructive/90">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }
-
-    
