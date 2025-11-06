@@ -96,7 +96,6 @@ const formSchema = z.object({
   paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
-  tags: z.array(z.string()).optional(),
 }).refine(data => {
     if (data.type === 'expense') {
         return !!data.paymentMethod && data.paymentMethod.length > 0;
@@ -138,9 +137,6 @@ export default function AddTransactionForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      tags: [],
-    },
   });
   
   const { watch, setValue, reset, control, formState: { isSubmitting }, trigger } = form;
@@ -161,7 +157,6 @@ export default function AddTransactionForm() {
             paymentMethod: type === 'expense' ? (transactionToEdit as Expense).paymentMethod : undefined,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
-            tags: (transactionToEdit as Expense | Income).tags || [],
         });
         setDateInput(format(transactionToEdit.date.toDate(), 'dd/MM/yyyy'));
       } else {
@@ -175,7 +170,6 @@ export default function AddTransactionForm() {
             paymentMethod: '',
             date: initialDate,
             installments: 1,
-            tags: [],
         });
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
@@ -274,7 +268,6 @@ export default function AddTransactionForm() {
                 mainCategory: values.mainCategory,
                 subcategory: values.subcategory,
                 date: Timestamp.fromDate(values.date),
-                tags: values.tags || [],
             };
 
             if (values.type === 'expense') {
@@ -299,7 +292,6 @@ export default function AddTransactionForm() {
                     amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                     paymentMethod: values.paymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
-                    tags: values.tags || [],
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -313,7 +305,6 @@ export default function AddTransactionForm() {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
                   amount: values.amount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                   date: Timestamp.fromDate(values.date),
-                  tags: values.tags || [],
                 };
                 await addDoc(collection(db, 'incomes'), incomeData);
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
@@ -470,24 +461,6 @@ export default function AddTransactionForm() {
                         />
                      )}
                 </div>
-
-                <FormField
-                  control={control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tags</FormLabel>
-                      <FormControl>
-                        <TagInput
-                          value={field.value || []}
-                          onChange={field.onChange}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {transactionType === 'expense' && isCreditCardPayment && (
                   <FormField
