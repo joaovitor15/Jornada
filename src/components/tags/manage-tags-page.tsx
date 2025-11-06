@@ -31,6 +31,7 @@ import {
   PlusCircle,
   MoreVertical,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -238,12 +239,6 @@ export default function ManageTagsPageClient() {
               >
                 <span className="font-semibold">{tag.name}</span>
                 <div className="flex items-center">
-                  <ChevronRight
-                    className={cn(
-                      'h-5 w-5 text-muted-foreground transition-transform',
-                      selectedTagId === tag.id ? 'rotate-90' : ''
-                    )}
-                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -273,6 +268,11 @@ export default function ManageTagsPageClient() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {selectedTagId === tag.id ? (
+                     <ChevronLeft className='h-5 w-5 text-muted-foreground' />
+                  ) : (
+                     <ChevronRight className='h-5 w-5 text-muted-foreground' />
+                  )}
                 </div>
               </div>
             ))
