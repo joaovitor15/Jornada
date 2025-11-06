@@ -16,7 +16,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -32,6 +32,8 @@ import {
   MoreVertical,
   ChevronLeft,
   ChevronRight,
+  Archive,
+  ArchiveX,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -69,50 +71,63 @@ export default function ManageTagsPageClient() {
   const [isRenaming, setIsRenaming] = useState<RawTag | null>(null);
   const [newTagName, setNewTagName] = useState('');
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
+  const [isArchiving, setIsArchiving] = useState<RawTag | null>(null);
+  const [isUnarchiving, setIsUnarchiving] = useState<RawTag | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('inUse');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
+    const allTags = hierarchicalTags;
+
     if (filter === 'inUse') {
-        return hierarchicalTags
-            .map(tag => {
-                // Filtra as filhas que estão em uso
-                const activeChildren = tag.children.filter(child => usedTagNames.has(child.name));
-                // A tag principal aparece se ela mesma estiver em uso OU se tiver alguma filha em uso
-                if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
-                    return { ...tag, children: activeChildren };
-                }
-                return null;
-            })
-            .filter((tag): tag is HierarchicalTag => tag !== null);
+      return allTags
+        .map((tag) => {
+          if (tag.isArchived) return null;
+          const activeChildren = tag.children.filter(
+            (child) => !child.isArchived && usedTagNames.has(child.name)
+          );
+          if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
+            return { ...tag, children: activeChildren };
+          }
+          return null;
+        })
+        .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'registered') {
-        return hierarchicalTags
-            .map(tag => {
-                // Nenhuma filha pode estar em uso
-                const hasUsedChildren = tag.children.some(child => usedTagNames.has(child.name));
-                // A tag principal não pode estar em uso e nenhuma filha pode estar em uso
-                if (!usedTagNames.has(tag.name) && !hasUsedChildren) {
-                    return { ...tag, children: tag.children.filter(child => !usedTagNames.has(child.name)) };
-                }
-                return null;
-            })
-            .filter((tag): tag is HierarchicalTag => tag !== null);
+      return allTags
+        .map((tag) => {
+          if (tag.isArchived) return null;
+          const hasUsedChildren = tag.children.some((child) =>
+            usedTagNames.has(child.name)
+          );
+          if (!usedTagNames.has(tag.name) && !hasUsedChildren) {
+             const unarchivedChildren = tag.children.filter(child => !child.isArchived);
+             return { ...tag, children: unarchivedChildren };
+          }
+          return null;
+        })
+        .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'archived') {
-      // Lógica para tags arquivadas (futura implementação)
-      return [];
+       return allTags
+        .map(tag => {
+            const archivedChildren = tag.children.filter(child => child.isArchived);
+            if (tag.isArchived || archivedChildren.length > 0) {
+                return { ...tag, children: archivedChildren };
+            }
+            return null;
+        })
+        .filter((tag): tag is HierarchicalTag => tag !== null);
     }
-    return hierarchicalTags;
+    return [];
   }, [hierarchicalTags, filter, usedTagNames]);
-
 
   const selectedTag = useMemo(() => {
     return filteredTags.find((tag) => tag.id === selectedTagId) || null;
   }, [selectedTagId, filteredTags]);
 
   const principalTagsForForm = useMemo(() => {
-    return hierarchicalTags.filter((t) => t.isPrincipal);
+    return hierarchicalTags.filter((t) => t.isPrincipal && !t.isArchived);
   }, [hierarchicalTags]);
 
   const handleTagCreated = () => {
@@ -153,7 +168,7 @@ export default function ManageTagsPageClient() {
     if (!isDeleting || !user) return;
 
     try {
-       if (usedTagNames.has(isDeleting.name)) {
+      if (usedTagNames.has(isDeleting.name)) {
         toast({
           variant: 'destructive',
           title: 'Ação não permitida',
@@ -162,12 +177,13 @@ export default function ManageTagsPageClient() {
         setIsDeleting(null);
         return;
       }
-      
+
       const batch = writeBatch(db);
       const tagRef = doc(db, 'tags', isDeleting.id);
 
       if (isDeleting.isPrincipal) {
-        const children = hierarchicalTags.find(t => t.id === isDeleting.id)?.children || [];
+        const children =
+          hierarchicalTags.find((t) => t.id === isDeleting.id)?.children || [];
         if (children.length > 0) {
           toast({
             variant: 'destructive',
@@ -187,7 +203,7 @@ export default function ManageTagsPageClient() {
         description: `A tag "${isDeleting.name}" foi excluída.`,
       });
       refreshTags();
-      if(isDeleting.id === selectedTagId) {
+      if (isDeleting.id === selectedTagId) {
         setSelectedTagId(null);
       }
     } catch (error) {
@@ -201,16 +217,105 @@ export default function ManageTagsPageClient() {
       setIsDeleting(null);
     }
   };
+  
+  const handleArchiveSubmit = async () => {
+    if (!isArchiving) return;
+    try {
+        const tagRef = doc(db, 'tags', isArchiving.id);
+        await updateDoc(tagRef, { isArchived: true });
+        toast({
+            title: text.common.success,
+            description: `A tag "${isArchiving.name}" foi arquivada.`,
+        });
+        refreshTags();
+    } catch (error) {
+         toast({
+            variant: 'destructive',
+            title: text.common.error,
+            description: 'Erro ao arquivar a tag.',
+        });
+    } finally {
+        setIsArchiving(null);
+    }
+  };
+
+  const handleUnarchiveSubmit = async () => {
+      if (!isUnarchiving) return;
+      try {
+        const tagRef = doc(db, 'tags', isUnarchiving.id);
+        await updateDoc(tagRef, { isArchived: false });
+        
+        // Se a tag principal dela foi arquivada, ela se torna órfã.
+        // A lógica de forçar a revinculação pode ser adicionada aqui se necessário.
+        // Por agora, apenas desarquivamos.
+        
+        toast({
+            title: text.common.success,
+            description: `A tag "${isUnarchiving.name}" foi desarquivada.`,
+        });
+        refreshTags();
+      } catch (error) {
+          toast({
+            variant: 'destructive',
+            title: text.common.error,
+            description: 'Erro ao desarquivar a tag.',
+        });
+      } finally {
+        setIsUnarchiving(null);
+      }
+  };
+
 
   const handleSelectTag = (tagId: string) => {
     setSelectedTagId((prevId) => (prevId === tagId ? null : tagId));
   };
-  
-  const filterOptions: { label: string, value: FilterType }[] = [
+
+  const filterOptions: { label: string; value: FilterType }[] = [
     { label: text.tags.filters.inUse, value: 'inUse' },
     { label: text.tags.filters.registered, value: 'registered' },
     { label: text.tags.filters.archived, value: 'archived' },
   ];
+  
+  const renderActions = (tag: RawTag) => {
+    switch (filter) {
+      case 'inUse':
+        return (
+          <>
+            <DropdownMenuItem onSelect={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
+              <Pencil className="mr-2 h-4 w-4" /> {text.common.rename}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsArchiving(tag)}>
+              <Archive className="mr-2 h-4 w-4" /> Arquivar
+            </DropdownMenuItem>
+          </>
+        );
+      case 'registered':
+        return (
+          <>
+            <DropdownMenuItem onSelect={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
+              <Pencil className="mr-2 h-4 w-4" /> {text.common.rename}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsDeleting(tag)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> {text.common.delete}
+            </DropdownMenuItem>
+          </>
+        );
+      case 'archived':
+         return (
+          <>
+            <DropdownMenuItem onSelect={() => { setIsRenaming(tag); setNewTagName(tag.name); }}>
+              <Pencil className="mr-2 h-4 w-4" /> {text.common.rename}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsUnarchiving(tag)}>
+              <ArchiveX className="mr-2 h-4 w-4" /> Desarquivar
+            </DropdownMenuItem>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
 
   if (loading) {
     return (
@@ -222,28 +327,28 @@ export default function ManageTagsPageClient() {
 
   return (
     <>
-       <div className="flex flex-col mb-4 gap-4">
+      <div className="flex flex-col mb-4 gap-4">
         <div className="flex justify-between items-start">
-           <div>
+          <div>
             <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
             <p className="text-muted-foreground">{text.tags.description}</p>
           </div>
           <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nova Tag
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nova Tag
           </Button>
         </div>
-         <div className="flex items-center gap-2">
-            {filterOptions.map(option => (
-              <Button
-                key={option.value}
-                variant={filter === option.value ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setFilter(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
+        <div className="flex items-center gap-2">
+          {filterOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={filter === option.value ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -263,7 +368,7 @@ export default function ManageTagsPageClient() {
                 )}
               >
                 <span className="font-semibold">{tag.name}</span>
-                 <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -275,28 +380,13 @@ export default function ManageTagsPageClient() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setIsRenaming(tag);
-                          setNewTagName(tag.name);
-                        }}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        {text.common.rename}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => setIsDeleting(tag)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        {text.common.delete}
-                      </DropdownMenuItem>
+                       {renderActions(tag)}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {selectedTagId === tag.id ? (
-                    <ChevronLeft className="h-5 w-5 text-muted-foreground transition-transform" />
+                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
               </div>
@@ -304,7 +394,7 @@ export default function ManageTagsPageClient() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
               <p className="text-lg font-semibold">Nenhuma tag encontrada.</p>
-               <p>Tente um filtro diferente ou crie uma nova tag.</p>
+              <p>Tente um filtro diferente ou crie uma nova tag.</p>
             </div>
           )}
         </div>
@@ -329,22 +419,7 @@ export default function ManageTagsPageClient() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                setIsRenaming(child);
-                                setNewTagName(child.name);
-                              }}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              {text.common.rename}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() => setIsDeleting(child)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              {text.common.delete}
-                            </DropdownMenuItem>
+                            {renderActions(child)}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </CardHeader>
@@ -353,13 +428,16 @@ export default function ManageTagsPageClient() {
                 </div>
               ) : (
                 <p className="text-muted-foreground mt-4">
-                  Nenhuma tag vinculada a esta tag principal.
+                  Nenhuma tag vinculada a esta tag principal neste filtro.
                 </p>
               )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg text-center text-muted-foreground p-4">
-              <p>Selecione uma Tag Principal à esquerda para ver suas tags vinculadas.</p>
+              <p>
+                Selecione uma Tag Principal à esquerda para ver suas tags
+                vinculadas.
+              </p>
             </div>
           )}
         </div>
@@ -372,6 +450,7 @@ export default function ManageTagsPageClient() {
         onTagCreated={handleTagCreated}
       />
 
+       {/* Dialogs for actions */}
       <AlertDialog
         open={!!isRenaming}
         onOpenChange={(open) => !open && setIsRenaming(null)}
@@ -410,9 +489,7 @@ export default function ManageTagsPageClient() {
             <AlertDialogTitle>Excluir Tag</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir a tag "{isDeleting?.name}"? Esta
-              ação não pode ser desfeita. A tag só será excluída se não estiver
-              em uso e, no caso de uma tag principal, se não tiver outras tags
-              vinculadas a ela.
+              ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -422,6 +499,40 @@ export default function ManageTagsPageClient() {
               className="bg-destructive hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+       <AlertDialog open={!!isArchiving} onOpenChange={(open) => !open && setIsArchiving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivar Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja arquivar a tag "{isArchiving?.name}"? Ela não aparecerá mais nas listas de seleção, mas seu histórico será mantido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveSubmit}>
+              Arquivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!isUnarchiving} onOpenChange={(open) => !open && setIsUnarchiving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desarquivar Tag</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja desarquivar a tag "{isUnarchiving?.name}"? Ela voltará a aparecer nas listas de seleção.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUnarchiveSubmit}>
+             Desarquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
