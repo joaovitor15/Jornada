@@ -51,13 +51,7 @@ import { useTags } from '@/hooks/use-tags';
 import { HierarchicalTag, RawTag } from '@/lib/types';
 import AddTagForm from './add-tag-form';
 import { cn } from '@/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Badge } from '../ui/badge';
 
 type FilterType = 'inUse' | 'registered' | 'archived';
 
@@ -94,17 +88,17 @@ export default function ManageTagsPageClient() {
         .filter((tag): tag is HierarchicalTag => tag !== null);
     }
     if (filter === 'registered') {
-      return allTags
+       return allTags
         .map((tag) => {
           if (tag.isArchived) return null;
-          const hasUsedChildren = tag.children.some((child) =>
-            usedTagNames.has(child.name)
-          );
-          if (!usedTagNames.has(tag.name) && !hasUsedChildren) {
-             const unarchivedChildren = tag.children.filter(child => !child.isArchived);
-             return { ...tag, children: unarchivedChildren };
-          }
-          return null;
+          // Check if the parent tag itself is used
+          if(usedTagNames.has(tag.name)) return null;
+          // Check if any of the children are used
+          const isAnyChildUsed = tag.children.some(child => usedTagNames.has(child.name));
+          if(isAnyChildUsed) return null;
+          
+          const unarchivedChildren = tag.children.filter(child => !child.isArchived);
+          return { ...tag, children: unarchivedChildren };
         })
         .filter((tag): tag is HierarchicalTag => tag !== null);
     }
@@ -329,10 +323,6 @@ export default function ManageTagsPageClient() {
     <>
       <div className="flex flex-col mb-4 gap-4">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
-            <p className="text-muted-foreground">{text.tags.description}</p>
-          </div>
           <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Nova Tag
@@ -367,7 +357,14 @@ export default function ManageTagsPageClient() {
                     : 'hover:bg-muted/50'
                 )}
               >
-                <span className="font-semibold">{tag.name}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold">{tag.name}</span>
+                    {tag.children.length > 0 && (
+                        <Badge variant="secondary" className="px-1.5 py-0.5 text-xs rounded-full">
+                            {tag.children.length}
+                        </Badge>
+                    )}
+                </div>
                 <div className="flex items-center gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
