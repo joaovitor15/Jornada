@@ -33,7 +33,7 @@ export default function TagInput({
   placeholder = 'Selecione as tags...',
   disabled = false,
 }: MultiSelectProps) {
-  const { tags: allTags, loading } = useTags();
+  const { childTags, loading } = useTags();
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -46,7 +46,7 @@ export default function TagInput({
     onChange(value.filter((t) => t !== tag));
   };
   
-  const unselectedTags = allTags.filter(tag => !value.includes(tag));
+  const unselectedTags = childTags.filter(tag => !value.includes(tag));
 
   return (
     <div className="w-full space-y-2">

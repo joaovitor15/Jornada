@@ -102,6 +102,13 @@ export function useTags() {
     return rawTags.filter(tag => !tag.isArchived).map(tag => tag.name).sort();
   }, [rawTags]);
 
+  const childTags = useMemo(() => {
+    return rawTags
+      .filter(tag => !tag.isPrincipal && !tag.isArchived)
+      .map(tag => tag.name)
+      .sort();
+  }, [rawTags]);
 
-  return { rawTags, hierarchicalTags, tags, loading, usedTagNames, refreshTags: fetchTags };
+
+  return { rawTags, hierarchicalTags, tags, childTags, loading, usedTagNames, refreshTags: fetchTags };
 }
