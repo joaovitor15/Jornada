@@ -15,11 +15,11 @@ export function useTags() {
   const [loading, setLoading] = useState(true);
   const [usedTagNames, setUsedTagNames] = useState<Set<string>>(new Set());
 
-  const fetchTags = useCallback(() => {
+  const refreshTags = useCallback(() => {
     if (!user || !activeProfile) {
       setRawTags([]);
       setLoading(false);
-      return () => {};
+      return;
     }
 
     setLoading(true);
@@ -36,7 +36,6 @@ export function useTags() {
         const tagsData = snapshot.docs.map(doc => doc.data() as RawTag);
         setRawTags(tagsData);
 
-        // After fetching tags, find out which ones are used
         const collectionsToSearch = ['expenses', 'incomes', 'plans'];
         const allUsedTags = new Set<string>();
 
@@ -67,13 +66,13 @@ export function useTags() {
   }, [user, activeProfile]);
 
   useEffect(() => {
-    const unsubscribe = fetchTags();
+    const unsubscribe = refreshTags();
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [fetchTags]);
+  }, [refreshTags]);
   
   const hierarchicalTags = useMemo((): HierarchicalTag[] => {
     const principals = rawTags
@@ -110,5 +109,5 @@ export function useTags() {
   }, [rawTags]);
 
 
-  return { rawTags, hierarchicalTags, tags, childTags, loading, usedTagNames, refreshTags: fetchTags };
+  return { rawTags, hierarchicalTags, tags, childTags, loading, usedTagNames, refreshTags };
 }
