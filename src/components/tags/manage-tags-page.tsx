@@ -70,7 +70,7 @@ export default function ManageTagsPageClient() {
   const [newTagName, setNewTagName] = useState('');
   const [isDeleting, setIsDeleting] = useState<RawTag | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>('active');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
     if (filter === 'all') {
@@ -198,6 +198,12 @@ export default function ManageTagsPageClient() {
   const handleSelectTag = (tagId: string) => {
     setSelectedTagId((prevId) => (prevId === tagId ? null : tagId));
   };
+  
+  const filterOptions: { label: string, value: FilterType }[] = [
+    { label: 'Todas', value: 'all' },
+    { label: 'Ativas', value: 'active' },
+    { label: 'Inativas', value: 'inactive' },
+  ];
 
   if (loading) {
     return (
@@ -209,30 +215,32 @@ export default function ManageTagsPageClient() {
 
   return (
     <>
-      <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
-          <p className="text-muted-foreground">{text.tags.description}</p>
+      <div className="flex flex-col mb-4 gap-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">{text.sidebar.manageTags}</h1>
+            <p className="text-muted-foreground">{text.tags.description}</p>
+          </div>
+          <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova Tag
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-            <Select value={filter} onValueChange={(value) => setFilter(value as FilterType)}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filtrar tags" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todas as Tags</SelectItem>
-                    <SelectItem value="active">Tags Ativas</SelectItem>
-                    <SelectItem value="inactive">Tags Inativas</SelectItem>
-                </SelectContent>
-            </Select>
-            <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nova Tag
-            </Button>
+         <div className="flex items-center gap-2">
+            {filterOptions.map(option => (
+              <Button
+                key={option.value}
+                variant={filter === option.value ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-100px)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-140px)]">
         {/* Coluna de Tags Principais */}
         <div className="md:col-span-1 space-y-3 overflow-y-auto pr-2">
           {filteredTags.length > 0 ? (
@@ -278,7 +286,7 @@ export default function ManageTagsPageClient() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  {selectedTagId === tag.id ? (
+                   {selectedTagId === tag.id ? (
                     <ChevronLeft className="h-5 w-5 text-muted-foreground" />
                   ) : (
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
