@@ -141,12 +141,6 @@ export default function ExpensesList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.common.mainCategory}
-                        </TableHead>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.common.subcategory}
-                        </TableHead>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
@@ -175,16 +169,6 @@ export default function ExpensesList() {
                             index % 2 === 0 ? 'bg-muted/25' : ''
                           )}
                         >
-                          <TableCell className="py-2 px-2 align-middle">
-                            <span className="text-muted-foreground text-sm">
-                              {expense.mainCategory}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-2 px-2 align-middle">
-                            <span className="text-muted-foreground text-sm">
-                              {expense.subcategory}
-                            </span>
-                          </TableCell>
                           <TableCell className="font-medium py-2 px-2 align-middle">
                             {expense.description || '-'}
                           </TableCell>
