@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -216,7 +215,7 @@ export default function PlanForm({
     
     const { planName, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
 
-    const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile' | 'mainCategory' | 'subcategory'>> & { name: string; } = {
+    const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
         name: planName,
         amount: rest.amount,
         type: rest.type,
@@ -582,3 +581,5 @@ export default function PlanForm({
     </Dialog>
   );
 }
+
+    
