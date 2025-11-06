@@ -98,7 +98,11 @@ export function useTags() {
       a.name.localeCompare(b.name)
     );
   }, [rawTags]);
+  
+  const tags = useMemo(() => {
+    return rawTags.filter(tag => !tag.isArchived).map(tag => tag.name).sort();
+  }, [rawTags]);
 
 
-  return { rawTags, hierarchicalTags, loading, usedTagNames, refreshTags: fetchTags };
+  return { rawTags, hierarchicalTags, tags, loading, usedTagNames, refreshTags: fetchTags };
 }
