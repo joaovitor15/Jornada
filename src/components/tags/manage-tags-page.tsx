@@ -30,6 +30,7 @@ import {
   Trash2,
   PlusCircle,
   MoreVertical,
+  ChevronRight,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -229,38 +230,50 @@ export default function ManageTagsPageClient() {
                 key={tag.id}
                 onClick={() => handleSelectTag(tag.id)}
                 className={cn(
-                  'p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center',
+                  'p-3 rounded-lg border cursor-pointer transition-all flex justify-between items-center group',
                   selectedTagId === tag.id
                     ? 'bg-primary/10 ring-2 ring-primary'
                     : 'hover:bg-muted/50'
                 )}
               >
                 <span className="font-semibold">{tag.name}</span>
-                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-full" onClick={(e) => e.stopPropagation()}>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setIsRenaming(tag);
-                        setNewTagName(tag.name);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      {text.common.rename}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => setIsDeleting(tag)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {text.common.delete}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center">
+                  <ChevronRight
+                    className={cn(
+                      'h-5 w-5 text-muted-foreground transition-transform',
+                      selectedTagId === tag.id ? 'rotate-90' : ''
+                    )}
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-full"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setIsRenaming(tag);
+                          setNewTagName(tag.name);
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        {text.common.rename}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => setIsDeleting(tag)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {text.common.delete}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             ))
           ) : (
