@@ -43,7 +43,7 @@ import TagInput from '../ui/tag-input';
 
 const planSchema = z
   .object({
-    planName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
+    title: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
     amount: z.coerce
       .number()
       .positive('O custo base deve ser um número positivo.'),
@@ -103,7 +103,7 @@ export default function PlanForm({
   const form = useForm<z.infer<typeof planSchema>>({
     resolver: zodResolver(planSchema),
     defaultValues: {
-      planName: '',
+      title: '',
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
@@ -133,7 +133,7 @@ export default function PlanForm({
         }
         
         form.reset({
-          planName: planToEdit.name,
+          title: planToEdit.name,
           amount: planToEdit.amount,
           type: planToEdit.type,
           paymentDay: planToEdit.paymentDay,
@@ -146,7 +146,7 @@ export default function PlanForm({
         });
       } else {
         form.reset({
-          planName: '',
+          title: '',
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
@@ -213,10 +213,10 @@ export default function PlanForm({
       return;
     }
     
-    const { planName, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
+    const { title, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
 
     const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
-        name: planName,
+        name: title,
         amount: rest.amount,
         type: rest.type,
         paymentMethod: rest.paymentMethod,
@@ -277,12 +277,12 @@ export default function PlanForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="planName"
+                  name="title"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{text.plans.form.name}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Netflix, Meli+" {...field} />
+                        <Input placeholder="Ex: Netflix, Meli+" {...field} id="planTitleInput" name="planTitleInput" autoComplete="off" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -581,5 +581,3 @@ export default function PlanForm({
     </Dialog>
   );
 }
-
-    

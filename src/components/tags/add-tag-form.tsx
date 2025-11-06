@@ -39,7 +39,7 @@ import { RawTag } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'O nome da tag é obrigatório.'),
+  tagName: z.string().min(1, 'O nome da tag é obrigatório.'),
   type: z.enum(['principal', 'vinculada'], { required_error: 'Selecione um tipo de tag.' }),
   parentId: z.string().optional(),
 }).refine((data) => {
@@ -72,7 +72,7 @@ export default function AddTagForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      tagName: '',
       type: 'principal',
       parentId: undefined,
     },
@@ -86,7 +86,7 @@ export default function AddTagForm({
   useEffect(() => {
     if (isOpen) {
       reset({
-        name: '',
+        tagName: '',
         type: 'principal',
         parentId: undefined,
       });
@@ -117,7 +117,7 @@ export default function AddTagForm({
         id: newTagRef.id,
         userId: user.uid,
         profile: activeProfile,
-        name: values.name.trim(),
+        name: values.tagName.trim(),
         isPrincipal: values.type === 'principal',
         parent: values.parentId || null,
         order: 0,
@@ -228,12 +228,14 @@ export default function AddTagForm({
 
             <FormField
               control={control}
-              name="name"
+              name="tagName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome da Nova Tag</FormLabel>
                   <FormControl>
                     <Input
+                      id="tagNameInput"
+                      name="tagNameInput"
                       placeholder={
                         tagType === 'principal'
                           ? 'Ex: Conta de Luz, Supermercado'
