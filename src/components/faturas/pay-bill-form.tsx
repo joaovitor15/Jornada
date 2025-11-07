@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parse, isValid, isAfter, set } from 'date-fns';
+import { format, parse, isValid, isAfter, set, getDate } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -172,10 +172,9 @@ export default function AddBillTransactionForm({
     
     // Validation for 'payment' type
     if (values.type === 'payment') {
-        const today = new Date();
-        const closingDateThisMonth = set(new Date(), { date: selectedCard.closingDay });
+        const today = getDate(new Date());
 
-        if (!isAfter(today, closingDateThisMonth)) {
+        if (today <= selectedCard.closingDay) {
              toast({
                 variant: 'destructive',
                 title: 'Pagamento não permitido',
