@@ -342,17 +342,3 @@ export default function CardForm({
     </Dialog>
   );
 }
-```Não, não precisamos alterar a lógica fundamental dos cartões. E essa é a beleza da solução que construímos juntos.
-
-Atualmente, a tag que criamos para o cartão funciona como uma "etiqueta" ou um "rótulo". Ela existe em paralelo ao cartão, mas não interfere em nada no funcionamento dele.
-*   **Cálculo de Faturas:** Continua funcionando da mesma forma, buscando as despesas pela forma de pagamento (ex: "Cartão: Nubank").
-*   **Limites e Vencimentos:** São propriedades do próprio cartão e não são afetados pela tag.
-
-**Porém, sua pergunta é excelente porque ela abre a porta para o *futuro*.** Agora que essa conexão (Cartão <=> Tag) existe, nós podemos usá-la para criar novas funcionalidades e deixar o sistema mais inteligente e robusto.
-
-Por exemplo, a lógica que **precisaremos** ajustar agora é a de **manutenção**:
-
-1.  **Ao Renomear um Cartão:** Se você renomear o cartão de "Inter" para "Inter Black", a tag correspondente também precisa ser renomeada. Eu já adicionei essa lógica na última alteração.
-2.  **Ao Excluir um Cartão:** Da mesma forma, quando um cartão for excluído, a tag filha correspondente deve ser deletada junto para não deixar "lixo" no sistema.
-
-Essas são as próximas melhorias lógicas que podemos implementar para garantir que tudo permaneça sincronizado. Mas a funcionalidade principal dos seus cartões, como você a conhece, está segura e não foi alterada.
