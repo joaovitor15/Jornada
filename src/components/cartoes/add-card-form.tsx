@@ -6,7 +6,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  doc,
+  serverTimestamp,
+  updateDoc,
+  query,
+  where,
+  getDocs,
+  writeBatch,
+  limit,
+} from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -31,7 +42,7 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Card } from '@/lib/types';
+import { type Card, RawTag } from '@/lib/types';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -52,7 +63,11 @@ type CardFormProps = {
   cardToEdit?: Card | null;
 };
 
-export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormProps) {
+export default function CardForm({
+  isOpen,
+  onOpenChange,
+  cardToEdit,
+}: CardFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
@@ -90,7 +105,100 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
 
   const { isSubmitting } = form.formState;
 
-  const handleSubmit = async (values: z.infer<typeof cardSchema>) => {
+  const getOrCreatePrincipalTag = async (
+    batch: any,
+    userId: string,
+    profile: string
+  ): Promise<string> => {
+    const principalTagName = 'Cartões';
+    const tagsRef = collection(db, 'tags');
+    const q = query(
+      tagsRef,
+      where('userId', '==', userId),
+      where('profile', '==', profile),
+      where('name', '==', principalTagName),
+      where('isPrincipal', '==', true),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].id;
+    } else {
+      const principalTagRef = doc(tagsRef);
+      const principalTagData = {
+        id: principalTagRef.id,
+        userId,
+        profile,
+        name: principalTagName,
+        isPrincipal: true,
+        parent: null,
+        order: -1, // Give it a special order to keep it separate
+      };
+      batch.set(principalTagRef, principalTagData);
+      return principalTagRef.id;
+    }
+  };
+
+  const handleTagManagement = async (
+    cardName: string,
+    previousCardName?: string
+  ) => {
+    if (!user || !activeProfile) return;
+
+    const batch = writeBatch(db);
+    const principalTagId = await getOrCreatePrincipalTag(
+      batch,
+      user.uid,
+      activeProfile
+    );
+    const tagsRef = collection(db, 'tags');
+
+    if (isEditMode && cardToEdit && previousCardName !== cardName) {
+      // Logic for renaming
+      const tagQuery = query(
+        tagsRef,
+        where('userId', '==', user.uid),
+        where('profile', '==', activeProfile),
+        where('name', '==', previousCardName),
+        where('parent', '==', principalTagId),
+        limit(1)
+      );
+      const tagSnapshot = await getDocs(tagQuery);
+      if (!tagSnapshot.empty) {
+        const tagToUpdateRef = tagSnapshot.docs[0].ref;
+        batch.update(tagToUpdateRef, { name: cardName });
+      } else {
+        // If the old tag doesn't exist, just create a new one
+         const newTagRef = doc(tagsRef);
+         const newTagData: RawTag = {
+           id: newTagRef.id,
+           userId: user.uid,
+           profile: activeProfile,
+           name: cardName,
+           isPrincipal: false,
+           parent: principalTagId,
+         };
+         batch.set(newTagRef, newTagData);
+      }
+    } else if (!isEditMode) {
+      // Logic for creating a new tag
+      const newTagRef = doc(tagsRef);
+      const newTagData: RawTag = {
+        id: newTagRef.id,
+        userId: user.uid,
+        profile: activeProfile,
+        name: cardName,
+        isPrincipal: false,
+        parent: principalTagId,
+      };
+      batch.set(newTagRef, newTagData);
+    }
+    
+    await batch.commit();
+  };
+
+  const handleSubmitCard = async (values: z.infer<typeof cardSchema>) => {
     if (!user || !activeProfile) {
       toast({
         variant: 'destructive',
@@ -102,8 +210,10 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
 
     try {
       if (isEditMode && cardToEdit?.id) {
+        const previousName = cardToEdit.name;
         const cardRef = doc(db, 'cards', cardToEdit.id);
         await updateDoc(cardRef, values);
+        await handleTagManagement(values.name, previousName);
         toast({
           title: text.common.success,
           description: text.addCardForm.updateSuccess,
@@ -115,6 +225,7 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
           profile: activeProfile,
           createdAt: serverTimestamp(),
         });
+        await handleTagManagement(values.name);
         toast({
           title: text.common.success,
           description: text.addCardForm.addSuccess,
@@ -135,7 +246,9 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? text.addCardForm.editTitle : text.addCardForm.title}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? text.addCardForm.editTitle : text.addCardForm.title}
+          </DialogTitle>
           <DialogDescription>
             {isEditMode
               ? text.addCardForm.editDescription
@@ -143,7 +256,10 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmitCard)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -193,7 +309,9 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
                         min={1}
                         max={31}
                         {...field}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        onChange={(e) =>
+                          field.onChange(e.target.valueAsNumber)
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -212,7 +330,9 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
                         min={1}
                         max={31}
                         {...field}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        onChange={(e) =>
+                          field.onChange(e.target.valueAsNumber)
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -233,7 +353,9 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isEditMode ? text.addCardForm.saveChanges : text.addCardForm.addCard}
+                {isEditMode
+                  ? text.addCardForm.saveChanges
+                  : text.addCardForm.addCard}
               </Button>
             </DialogFooter>
           </form>
@@ -243,4 +365,3 @@ export default function CardForm({ isOpen, onOpenChange, cardToEdit }: CardFormP
   );
 }
 
-    
