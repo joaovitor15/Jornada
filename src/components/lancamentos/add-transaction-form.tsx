@@ -55,6 +55,7 @@ import {
   type Profile,
   Expense,
   Income,
+  RawTag,
 } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
@@ -126,31 +127,31 @@ export default function AddTransactionForm() {
   const transactionType = watch('type');
   const selectedPaymentMethod = watch('paymentMethod');
   
-  const { cardTags, nonCardTags, paymentMethodTags } = useMemo(() => {
+  const { allPaymentMethods, nonCardTags } = useMemo(() => {
     const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
     const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
 
     const cardTagChildren = cardsPrincipal?.children || [];
     const paymentMethodChildren = paymentMethodsPrincipal?.children || [];
 
-    const allPaymentTagNames = new Set([
-        ...(cardTagChildren.map(c => c.name)),
-        ...(paymentMethodChildren.map(c => c.name))
-    ]);
-
+    const combined = [...paymentMethodChildren, ...cardTagChildren];
+    const uniquePaymentMethods = Array.from(new Map(combined.map(item => [item.name, item])).values());
+    
+    const allPaymentTagNames = new Set(uniquePaymentMethods.map(c => c.name));
     const allChildTags = allTags.flatMap(t => t.children);
     
     return {
-      cardTags: cardTagChildren,
-      paymentMethodTags: paymentMethodChildren,
+      allPaymentMethods: uniquePaymentMethods,
       nonCardTags: allChildTags.filter(t => !allPaymentTagNames.has(t.name)).map(c => c.name),
     };
   }, [allTags]);
-
+  
   const isCreditCardPayment = useMemo(() => {
     if (!selectedPaymentMethod) return false;
-    return cardTags.some(card => card.name === selectedPaymentMethod);
-  }, [selectedPaymentMethod, cardTags]);
+    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+    return cardsPrincipal?.children.some(card => card.name === selectedPaymentMethod) ?? false;
+  }, [selectedPaymentMethod, allTags]);
+
 
 
   useEffect(() => {
@@ -212,14 +213,15 @@ export default function AddTransactionForm() {
       }
       
       if (name === 'paymentMethod') {
-        const isCard = cardTags.some(card => card.name === value.paymentMethod);
+        const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+        const isCard = cardsPrincipal?.children.some(card => card.name === value.paymentMethod) ?? false;
         if(!isCard) {
             setValue('installments', 1);
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue, trigger, isEditMode, cardTags]);
+  }, [watch, setValue, trigger, isEditMode, allTags]);
 
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
@@ -262,7 +264,8 @@ export default function AddTransactionForm() {
             };
 
             if (values.type === 'expense') {
-                const isCard = cardTags.some(card => card.name === values.paymentMethod);
+                const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+                const isCard = cardsPrincipal?.children.some(card => card.name === values.paymentMethod) ?? false;
                 (dataToUpdate as Partial<Expense>).paymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
             }
 
@@ -276,7 +279,8 @@ export default function AddTransactionForm() {
                 const installmentAmount = values.amount / installments;
                 const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
                 
-                const isCard = cardTags.some(card => card.name === values.paymentMethod);
+                const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+                const isCard = cardsPrincipal?.children.some(card => card.name === values.paymentMethod) ?? false;
                 const finalPaymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
 
                 for (let i = 0; i < installments; i++) {
@@ -447,16 +451,11 @@ export default function AddTransactionForm() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {paymentMethodTags.map((tag) => (
+                                    {allPaymentMethods.map((tag: RawTag) => (
                                        <SelectItem key={tag.id} value={tag.name}>
                                           {tag.name}
                                         </SelectItem>
                                     ))}
-                                    {cardTags.map((card) => (
-                                    <SelectItem key={card.id} value={card.name}>
-                                      {card.name}
-                                    </SelectItem>
-                                  ))}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
