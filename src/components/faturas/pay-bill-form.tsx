@@ -83,7 +83,7 @@ type AddBillTransactionFormProps = {
 export default function AddBillTransactionForm({
   isOpen,
   onOpenChange,
-  initialType = 'payment',
+  initialType,
 }: AddBillTransactionFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();

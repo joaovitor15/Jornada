@@ -21,7 +21,7 @@ const AddBillTransactionModalContext = createContext<AddBillTransactionModalCont
 export function AddBillTransactionModalProvider({ children }: { children: ReactNode }) {
   const [payBillModal, setPayBillModal] = useState<ModalState>({ isOpen: false });
 
-  const openModal = (type: ModalType, billType: BillTransactionType = 'payment') => {
+  const openModal = (type: ModalType, billType?: BillTransactionType) => {
     if (type === 'pay') {
       setPayBillModal({ isOpen: true, type: billType });
     }
