@@ -63,6 +63,29 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
   const [loading, setLoading] = useState(true);
   const [faturas, setFaturas] = useState<Fatura[]>([]);
   
+  const getMonthBalance = async (month: number, year: number) => {
+      if (!user || !activeProfile || !card) return { faturaValue: 0, totalPayments: 0 };
+      
+      const { startDate, endDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
+
+      const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+      const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+      
+      // Pagamentos referentes a esta fatura ocorrem APÓS seu fechamento e ANTES do fechamento da próxima
+      const nextFaturaPeriod = getFaturaPeriod(addMonths(endDate, 1).getFullYear(), addMonths(endDate, 1).getMonth(), card.closingDay, card.dueDay);
+      const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(endDate)), where('date', '<', Timestamp.fromDate(nextFaturaPeriod.startDate))));
+      
+      const [expensesSnap, refundsSnap, paymentsSnap] = await Promise.all([expensesQuery, refundsQuery, paymentsQuery]);
+
+      const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+      const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+      const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
+      
+      const faturaValue = totalExpenses - totalRefunds;
+
+      return { faturaValue, totalPayments };
+  };
+  
   useEffect(() => {
     const fetchFaturas = async () => {
       if (!isOpen || !user || !activeProfile || !card) return;
@@ -112,40 +135,25 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
           (f, i, self) => i === self.findIndex(t => t.month === f.month && t.year === f.year)
         );
         
+        let previousCredit = 0;
+
         const faturasDataPromises = uniqueMonths.map(async ({ month, year }) => {
-            const { startDate, endDate, dueDate, closingDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
+            const { dueDate, closingDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
+            const { faturaValue, totalPayments } = await getMonthBalance(month, year);
             
-            const expensesQuery = query(
-                collection(db, 'expenses'),
-                where('userId', '==', user.uid),
-                where('profile', '==', activeProfile),
-                where('paymentMethod', '==', `Cartão: ${card.name}`),
-                where('date', '>=', Timestamp.fromDate(startDate)),
-                where('date', '<=', Timestamp.fromDate(endDate))
-            );
-            
-            const nextFaturaPeriod = getFaturaPeriod(addMonths(closingDate, 1).getFullYear(), addMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
-            const paymentsQuery = query(
-                collection(db, 'billPayments'),
-                where('userId', '==', user.uid),
-                where('profile', '==', activeProfile),
-                where('cardId', '==', card.id),
-                where('date', '>=', Timestamp.fromDate(closingDate)),
-                where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
-            );
+            const prevFaturaDate = subMonths(new Date(year, month), 1);
+            const { faturaValue: prevFaturaValue, totalPayments: prevTotalPayments } = await getMonthBalance(prevFaturaDate.getMonth(), prevFaturaDate.getFullYear());
+            previousCredit = Math.max(0, prevTotalPayments - prevFaturaValue);
 
-            const [expensesSnap, paymentsSnap] = await Promise.all([getDocs(expensesQuery), getDocs(paymentsQuery)]);
-
-            const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-            const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
+            const finalValue = faturaValue - totalPayments - previousCredit;
             
             const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
             const isCurrentFatura = month === currentFaturaMonth && year === currentFaturaYear;
             const isFutureFatura = new Date(year, month) > new Date(currentFaturaYear, currentFaturaMonth);
             
-            const { status } = getFaturaStatus(totalExpenses, totalPayments, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+            const { status } = getFaturaStatus(faturaValue, totalPayments + previousCredit, dueDate, closingDate, isCurrentFatura, isFutureFatura);
 
-            return { month, year, status, value: totalExpenses };
+            return { month, year, status, value: finalValue };
         });
 
         let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
@@ -153,8 +161,8 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
         
         resolvedFaturas = resolvedFaturas.filter(f => {
             const faturaDate = startOfMonth(new Date(f.year, f.month));
-            // Show if it has value OR if it's the current month or a future month
-            return f.value > 0 || !isBefore(faturaDate, currentMonthStart);
+            // Mostra se o valor for diferente de zero, ou se for a fatura atual/futura
+            return f.value !== 0 || !isBefore(faturaDate, currentMonthStart);
         });
 
         resolvedFaturas.sort((a, b) => {
@@ -208,13 +216,17 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
               >
                 <div>
                   <p className="font-semibold">{months[fatura.month]} de {fatura.year}</p>
-                  <p className={`text-sm ${fatura.status.includes('Paga') ? 'text-green-500' : (fatura.status.includes('Vencida') ? 'text-red-500' : (fatura.status.includes('Fechada') ? 'text-orange-500' : (fatura.status.includes('Futura') ? 'text-purple-500' : 'text-blue-500')))}`}>
+                  <p className={`text-sm ${fatura.status.includes('Paga') || fatura.status.includes('Crédito') ? 'text-green-500' : (fatura.status.includes('Vencida') ? 'text-red-500' : (fatura.status.includes('Fechada') ? 'text-orange-500' : (fatura.status.includes('Futura') ? 'text-purple-500' : 'text-blue-500')))}`}>
                     {fatura.status}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="font-bold text-lg">
-                    {fatura.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  <span className={cn(
+                      "font-bold text-lg",
+                      fatura.value < 0 ? "text-green-500" : "text-foreground"
+                    )}
+                  >
+                    {fatura.value < 0 ? `+${formatCurrency(Math.abs(fatura.value))}` : formatCurrency(fatura.value)}
                   </span>
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
                     <ChevronRight className="h-5 w-5 text-secondary-foreground" />

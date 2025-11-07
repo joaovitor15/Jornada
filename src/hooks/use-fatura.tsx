@@ -41,13 +41,15 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
     
     const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('paymentMethod', '==', `Cartão: ${localCard.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
     const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
-    const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+    
+    const nextFaturaPeriod = getFaturaPeriod(addMonths(endDate, 1).getFullYear(), addMonths(endDate, 1).getMonth(), localCard.closingDay, localCard.dueDay);
+    const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(endDate)), where('date', '<', Timestamp.fromDate(nextFaturaPeriod.startDate))));
     
     const [expensesSnap, refundsSnap, paymentsSnap] = await Promise.all([expensesQuery, refundsQuery, paymentsQuery]);
 
     const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
     const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-    const totalPayments = paymentsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+    const totalPayments = paymentsSnap.docs.reduce((acc, p) => acc + p.data().amount, 0);
     const faturaValue = totalExpenses - totalRefunds;
 
     return { faturaValue, totalPayments };
@@ -76,7 +78,9 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       const expensesQuery = query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)), orderBy('date', 'desc'));
       const refundsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)));
       
-      const paymentsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)));
+      const nextFaturaPeriod = getFaturaPeriod(addMonths(endDate, 1).getFullYear(), addMonths(endDate, 1).getMonth(), card.closingDay, card.dueDay);
+      const paymentsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(endDate)), where('date', '<', Timestamp.fromDate(nextFaturaPeriod.startDate)));
+
 
       const combineData = (
         expenses: FaturaTransaction[],
@@ -85,11 +89,11 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       ) => {
         const totalExpenses = expenses.reduce((acc, tx) => acc + tx.amount, 0);
         const totalRefunds = refunds.reduce((acc, p) => acc + p.amount, 0);
-        const totalPaymentsValue = payments.reduce((acc, p) => acc + p.amount, 0);
+        const totalPaymentsOnThisCycle = payments.reduce((acc, p) => acc + p.amount, 0);
         
         const faturaBruta = totalExpenses - totalRefunds;
-        const totalPagoNaPropriaFatura = totalPaymentsValue + creditFromPreviousMonth;
-        const faturaLiquida = faturaBruta - totalPagoNaPropriaFatura;
+        const totalPagoConsiderandoCredito = totalPaymentsOnThisCycle + creditFromPreviousMonth;
+        const faturaLiquida = faturaBruta - totalPagoConsiderandoCredito;
 
         setTotal(faturaLiquida);
         
@@ -100,7 +104,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
         const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
         const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
         
-        const { status: faturaStatus } = getFaturaStatus(faturaBruta, totalPagoNaPropriaFatura, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+        const { status: faturaStatus } = getFaturaStatus(faturaBruta, totalPagoConsiderandoCredito, dueDate, closingDate, isCurrentFatura, isFutureFatura);
         setStatus(faturaStatus);
         
         setLoading(false);
