@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -48,6 +47,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
     setFechamento(closingDate);
     setVencimento(dueDate);
 
+    // Consulta de Despesas (Correta, sem alteração)
     const expensesQuery = query(
       collection(db, 'expenses'),
       where('userId', '==', user.uid),
@@ -58,9 +58,20 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       orderBy('date', 'desc')
     );
     
-    // CORREÇÃO: O período de busca de pagamentos deve corresponder ao ciclo da fatura.
-    // Pagamentos para a fatura de 'Outubro' (que fecha em Outubro) são feitos
-    // entre o fechamento de Outubro e o fechamento de Novembro.
+    // --- INÍCIO DA CORREÇÃO ---
+
+    // Consulta 1: Busca ESTORNOS (refunds) DENTRO do período da fatura
+    const refundsQuery = query(
+        collection(db, 'billPayments'),
+        where('userId', '==', user.uid),
+        where('profile', '==', activeProfile),
+        where('cardId', '==', card.id),
+        where('type', '==', 'refund'), // Apenas Estornos
+        where('date', '>=', Timestamp.fromDate(startDate)), // Dentro do período
+        where('date', '<=', Timestamp.fromDate(endDate))   // Dentro do período
+    );
+
+    // Consulta 2: Busca PAGAMENTOS (payments) APÓS o fechamento
     const paymentStart = closingDate;
     const paymentEnd = addMonths(closingDate, 1);
 
@@ -69,44 +80,52 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
         where('userId', '==', user.uid),
         where('profile', '==', activeProfile),
         where('cardId', '==', card.id),
-        where('date', '>=', Timestamp.fromDate(paymentStart)),
+        where('type', '==', 'payment'), // Apenas Pagamentos
+        where('date', '>=', Timestamp.fromDate(paymentStart)), // Após o fechamento
         where('date', '<', Timestamp.fromDate(paymentEnd))
     );
 
+    // --- FIM DA CORREÇÃO ---
+
 
     let localExpenses: FaturaTransaction[] = [];
+    let localRefunds: FaturaTransaction[] = []; // Nova variável para estornos
     let localPayments: FaturaTransaction[] = [];
 
     const handleDataUpdate = () => {
         const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
         
+        // Pagamentos vêm da consulta de pagamentos
         const totalPaymentsValue = localPayments
             .filter(p => p.type === 'payment')
             .reduce((acc, p) => acc + p.amount, 0);
 
-        const totalRefunds = localPayments
+        // Estornos vêm da consulta de estornos
+        const totalRefunds = localRefunds
             .filter(p => p.type === 'refund')
             .reduce((acc, p) => acc + p.amount, 0);
 
-        // O valor total da fatura é o gasto menos os estornos.
+        // O valor total da fatura é o gasto MENOS os estornos.
         const faturaValue = totalExpenses - totalRefunds;
 
         setTotal(faturaValue < 0 ? 0 : faturaValue);
 
-        const allTransactions = [...localExpenses, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
+        // Combina as 3 listas para exibição
+        const allTransactions = [...localExpenses, ...localRefunds, ...localPayments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
         setTransactions(allTransactions);
 
         const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
         const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
         const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
       
-        // O status é calculado com base no valor da fatura e nos pagamentos feitos.
+        // O status é calculado com base no valor da fatura (despesas - estornos) e nos pagamentos feitos.
         const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaymentsValue, dueDate, closingDate, isCurrentFatura, isFutureFatura);
         setStatus(faturaStatus);
 
         setLoading(false);
     }
     
+    // Listener para Despesas
     const unsubscribeExpenses = onSnapshot(expensesQuery, (expensesSnapshot) => {
       localExpenses = expensesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'expense' } as FaturaTransaction));
       handleDataUpdate();
@@ -115,15 +134,29 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       setLoading(false);
     });
 
+    // --- NOVOS LISTENERS ---
+    
+    // Listener para Estornos
+    const unsubscribeRefunds = onSnapshot(refundsQuery, (refundsSnapshot) => {
+      localRefunds = refundsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'refund' } as FaturaTransaction));
+      handleDataUpdate();
+    }, (error) => {
+      console.error("Error fetching refunds: ", error);
+    });
+
+    // Listener para Pagamentos
     const unsubscribePayments = onSnapshot(paymentsQuery, (paymentsSnapshot) => {
-      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: doc.data().type } as FaturaTransaction));
+      localPayments = paymentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'payment' } as FaturaTransaction));
       handleDataUpdate();
     }, (error) => {
       console.error("Error fetching payments: ", error);
     });
 
+    // --- FIM DA ALTERAÇÃO ---
+
     return () => {
       unsubscribeExpenses();
+      unsubscribeRefunds(); // Adicionado
       unsubscribePayments();
     };
   }, [user, activeProfile, card, selectedFatura]);
