@@ -127,51 +127,30 @@ export default function AddTransactionForm() {
   const transactionType = watch('type');
   const selectedPaymentMethod = watch('paymentMethod');
   
-  const { allPaymentMethods, nonCardTags } = useMemo(() => {
+  const { paymentMethodTags, cardTags, nonCardTags } = useMemo(() => {
     const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
     const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
   
-    const cardTagChildren = cardsPrincipal?.children.filter(c => !c.isArchived) || [];
-    const paymentMethodChildren = paymentMethodsPrincipal?.children.filter(c => !c.isArchived) || [];
-  
-    const combined = [...paymentMethodChildren, ...cardTagChildren];
-    
-    // Deduplicate by name, ignoring case
-    const uniquePaymentMethodsMap = new Map<string, RawTag>();
-    combined.forEach(item => {
-        const lowerCaseName = item.name.toLowerCase();
-        if (!uniquePaymentMethodsMap.has(lowerCaseName)) {
-            uniquePaymentMethodsMap.set(lowerCaseName, item);
-        }
-    });
+    const pmt = paymentMethodsPrincipal?.children.filter(c => !c.isArchived) || [];
+    const ct = cardsPrincipal?.children.filter(c => !c.isArchived) || [];
 
-    const uniquePaymentMethods = Array.from(uniquePaymentMethodsMap.values());
-  
-    const allPaymentTagNames = new Set(uniquePaymentMethods.map(t => t.name.toLowerCase()));
-  
-    const allChildTags = allTags.flatMap(t => t.children);
-    const filteredNonCardTags = allChildTags
-      .filter(t => !t.isPrincipal && !t.parent?.includes('cards') && !t.parent?.includes('payment'))
-      .map(c => c.name);
-
-    // Get all tags that are not children of "Cartões" or "Formas de Pagamento"
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
-      .flatMap(pt => [pt.name, ...pt.children.map(ct => ct.name)]);
-      
-    const finalNonCardTags = Array.from(new Set(generalTags));
+      .flatMap(pt => [pt, ...pt.children])
+      .filter(t => !t.isArchived)
+      .map(t => t.name);
 
     return {
-      allPaymentMethods: uniquePaymentMethods,
-      nonCardTags: finalNonCardTags,
+      paymentMethodTags: pmt,
+      cardTags: ct,
+      nonCardTags: Array.from(new Set(generalTags)),
     };
   }, [allTags]);
   
   const isCreditCardPayment = useMemo(() => {
     if (!selectedPaymentMethod) return false;
-    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-    return cardsPrincipal?.children.some(card => card.name.toLowerCase() === selectedPaymentMethod.toLowerCase()) ?? false;
-  }, [selectedPaymentMethod, allTags]);
+    return cardTags.some(card => card.name === selectedPaymentMethod);
+  }, [selectedPaymentMethod, cardTags]);
 
 
 
@@ -466,11 +445,26 @@ export default function AddTransactionForm() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {allPaymentMethods.map((tag: RawTag) => (
-                                       <SelectItem key={tag.id} value={tag.name}>
-                                          {tag.name}
-                                        </SelectItem>
-                                    ))}
+                                    {paymentMethodTags.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Formas de Pagamento</SelectLabel>
+                                            {paymentMethodTags.map((tag: RawTag) => (
+                                               <SelectItem key={tag.id} value={tag.name}>
+                                                  {tag.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                    {cardTags.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Cartões</SelectLabel>
+                                            {cardTags.map((tag: RawTag) => (
+                                               <SelectItem key={tag.id} value={tag.name}>
+                                                  {tag.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
