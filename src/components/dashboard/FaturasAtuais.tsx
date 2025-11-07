@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   collection,
   query,
@@ -19,7 +19,7 @@ import {
   getFaturaPeriod,
   getFaturaStatus,
 } from '@/lib/fatura-utils';
-import { format, addMonths, subMonths } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,82 +53,39 @@ export default function FaturasAtuais() {
   const { activeProfile } = useProfile();
   const [faturas, setFaturas] = useState<FaturaInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cards, setCards] = useState<CardType[]>([]);
   const { openModal } = useAddBillTransactionModal();
 
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      setFaturas([]);
-      return;
-    }
-
-    setLoading(true);
-
-    const cardsQuery = query(
-      collection(db, 'cards'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('isArchived', '!=', true)
-    );
-    
-    const processFaturas = async (cards: CardType[]) => {
-      if (cards.length === 0) {
+  const processFaturas = useCallback(async (cardsToProcess: CardType[]) => {
+      if (!user || !activeProfile) return;
+      if (cardsToProcess.length === 0) {
         setFaturas([]);
         setLoading(false);
         return;
       }
 
-      const allFaturasPromises = cards.flatMap((card) => {
+      const allFaturasPromises = cardsToProcess.flatMap((card) => {
         const today = new Date();
         const { month: currentFaturaMonth, year: currentFaturaYear } =
           getCurrentFaturaMonthAndYear(today, card.closingDay);
 
-        const previousFaturaDate = subMonths(
-          new Date(currentFaturaYear, currentFaturaMonth),
-          1
-        );
+        const previousFaturaDate = subMonths(new Date(currentFaturaYear, currentFaturaMonth), 1);
         const previousFaturaMonth = previousFaturaDate.getMonth();
         const previousFaturaYear = previousFaturaDate.getFullYear();
 
-        const faturasToFetch = [
-          { month: currentFaturaMonth, year: currentFaturaYear, isCurrent: true },
-          { month: previousFaturaMonth, year: previousFaturaYear, isCurrent: false },
-        ];
+        return [
+            { month: currentFaturaMonth, year: currentFaturaYear, isCurrent: true },
+            { month: previousFaturaMonth, year: previousFaturaYear, isCurrent: false },
+        ].map(async (faturaMeta) => {
+          const { startDate, endDate, closingDate, dueDate } = getFaturaPeriod(faturaMeta.year, faturaMeta.month, card.closingDay, card.dueDay);
+          const prevFaturaPeriod = getFaturaPeriod(subMonths(closingDate, 1).getFullYear(), subMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
 
-        return faturasToFetch.map(async (faturaMeta) => {
-          const { startDate, endDate, closingDate, dueDate } = getFaturaPeriod(
-            faturaMeta.year, faturaMeta.month, card.closingDay, card.dueDay
-          );
-
-          const expensesQuery = query(
-            collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile),
-            where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)),
-            where('date', '<=', Timestamp.fromDate(endDate))
-          );
-          const refundsQuery = query(
-            collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile),
-            where('cardId', '==', card.id), where('type', '==', 'refund'),
-            where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))
-          );
+          const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+          const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+          const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)), where('date', '<=', Timestamp.fromDate(closingDate))));
+          const futureExpensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>', Timestamp.fromDate(endDate))));
           
-          const prevFaturaPeriod = getFaturaPeriod(
-            subMonths(closingDate, 1).getFullYear(), subMonths(closingDate, 1).getMonth(),
-            card.closingDay, card.dueDay
-          );
-          const paymentsQuery = query(
-            collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile),
-            where('cardId', '==', card.id), where('type', '==', 'payment'),
-            where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)), where('date', '<=', Timestamp.fromDate(closingDate))
-          );
-          
-          const futureExpensesQuery = query(
-            collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile),
-            where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>', Timestamp.fromDate(endDate))
-          );
-
-          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([
-            getDocs(expensesQuery), getDocs(paymentsQuery), getDocs(futureExpensesQuery), getDocs(refundsSnap)
-          ]);
+          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, paymentsQuery, futureExpensesQuery, refundsQuery]);
 
           const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
           const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
@@ -159,18 +116,38 @@ export default function FaturasAtuais() {
       const uniqueFaturas = Array.from(new Map(filteredFaturas.map(f => [f.id, f])).values());
       setFaturas(uniqueFaturas);
       setLoading(false);
-    };
+  }, [user, activeProfile]);
 
-    const unsubscribe = onSnapshot(cardsQuery, (cardsSnapshot) => {
-        const cardsData = cardsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
-        processFaturas(cardsData);
+  useEffect(() => {
+    if (!user || !activeProfile) {
+      setLoading(false);
+      setCards([]);
+      return;
+    }
+    setLoading(true);
+    const cardsQuery = query(
+      collection(db, 'cards'),
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
+      where('isArchived', '!=', true)
+    );
+    const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
+      const cardsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
+      setCards(cardsData);
     }, (error) => {
-        console.error("Error fetching cards:", error);
-        setLoading(false);
+      console.error("Error fetching cards:", error);
+      setLoading(false);
     });
-
     return () => unsubscribe();
   }, [user, activeProfile]);
+
+  useEffect(() => {
+    if (cards.length > 0) {
+      processFaturas(cards);
+    } else if (!loading) {
+       setFaturas([]);
+    }
+  }, [cards, processFaturas, loading]);
 
   if (loading) {
     return (
