@@ -200,6 +200,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
     if (!user || !activeProfile) return;
 
     setLoading(true);
+    setExpenses([]); // Limpa os dados antigos ao iniciar a busca
 
     const startDate = viewMode === 'mensal'
       ? new Date(selectedYear, selectedMonth, 1)
