@@ -127,7 +127,7 @@ export default function FaturasAtuais() {
           );
 
           const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([
-            getDocs(expensesQuery), getDocs(paymentsQuery), getDocs(futureExpensesQuery), getDocs(refundsQuery)
+            getDocs(expensesQuery), getDocs(paymentsQuery), getDocs(futureExpensesQuery), getDocs(refundsSnap)
           ]);
 
           const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
