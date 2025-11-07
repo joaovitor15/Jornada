@@ -134,16 +134,22 @@ export default function AddTransactionForm() {
   const selectedPaymentMethod = watch('paymentMethod');
   
   const { paymentMethodOptions, cardOptions, nonCardTags } = useMemo(() => {
-    const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
-    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-    
-    const pmtOptions = paymentMethodsPrincipal?.children
-      .filter(c => !c.isArchived)
-      .map(c => c.name) || [];
+    const paymentMethodsPrincipal = allTags.find(
+      (tag) => tag.name === 'Formas de Pagamento' && tag.isPrincipal
+    );
+    const cardsPrincipal = allTags.find(
+      (tag) => tag.name === 'Cartões' && tag.isPrincipal
+    );
 
-    const cardOpts = cardsPrincipal?.children
-      .filter(c => !c.isArchived)
-      .map(c => c.name) || [];
+    const pmtOptions =
+      paymentMethodsPrincipal?.children
+        .filter((c) => !c.isArchived)
+        .map((c) => c.name) || [];
+
+    const cardOpts =
+      cardsPrincipal?.children
+        .filter((c) => !c.isArchived)
+        .map((c) => c.name) || [];
 
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
