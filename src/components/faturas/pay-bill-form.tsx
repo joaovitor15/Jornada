@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { CalendarIcon, Loader2 } from 'lucide-react';
-import { format, parse, isValid } from 'date-fns';
+import { format, parse, isValid, isAfter, set } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ import { text } from '@/lib/strings';
 import { type Card } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { getFaturaPeriod } from '@/lib/fatura-utils';
 
 const formSchema = z.object({
   cardId: z
@@ -168,6 +169,32 @@ export default function AddBillTransactionForm({
       });
       return;
     }
+    
+    // Validation for 'payment' type
+    if (values.type === 'payment') {
+        const today = new Date();
+        const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const { closingDate } = getFaturaPeriod(
+          previousMonth.getFullYear(),
+          previousMonth.getMonth(),
+          selectedCard.closingDay,
+          selectedCard.dueDay
+        );
+        
+        const closingDateThisMonth = set(new Date(), { date: selectedCard.closingDay });
+
+        if (isAfter(today, closingDateThisMonth)) {
+           // Fatura do mês atual já fechou, então ok
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Pagamento não permitido',
+                description: `A fatura ainda não fechou. O fechamento é dia ${selectedCard.closingDay}.`,
+            });
+            return;
+        }
+    }
+
 
     const finalType = values.type === 'anticipate' ? 'payment' : values.type;
 

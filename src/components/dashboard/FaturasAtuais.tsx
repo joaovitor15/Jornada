@@ -73,7 +73,8 @@ export default function FaturasAtuais() {
     const unsubscribe = onSnapshot(cardsQuery, async (cardsSnapshot) => {
       const cards = cardsSnapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as CardType)
-      );
+      ).filter(card => !card.isArchived);
+
 
       if (cards.length === 0) {
         setFaturas([]);
@@ -93,17 +94,16 @@ export default function FaturasAtuais() {
         const previousFaturaMonth = previousFaturaDate.getMonth();
         const previousFaturaYear = previousFaturaDate.getFullYear();
 
-        // Gerar promessas para a fatura atual e a anterior
         const faturasToFetch = [
           {
             month: currentFaturaMonth,
             year: currentFaturaYear,
-            label: 'Fatura Atual',
+            isCurrent: true,
           },
           {
             month: previousFaturaMonth,
             year: previousFaturaYear,
-            label: 'Fatura Fechada',
+            isCurrent: false,
           },
         ];
 
@@ -168,7 +168,7 @@ export default function FaturasAtuais() {
             await Promise.all([
               getDocs(expensesQuery),
               getDocs(paymentsQuery),
-              getDocs(futureExpensesSnap),
+              getDocs(futureExpensesQuery),
               getDocs(refundsQuery)
             ]);
 
@@ -178,21 +178,20 @@ export default function FaturasAtuais() {
 
           const pagamentos = paymentsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
           const parcelasFuturas = futureExpensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-
-          const isCurrentFatura = faturaMeta.month === currentFaturaMonth && faturaMeta.year === currentFaturaYear;
+          
           const isFutureFatura = new Date(faturaMeta.year, faturaMeta.month) > new Date(currentFaturaYear, currentFaturaMonth);
 
 
-          const { status } = getFaturaStatus(
+          const { status, color } = getFaturaStatus(
             faturaValue,
             pagamentos,
             dueDate,
             closingDate,
-            isCurrentFatura,
+            faturaMeta.isCurrent,
             isFutureFatura
           );
 
-          const isFaturaFechada = !isCurrentFatura && status.includes(text.payBillForm.billClosed) && faturaValue - pagamentos > 0;
+          const isFaturaFechada = !faturaMeta.isCurrent && status.includes(text.payBillForm.billClosed) && faturaValue - pagamentos > 0;
 
           const limiteDisponivel = card.limit - faturaValue - parcelasFuturas + pagamentos;
 
@@ -207,28 +206,25 @@ export default function FaturasAtuais() {
             dueDate,
             pagamentos,
             parcelasFuturas,
-            faturaLabel: isCurrentFatura ? text.payBillForm.currentBill : status,
+            faturaLabel: faturaMeta.isCurrent ? text.payBillForm.currentBill : status,
           };
         });
       });
 
       const resolvedFaturas = await Promise.all(allFaturasPromises.flat());
-
+      
       const filteredFaturas = resolvedFaturas.filter((f) => {
-        const { month: currentMonth, year: currentYear } =
-          getCurrentFaturaMonthAndYear(new Date(), f.card.closingDay);
-        const isCurrent =
-          f.closingDate.getMonth() === currentMonth &&
-          f.closingDate.getFullYear() === currentYear;
-
-        if (isCurrent) return true;
-
-        if (f.faturaValue > 0 && f.faturaValue - f.pagamentos > 0) return true;
-
+        // Only show current bill
+        if (f.faturaLabel === text.payBillForm.currentBill) return true;
+        // Or show closed bills that are not fully paid
+        if (!f.isFaturaFechada && f.faturaValue > 0 && f.faturaValue - f.pagamentos > 0) return true;
+        
         return false;
       });
 
-      setFaturas(filteredFaturas);
+      const uniqueFaturas = Array.from(new Map(filteredFaturas.map(f => [f.id, f])).values());
+      
+      setFaturas(uniqueFaturas);
       setLoading(false);
     });
 
