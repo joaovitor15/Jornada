@@ -162,9 +162,14 @@ export default function CardsList({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Gerenciador de Tags de Cartão</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Gerenciador de Cartões</h1>
+        <Button onClick={handleAddClick} size="sm">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Novo Cartão
+        </Button>
       </div>
+
 
        <div className="flex items-center gap-2 mb-4">
           {filterOptions.map((option) => (
@@ -178,20 +183,6 @@ export default function CardsList({
             </Button>
           ))}
         </div>
-
-      <div className="flex justify-between items-center p-3 rounded-lg border mb-4 gap-2">
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold">Cartões</span>
-          <Badge variant="secondary" className="px-1.5 py-0.5 text-xs rounded-full">
-            {cards.filter((c) => !c.isArchived).length}
-          </Badge>
-        </div>
-        <Button onClick={handleAddClick} size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Cartão
-        </Button>
-      </div>
 
       <ScrollArea className="flex-grow pr-4">
         <div className="space-y-4 pr-2">
