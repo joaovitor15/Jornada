@@ -8,9 +8,6 @@ import {
   collection,
   addDoc,
   Timestamp,
-  onSnapshot,
-  query,
-  where,
   writeBatch,
   doc,
   updateDoc,
@@ -55,8 +52,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import {
-  type Card,
-  type PaymentMethod,
   type Profile,
   Expense,
   Income,
@@ -73,6 +68,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import TagInput from '../ui/tag-input';
+import { useTags } from '@/hooks/use-tags';
 
 const formSchema = z.object({
   type: z.enum(['expense', 'income'], {
@@ -120,7 +116,7 @@ export default function AddTransactionForm() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const [cards, setCards] = useState<Card[]>([]);
+  const { hierarchicalTags: allTags } = useTags();
   const [dateInput, setDateInput] = useState('');
   const { isFormOpen, closeForm, transactionToEdit } = useAddTransactionModal();
   
@@ -135,6 +131,21 @@ export default function AddTransactionForm() {
   const selectedCardId = watch('cardId');
   const isCreditCardPayment = !!selectedCardId;
   
+  const { cardTags, nonCardTags } = useMemo(() => {
+    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+    if (!cardsPrincipal) {
+      return { cardTags: [], nonCardTags: allTags.flatMap(t => t.children).map(c => c.name) };
+    }
+    const cardTagNames = new Set(cardsPrincipal.children.map(c => c.name));
+    const allChildTags = allTags.flatMap(t => t.children);
+
+    return {
+      cardTags: cardsPrincipal.children.map(c => ({ id: c.id, name: c.name })),
+      nonCardTags: allChildTags.filter(t => !cardTagNames.has(t.name)).map(c => c.name),
+    };
+  }, [allTags]);
+
+
   useEffect(() => {
     if (isFormOpen) {
       if (isEditMode && transactionToEdit) {
@@ -144,7 +155,7 @@ export default function AddTransactionForm() {
             const expense = transactionToEdit as Expense;
             if (expense.paymentMethod.startsWith('Cartão: ')) {
                 const cardName = expense.paymentMethod.replace('Cartão: ', '');
-                const foundCard = cards.find(c => c.name === cardName);
+                const foundCard = cardTags.find(c => c.name === cardName);
                 if (foundCard) {
                     cardId = foundCard.id;
                 }
@@ -179,9 +190,9 @@ export default function AddTransactionForm() {
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
     }
-  }, [isFormOpen, isEditMode, transactionToEdit, reset, cards]);
+  }, [isFormOpen, isEditMode, transactionToEdit, reset, cardTags]);
 
-  // Handle dynamic form changes based on transaction type
+  // Handle dynamic form changes
   useEffect(() => {
     const subscription = watch((value, { name, type }) => {
       if (name === 'type' && type === 'change' && !isEditMode) {
@@ -212,29 +223,6 @@ export default function AddTransactionForm() {
   }, [watch, setValue, trigger, isEditMode]);
 
 
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setCards([]);
-      return;
-    }
-
-    const cardsQuery = query(
-      collection(db, 'cards'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
-    const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
-      const fetchedCards = snapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() } as Card)
-      );
-      setCards(fetchedCards);
-    });
-
-    return () => unsubscribe();
-  }, [user, activeProfile]);
-
-
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
   const allCategories = Object.keys(categoryConfig);
   const selectedCategory = watch('mainCategory');
@@ -258,14 +246,10 @@ export default function AddTransactionForm() {
     }
     
     try {
-        const selectedCard = cards.find(card => card.id === values.cardId);
+        const selectedCard = cardTags.find(card => card.id === values.cardId);
         
-        // Automatic Tagging Logic
-        const originalTags = values.tags || [];
-        const finalTags = new Set(originalTags);
-        if (selectedCard) {
-            finalTags.add(selectedCard.name);
-        }
+        // Logic remains the same, but card selection is now fully isolated.
+        const finalTags = values.tags || [];
 
         if (isEditMode && transactionToEdit) {
             // EDIT LOGIC
@@ -278,7 +262,7 @@ export default function AddTransactionForm() {
                 mainCategory: values.mainCategory,
                 subcategory: values.subcategory,
                 date: Timestamp.fromDate(values.date),
-                tags: Array.from(finalTags),
+                tags: finalTags,
             };
 
             if (values.type === 'expense') {
@@ -305,7 +289,7 @@ export default function AddTransactionForm() {
                     amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                     paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
-                    tags: Array.from(finalTags),
+                    tags: finalTags,
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -319,7 +303,7 @@ export default function AddTransactionForm() {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
                   amount: values.amount, mainCategory: values.mainCategory, subcategory: values.subcategory,
                   date: Timestamp.fromDate(values.date),
-                  tags: Array.from(finalTags),
+                  tags: finalTags,
                 };
                 await addDoc(collection(db, 'incomes'), incomeData);
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
@@ -452,32 +436,30 @@ export default function AddTransactionForm() {
                       )}
                     />
                     {transactionType === 'expense' && (
-                        <>
-                        <FormField
-                            control={control}
-                            name="cardId"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Cartão (Opcional)</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione um cartão" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    {cards.map((card) => (
-                                        <SelectItem key={card.id} value={card.id}>
-                                        {card.name}
-                                        </SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                        </>
+                       <FormField
+                          control={control}
+                          name="cardId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cartão (Opcional)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Dinheiro/Pix" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {cardTags.map((card) => (
+                                    <SelectItem key={card.id} value={card.id}>
+                                      {card.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                     )}
               </div>
 
@@ -504,9 +486,10 @@ export default function AddTransactionForm() {
                 control={control} name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags</FormLabel>
+                    <FormLabel>Tags (Opcional)</FormLabel>
                     <FormControl>
                       <TagInput
+                          availableTags={nonCardTags}
                           placeholder="Selecione as tags..."
                           value={field.value || []}
                           onChange={field.onChange}
@@ -567,5 +550,3 @@ export default function AddTransactionForm() {
     </Dialog>
   );
 }
-
-    

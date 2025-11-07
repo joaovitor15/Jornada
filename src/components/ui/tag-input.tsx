@@ -20,11 +20,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useTags } from '@/hooks/use-tags';
 
-interface MultiSelectProps {
+interface TagInputProps {
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  availableTags: string[];
 }
 
 export default function TagInput({
@@ -32,8 +33,8 @@ export default function TagInput({
   onChange,
   placeholder = 'Selecione as tags...',
   disabled = false,
-}: MultiSelectProps) {
-  const { childTags, loading } = useTags();
+  availableTags,
+}: TagInputProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -46,7 +47,7 @@ export default function TagInput({
     onChange(value.filter((t) => t !== tag));
   };
   
-  const unselectedTags = childTags.filter(tag => !value.includes(tag));
+  const unselectedTags = availableTags.filter(tag => !value.includes(tag));
 
   return (
     <div className="w-full space-y-2">
@@ -57,7 +58,7 @@ export default function TagInput({
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between font-normal min-h-10"
-            disabled={disabled || loading}
+            disabled={disabled}
           >
              {value.length > 0
               ? `${value.length} tag(s) selecionada(s)`
