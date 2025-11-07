@@ -30,6 +30,8 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { useTags } from '@/hooks/use-tags';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -64,8 +66,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function IncomeChart({ incomes }: { incomes: Income[] }) {
+function IncomeChart({ incomes, selectedPrincipalTagId }: { incomes: Income[], selectedPrincipalTagId: string | 'all' }) {
   const [chartData, setChartData] = useState<IncomeData[]>([]);
+  const { hierarchicalTags } = useTags();
+
+  const relevantSubTags = useMemo(() => {
+    if (selectedPrincipalTagId === 'all') {
+      return hierarchicalTags.flatMap(pt => pt.children.map(st => st.name));
+    }
+    const principalTag = hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId);
+    return principalTag ? principalTag.children.map(st => st.name) : [];
+  }, [selectedPrincipalTagId, hierarchicalTags]);
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
@@ -73,7 +84,9 @@ function IncomeChart({ incomes }: { incomes: Income[] }) {
     incomes.forEach((income) => {
       if (income.tags && income.tags.length > 0) {
         income.tags.forEach(tag => {
-          totals[tag] = (totals[tag] || 0) + income.amount;
+           if(relevantSubTags.includes(tag)) {
+            totals[tag] = (totals[tag] || 0) + income.amount;
+          }
         });
       }
     });
@@ -85,14 +98,14 @@ function IncomeChart({ incomes }: { incomes: Income[] }) {
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [incomes]);
+  }, [incomes, relevantSubTags]);
 
   if (incomes.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem receitas neste período.</div>;
   }
   
   if (chartData.length === 0) {
-     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem receitas com tags neste período.</div>;
+     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem receitas com tags neste período/filtro.</div>;
   }
 
   return (
@@ -145,9 +158,15 @@ interface IncomeAnalysisTabsProps {
 export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: IncomeAnalysisTabsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
+  const { hierarchicalTags, loading: tagsLoading } = useTags();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('mensal');
+  const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
+
+  const principalTags = useMemo(() => {
+    return hierarchicalTags.filter(t => t.isPrincipal && t.children.length > 0);
+  }, [hierarchicalTags]);
 
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
@@ -221,9 +240,22 @@ export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: Inco
             <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="tags">Tags</TabsTrigger>
             </TabsList>
-             {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
-              <TabsContent value="tags">
-                <IncomeChart incomes={incomes} />
+            <div className="mt-4">
+                <Select value={selectedPrincipalTagId} onValueChange={setSelectedPrincipalTagId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma Tag Principal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todas as Tags Principais</SelectItem>
+                        {principalTags.map(tag => (
+                            <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+             {(loading || tagsLoading) ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
+              <TabsContent value="tags" className="mt-4">
+                <IncomeChart incomes={incomes} selectedPrincipalTagId={selectedPrincipalTagId} />
               </TabsContent>
              )}
           </Tabs>

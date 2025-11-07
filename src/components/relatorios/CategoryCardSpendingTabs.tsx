@@ -31,6 +31,8 @@ import {
   Legend,
 } from 'recharts';
 import { Progress } from '../ui/progress';
+import { useTags } from '@/hooks/use-tags';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -65,8 +67,18 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses }: { expenses: Expense[] }) {
+function SpendingChart({ expenses, selectedPrincipalTagId }: { expenses: Expense[], selectedPrincipalTagId: string | 'all' }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
+  const { hierarchicalTags } = useTags();
+
+  const relevantSubTags = useMemo(() => {
+    if (selectedPrincipalTagId === 'all') {
+      // Pega todas as tags filhas de todas as tags principais
+      return hierarchicalTags.flatMap(pt => pt.children.map(st => st.name));
+    }
+    const principalTag = hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId);
+    return principalTag ? principalTag.children.map(st => st.name) : [];
+  }, [selectedPrincipalTagId, hierarchicalTags]);
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
@@ -74,7 +86,9 @@ function SpendingChart({ expenses }: { expenses: Expense[] }) {
     expenses.forEach((expense) => {
       if (expense.tags && expense.tags.length > 0) {
         expense.tags.forEach(tag => {
-          totals[tag] = (totals[tag] || 0) + expense.amount;
+          if(relevantSubTags.includes(tag)) {
+            totals[tag] = (totals[tag] || 0) + expense.amount;
+          }
         });
       }
     });
@@ -86,14 +100,14 @@ function SpendingChart({ expenses }: { expenses: Expense[] }) {
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [expenses]);
+  }, [expenses, relevantSubTags]);
 
   if (expenses.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos neste período.</div>;
   }
   
   if (chartData.length === 0) {
-     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com tags neste período.</div>;
+     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com tags neste período/filtro.</div>;
   }
 
   return (
@@ -185,10 +199,17 @@ interface CategoryCardSpendingTabsProps {
 export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
+  const { hierarchicalTags, loading: tagsLoading } = useTags();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('mensal');
+  const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
+
+  const principalTags = useMemo(() => {
+    return hierarchicalTags.filter(t => t.isPrincipal && t.children.length > 0);
+  }, [hierarchicalTags]);
+
 
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
@@ -200,7 +221,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
     if (!user || !activeProfile) return;
 
     setLoading(true);
-    setExpenses([]); // Limpa os dados antigos ao iniciar a busca
+    setExpenses([]); 
 
     const startDate = viewMode === 'mensal'
       ? new Date(selectedYear, selectedMonth, 1)
@@ -244,7 +265,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
 
   const TABS = [
-    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} /> },
+    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} selectedPrincipalTagId={selectedPrincipalTagId} /> },
     ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
   ];
 
@@ -284,9 +305,22 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
                  <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
               ))}
             </TabsList>
-             {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
+            <div className="mt-4">
+                <Select value={selectedPrincipalTagId} onValueChange={setSelectedPrincipalTagId}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma Tag Principal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todas as Tags Principais</SelectItem>
+                        {principalTags.map(tag => (
+                            <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+             {(loading || tagsLoading) ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
               TABS.map(tab => (
-                 <TabsContent key={tab.value} value={tab.value}>
+                 <TabsContent key={tab.value} value={tab.value} className="mt-4">
                   {tab.content}
                 </TabsContent>
               ))
