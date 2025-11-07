@@ -32,6 +32,7 @@ import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
 import { useTransactions } from '@/hooks/use-transactions';
+import { useTags } from '@/hooks/use-tags';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
 
   const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
+  const { hierarchicalTags, loading: tagsLoading } = useTags();
 
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
@@ -68,7 +70,7 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (transactionsLoading) return;
+    if (transactionsLoading || tagsLoading) return;
 
     const allTransactions = [...incomes, ...expenses, ...billPayments];
     if (allTransactions.length > 0) {
@@ -104,10 +106,21 @@ export default function DashboardPage() {
       .filter(income => income.subcategory === text.businessCategories.pfpbSubcategory)
       .reduce((acc, curr) => acc + curr.amount, 0);
     
+    // --- Nova lógica para cálculo de Alimentação usando Tags ---
+    const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação' && tag.isPrincipal);
+    const alimentacaoTagNames = new Set<string>();
+    if (alimentacaoTag) {
+        alimentacaoTagNames.add(alimentacaoTag.name);
+        alimentacaoTag.children.forEach(child => alimentacaoTagNames.add(child.name));
+    }
+
     const monthlyAlimentacao = expenses
       .filter(filterByMonthAndYear)
-      .filter(expense => expense.mainCategory === 'Alimentação')
+      .filter(expense => 
+          expense.tags && expense.tags.some(tag => alimentacaoTagNames.has(tag))
+      )
       .reduce((acc, curr) => acc + curr.amount, 0);
+    // --- Fim da nova lógica ---
 
     const monthlyNonCardExpenses = expenses
       .filter(filterByMonthAndYear)
@@ -127,7 +140,7 @@ export default function DashboardPage() {
     setTotalVendas(monthlyVendas);
     setTotalAlimentacao(monthlyAlimentacao);
     setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
-  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
+  }, [incomes, expenses, billPayments, transactionsLoading, tagsLoading, hierarchicalTags, selectedYear, selectedMonth, activeProfile]);
 
 
   if (authLoading || !user) {
@@ -138,7 +151,7 @@ export default function DashboardPage() {
     );
   }
   
-  const loading = authLoading || transactionsLoading;
+  const loading = authLoading || transactionsLoading || tagsLoading;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('pt-BR', {
