@@ -105,58 +105,52 @@ export default function CardForm({
 
   const { isSubmitting } = form.formState;
 
-  const getOrCreatePrincipalTag = async (
-    batch: firebase.firestore.WriteBatch,
-    userId: string,
-    profile: string
-  ): Promise<string> => {
-    const principalTagName = 'Cartões';
-    const tagsRef = collection(db, 'tags');
-    const q = query(
-      tagsRef,
-      where('userId', '==', userId),
-      where('profile', '==', profile),
-      where('name', '==', principalTagName),
-      where('isPrincipal', '==', true),
-      limit(1)
-    );
-
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].id;
-    } else {
-      const principalTagRef = doc(tagsRef);
-      const principalTagData: Omit<RawTag, 'id'> & { id: string } = {
-        id: principalTagRef.id,
-        userId,
-        profile,
-        name: principalTagName,
-        isPrincipal: true,
-        parent: null,
-        order: -1, // Dê uma ordem especial para mantê-lo separado
-      };
-      batch.set(principalTagRef, principalTagData);
-      return principalTagRef.id;
-    }
-  };
-
   const handleTagManagement = async (
     cardName: string,
     previousCardName?: string
   ) => {
     if (!user || !activeProfile) return;
 
-    const batch = writeBatch(db);
+    const principalTagName = 'Cartões';
     const tagsRef = collection(db, 'tags');
+    const batch = writeBatch(db);
 
-    const principalTagId = await getOrCreatePrincipalTag(
-      batch,
-      user.uid,
-      activeProfile
+    // 1. Find or Create the Principal "Cartões" Tag
+    const principalTagQuery = query(
+      tagsRef,
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
+      where('name', '==', principalTagName),
+      where('isPrincipal', '==', true),
+      limit(1)
     );
 
+    const principalTagSnapshot = await getDocs(principalTagQuery);
+    let principalTagId: string;
+    let principalTagRef;
+
+    if (principalTagSnapshot.empty) {
+      principalTagRef = doc(tagsRef);
+      principalTagId = principalTagRef.id;
+      const principalTagData: Omit<RawTag, 'id'> & { id: string } = {
+        id: principalTagRef.id,
+        userId: user.uid,
+        profile: activeProfile,
+        name: principalTagName,
+        isPrincipal: true,
+        parent: null,
+        order: -1, // Special order to keep it separate or at the top
+      };
+      batch.set(principalTagRef, principalTagData);
+    } else {
+      principalTagId = principalTagSnapshot.docs[0].id;
+      principalTagRef = principalTagSnapshot.docs[0].ref;
+    }
+
+    // 2. Create or Update the Child Tag
     if (isEditMode && cardToEdit && previousCardName !== cardName) {
-      const tagQuery = query(
+      // Find the old tag and update it
+      const childTagQuery = query(
         tagsRef,
         where('userId', '==', user.uid),
         where('profile', '==', activeProfile),
@@ -164,33 +158,33 @@ export default function CardForm({
         where('parent', '==', principalTagId),
         limit(1)
       );
-      const tagSnapshot = await getDocs(tagQuery);
-      if (!tagSnapshot.empty) {
-        const tagToUpdateRef = tagSnapshot.docs[0].ref;
+      const childTagSnapshot = await getDocs(childTagQuery);
+      if (!childTagSnapshot.empty) {
+        const tagToUpdateRef = childTagSnapshot.docs[0].ref;
         batch.update(tagToUpdateRef, { name: cardName });
       } else {
-        const newTagRef = doc(tagsRef);
-        const newTagData: RawTag = {
-          id: newTagRef.id,
+        // If it doesn't exist for some reason, create it
+        const newChildTagRef = doc(tagsRef);
+        batch.set(newChildTagRef, {
+          id: newChildTagRef.id,
           userId: user.uid,
           profile: activeProfile,
           name: cardName,
           isPrincipal: false,
           parent: principalTagId,
-        };
-        batch.set(newTagRef, newTagData);
+        });
       }
     } else if (!isEditMode) {
-      const newTagRef = doc(tagsRef);
-      const newTagData: RawTag = {
-        id: newTagRef.id,
+      // Create a new child tag
+      const newChildTagRef = doc(tagsRef);
+      batch.set(newChildTagRef, {
+        id: newChildTagRef.id,
         userId: user.uid,
         profile: activeProfile,
         name: cardName,
         isPrincipal: false,
         parent: principalTagId,
-      };
-      batch.set(newTagRef, newTagData);
+      });
     }
 
     await batch.commit();
