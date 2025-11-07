@@ -193,7 +193,7 @@ export default function CardsList({
         </Button>
       </div>
 
-      <ScrollArea className="flex-grow pr-2 -mr-2">
+      <ScrollArea className="flex-grow pr-4">
         <div className="space-y-4 pr-2">
           {loading ? (
             <p>{text.cards.loading}</p>
