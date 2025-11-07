@@ -182,7 +182,7 @@ export default function ExpensesList() {
                             </div>
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
-                            {format(expense.date.toDate(), 'dd/MM/yyyy')}
+                            {expense.date ? format(expense.date.toDate(), 'dd/MM/yyyy') : '-'}
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle">
                             <span className="text-muted-foreground text-sm">

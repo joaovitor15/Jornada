@@ -94,11 +94,12 @@ const formSchema = z.object({
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectSubcategory }),
   paymentMethod: z.string().optional(),
+  cardId: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
   tags: z.array(z.string()).optional(),
 }).refine(data => {
-    if (data.type === 'expense') {
+    if (data.type === 'expense' && !data.cardId) {
         return !!data.paymentMethod && data.paymentMethod.length > 0;
     }
     return true;
@@ -142,20 +143,36 @@ export default function AddTransactionForm() {
   
   const { watch, setValue, reset, control, formState: { isSubmitting }, trigger } = form;
   const transactionType = watch('type');
-  const selectedPaymentMethod = watch('paymentMethod');
-  const isCreditCardPayment = useMemo(() => selectedPaymentMethod?.startsWith('Cartão:'), [selectedPaymentMethod]);
+  const selectedCardId = watch('cardId');
+  const isCreditCardPayment = !!selectedCardId;
   
   useEffect(() => {
     if (isFormOpen) {
       if (isEditMode && transactionToEdit) {
          const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
+         let cardId;
+         let paymentMethod;
+         if (type === 'expense') {
+            const expense = transactionToEdit as Expense;
+            if (expense.paymentMethod.startsWith('Cartão: ')) {
+                const cardName = expense.paymentMethod.replace('Cartão: ', '');
+                const foundCard = cards.find(c => c.name === cardName);
+                if (foundCard) {
+                    cardId = foundCard.id;
+                }
+            } else {
+                paymentMethod = expense.paymentMethod;
+            }
+         }
+
          reset({
             type: type,
             description: transactionToEdit.description,
             amount: transactionToEdit.amount,
             mainCategory: transactionToEdit.mainCategory,
             subcategory: transactionToEdit.subcategory,
-            paymentMethod: type === 'expense' ? (transactionToEdit as Expense).paymentMethod : undefined,
+            paymentMethod: paymentMethod,
+            cardId: cardId,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
             tags: transactionToEdit.tags || [],
@@ -170,6 +187,7 @@ export default function AddTransactionForm() {
             mainCategory: '',
             subcategory: '',
             paymentMethod: '',
+            cardId: undefined,
             date: initialDate,
             installments: 1,
             tags: [],
@@ -177,32 +195,42 @@ export default function AddTransactionForm() {
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
     }
-  }, [isFormOpen, isEditMode, transactionToEdit, reset]);
+  }, [isFormOpen, isEditMode, transactionToEdit, reset, cards]);
 
   // Handle dynamic form changes based on transaction type
   useEffect(() => {
     const subscription = watch((value, { name, type }) => {
-      // When transaction type changes, reset categories
       if (name === 'type' && type === 'change' && !isEditMode) {
           setValue('mainCategory', '');
           setValue('subcategory', '');
       }
       
-      // When main category changes, reset subcategory
       if (name === 'mainCategory' && type === 'change' && !isEditMode) {
         setValue('subcategory', '');
       }
 
-      // If type becomes income, clear payment method and installments
       if (name === 'type' && value.type === 'income' && !isEditMode) {
         setValue('paymentMethod', undefined);
+        setValue('cardId', undefined);
         setValue('installments', 1);
         trigger('paymentMethod'); 
       }
       
-      // Update date input when form date changes
       if (name === 'date' && value.date) {
         setDateInput(format(value.date, 'dd/MM/yyyy'));
+      }
+      
+      if (name === 'cardId') {
+        if(value.cardId) {
+            setValue('paymentMethod', undefined);
+        } else {
+            setValue('installments', 1);
+        }
+      }
+      if(name === 'paymentMethod') {
+        if(value.paymentMethod) {
+            setValue('cardId', undefined);
+        }
       }
     });
     return () => subscription.unsubscribe();
@@ -240,11 +268,6 @@ export default function AddTransactionForm() {
       ? categoryConfig[selectedCategory]
       : [];
       
-  const paymentMethods = useMemo(() => {
-    const cardNames = cards.map((card) => `Cartão: ${card.name}`);
-    return [...basePaymentMethods, ...cardNames];
-  }, [cards]);
-
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
       if (!open) {
@@ -277,7 +300,8 @@ export default function AddTransactionForm() {
             };
 
             if (values.type === 'expense') {
-                (dataToUpdate as Partial<Expense>).paymentMethod = values.paymentMethod;
+                 const selectedCard = cards.find(card => card.id === values.cardId);
+                (dataToUpdate as Partial<Expense>).paymentMethod = selectedCard ? `Cartão: ${selectedCard.name}` : values.paymentMethod;
             }
 
             await updateDoc(docRef, dataToUpdate);
@@ -290,13 +314,16 @@ export default function AddTransactionForm() {
                 const installmentAmount = values.amount / installments;
                 const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
                 
+                const selectedCard = cards.find(card => card.id === values.cardId);
+                const finalPaymentMethod = selectedCard ? `Cartão: ${selectedCard.name}` : values.paymentMethod;
+
                 for (let i = 0; i < installments; i++) {
                   const installmentDate = addMonths(values.date, i);
                   const expenseData: any = {
                     userId: user.uid, profile: activeProfile,
                     description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
                     amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
-                    paymentMethod: values.paymentMethod, date: Timestamp.fromDate(installmentDate),
+                    paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
                     tags: tags || [],
                   };
@@ -427,7 +454,7 @@ export default function AddTransactionForm() {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 items-end">
                     <FormField
                       control={control} name="amount"
                       render={({ field }) => (
@@ -445,27 +472,53 @@ export default function AddTransactionForm() {
                       )}
                     />
                     {transactionType === 'expense' && (
-                      <FormField
-                          control={control} name="paymentMethod"
-                          render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>{text.common.paymentMethod}</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment) || !transactionType}>
-                              <FormControl>
-                                  <SelectTrigger>
-                                  <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
-                                  </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                  {paymentMethods.map((method) => (
-                                  <SelectItem key={method} value={method as string}>{method as string}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
+                        <>
+                        <FormField
+                            control={control} name="paymentMethod"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{text.common.paymentMethod}</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || !!selectedCardId}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {basePaymentMethods.map((method) => (
+                                    <SelectItem key={method} value={method as string}>{method as string}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={control}
+                            name="cardId"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione um cartão" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    {cards.map((card) => (
+                                        <SelectItem key={card.id} value={card.id}>
+                                        {card.name}
+                                        </SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        </>
                     )}
               </div>
 
