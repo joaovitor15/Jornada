@@ -179,7 +179,7 @@ export default function CardsList({
           ))}
         </div>
 
-      <div className="flex justify-between items-center p-3 rounded-lg border mb-4 gap-4">
+      <div className="flex justify-between items-center p-3 rounded-lg border mb-4 gap-2">
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-muted-foreground" />
           <span className="font-semibold">Cartões</span>
@@ -193,8 +193,8 @@ export default function CardsList({
         </Button>
       </div>
 
-      <ScrollArea className="flex-grow pr-2">
-        <div className="space-y-4">
+      <ScrollArea className="flex-grow pr-2 -mr-2">
+        <div className="space-y-4 pr-2">
           {loading ? (
             <p>{text.cards.loading}</p>
           ) : filteredCards.length > 0 ? (
