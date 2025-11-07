@@ -12,12 +12,6 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
-  query,
-  where,
-  getDocs,
-  writeBatch,
-  limit,
-  setDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -43,7 +37,7 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Card, RawTag } from '@/lib/types';
+import { type Card } from '@/lib/types';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -106,92 +100,6 @@ export default function CardForm({
 
   const { isSubmitting } = form.formState;
 
-  const handleTagManagement = async (
-    newCardName: string,
-    oldCardName?: string
-  ): Promise<void> => {
-    if (!user || !activeProfile) {
-      throw new Error('Usuário ou perfil não encontrado.');
-    }
-  
-    const principalTagName = 'Cartões';
-    const tagsRef = collection(db, 'tags');
-  
-    // 1. Garantir que a tag principal "Cartões" exista e obter seu ID
-    const principalQuery = query(
-      tagsRef,
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('name', '==', principalTagName),
-      where('isPrincipal', '==', true),
-      limit(1)
-    );
-  
-    const principalSnapshot = await getDocs(principalQuery);
-    let principalTagId: string;
-  
-    if (principalSnapshot.empty) {
-      const principalRef = doc(tagsRef);
-      principalTagId = principalRef.id;
-      await setDoc(principalRef, {
-        id: principalTagId,
-        userId: user.uid,
-        profile: activeProfile,
-        name: principalTagName,
-        isPrincipal: true,
-        parent: null,
-        order: -1, // Fixo para "Cartões"
-      });
-    } else {
-      principalTagId = principalSnapshot.docs[0].id;
-    }
-  
-    // 2. Lidar com a tag filha (o nome do cartão)
-    const childQuery = query(
-        tagsRef,
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile),
-        where('name', '==', (isEditMode && oldCardName) ? oldCardName : newCardName),
-        where('parent', '==', principalTagId),
-        limit(1)
-    );
-  
-    const childSnapshot = await getDocs(childQuery);
-  
-    if (isEditMode && oldCardName && oldCardName !== newCardName) {
-      // Renomear: Encontrar a tag antiga e atualizar seu nome
-      if (!childSnapshot.empty) {
-        const oldTagRef = childSnapshot.docs[0].ref;
-        await updateDoc(oldTagRef, { name: newCardName });
-      } else {
-        // Se a tag antiga não for encontrada por algum motivo, crie uma nova
-        const newChildRef = doc(tagsRef);
-        await setDoc(newChildRef, {
-          id: newChildRef.id,
-          userId: user.uid,
-          profile: activeProfile,
-          name: newCardName,
-          isPrincipal: false,
-          parent: principalTagId,
-        });
-      }
-    } else if (!isEditMode) {
-      // Criar nova: Só cria se não existir
-      if (childSnapshot.empty) {
-        const newChildRef = doc(tagsRef);
-        await setDoc(newChildRef, {
-          id: newChildRef.id,
-          userId: user.uid,
-          profile: activeProfile,
-          name: newCardName,
-          isPrincipal: false,
-          parent: principalTagId,
-        });
-      }
-    }
-  };
-
-
   const handleSubmitCard = async (values: z.infer<typeof cardSchema>) => {
     if (!user || !activeProfile) {
       toast({
@@ -203,11 +111,6 @@ export default function CardForm({
     }
 
     try {
-      // Passo 1: Tentar criar/atualizar as tags PRIMEIRO.
-      // Se isso falhar, a função vai disparar um erro e não vai prosseguir.
-      await handleTagManagement(values.name, cardToEdit?.name);
-
-      // Passo 2: Se a gestão das tags foi bem-sucedida, criar/atualizar o cartão.
       if (isEditMode && cardToEdit?.id) {
         const cardRef = doc(db, 'cards', cardToEdit.id);
         await updateDoc(cardRef, values);
@@ -229,11 +132,11 @@ export default function CardForm({
       }
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao salvar cartão ou gerenciar tags:', error);
+      console.error('Erro ao salvar cartão:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: `Falha na operação: ${error instanceof Error ? error.message : text.addCardForm.saveError(isEditMode)}`,
+        description: text.addCardForm.saveError(isEditMode),
       });
     }
   };
@@ -266,9 +169,6 @@ export default function CardForm({
                     <Input
                       placeholder={text.addCardForm.cardNamePlaceholder}
                       {...field}
-                      id="cardNameInput"
-                      name="cardNameInput"
-                      autoComplete="off"
                     />
                   </FormControl>
                   <FormMessage />
