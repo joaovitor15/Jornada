@@ -21,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
-import type { Expense, Card as CardType } from '@/lib/types';
+import type { Income } from '@/lib/types';
 import {
   ResponsiveContainer,
   PieChart,
@@ -30,7 +30,6 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
-import { Progress } from '../ui/progress';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -39,17 +38,17 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-// --- Base Spending Chart Component ---
-interface SpendingData {
+// --- Base Income Chart Component ---
+interface IncomeData {
   name: string;
   value: number;
   percent: number;
 }
 
 const CATEGORY_COLORS = [
-  '#2563eb', '#f97316', '#22c55e', '#ef4444', '#8b5cf6',
-  '#f59e0b', '#10b981', '#d946ef', '#0ea5e9', '#6d28d9',
-  '#ec4899', '#f43f5e', '#84cc16', '#14b8a6', '#6366f1',
+  '#22c55e', '#8b5cf6', '#f97316', '#2563eb', '#ef4444',
+  '#10b981', '#f59e0b', '#d946ef', '#6d28d9', '#0ea5e9',
+  '#f43f5e', '#ec4899', '#14b8a6', '#84cc16', '#6366f1',
 ];
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -65,35 +64,35 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses }: { expenses: Expense[] }) {
-  const [chartData, setChartData] = useState<SpendingData[]>([]);
+function IncomeChart({ incomes }: { incomes: Income[] }) {
+  const [chartData, setChartData] = useState<IncomeData[]>([]);
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
 
-    expenses.forEach((expense) => {
-      if (expense.tags && expense.tags.length > 0) {
-        expense.tags.forEach(tag => {
-          totals[tag] = (totals[tag] || 0) + expense.amount;
+    incomes.forEach((income) => {
+      if (income.tags && income.tags.length > 0) {
+        income.tags.forEach(tag => {
+          totals[tag] = (totals[tag] || 0) + income.amount;
         });
       }
     });
 
-    const totalSpending = Object.values(totals).reduce((acc, val) => acc + val, 0);
+    const totalIncomes = Object.values(totals).reduce((acc, val) => acc + val, 0);
 
     const data = Object.entries(totals)
-      .map(([name, value]) => ({ name, value, percent: totalSpending > 0 ? (value / totalSpending) * 100 : 0 }))
+      .map(([name, value]) => ({ name, value, percent: totalIncomes > 0 ? (value / totalIncomes) * 100 : 0 }))
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [expenses]);
+  }, [incomes]);
 
-  if (expenses.length === 0) {
-    return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos neste período.</div>;
+  if (incomes.length === 0) {
+    return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem receitas neste período.</div>;
   }
   
   if (chartData.length === 0) {
-     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com tags neste período.</div>;
+     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem receitas com tags neste período.</div>;
   }
 
   return (
@@ -136,57 +135,17 @@ function SpendingChart({ expenses }: { expenses: Expense[] }) {
 }
 
 
-// --- Card Spending Component ---
-interface CardSpendingData {
-  card: CardType;
-  total: number;
-}
-
-function CardSpendingList({ expenses, cards }: { expenses: Expense[], cards: CardType[] }) {
-
-  const cardSpending = cards.map(card => {
-    const total = expenses
-      .filter(e => e.paymentMethod === `Cartão: ${card.name}`)
-      .reduce((acc, e) => acc + e.amount, 0);
-    return { card, total };
-  }).filter(cs => cs.total > 0)
-    .sort((a, b) => b.total - a.total);
-
-  if (cardSpending.length === 0) {
-    return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com cartão neste período.</div>;
-  }
-
-  return (
-    <div className="space-y-4 p-4 max-h-[300px] overflow-y-auto">
-      {cardSpending.map(({ card, total }) => {
-        const percentage = card.limit > 0 ? (total / card.limit) * 100 : 0;
-        return (
-          <div key={card.id}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-semibold text-sm">{card.name}</span>
-              <span className="text-sm">{formatCurrency(total)} / <span className="text-xs text-muted-foreground">{formatCurrency(card.limit)}</span></span>
-            </div>
-            <Progress value={percentage} indicatorClassName="bg-primary" />
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-interface CategoryCardSpendingTabsProps {
-  showCardSpending?: boolean;
+interface IncomeAnalysisTabsProps {
   selectedMonth: number;
   selectedYear: number;
 }
 
 
 // --- Main Tabs Component ---
-export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
+export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: IncomeAnalysisTabsProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [cards, setCards] = useState<CardType[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('mensal');
 
@@ -208,52 +167,33 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
       ? new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59)
       : new Date(selectedYear, 11, 31, 23, 59, 59);
 
-    const expensesQuery = query(
-      collection(db, 'expenses'),
+    const incomesQuery = query(
+      collection(db, 'incomes'),
       where('userId', '==', user.uid),
       where('profile', '==', activeProfile),
       where('date', '>=', Timestamp.fromDate(startDate)),
       where('date', '<=', Timestamp.fromDate(endDate))
     );
 
-    const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
-      const fetchedExpenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
-      setExpenses(fetchedExpenses);
+    const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
+      const fetchedIncomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
+      setIncomes(fetchedIncomes);
       setLoading(false);
     }, () => setLoading(false));
-    
-    let unsubCards = () => {};
-    if (showCardSpending) {
-      const cardsQuery = query(
-        collection(db, 'cards'),
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile)
-      );
-      unsubCards = onSnapshot(cardsQuery, (snap) => {
-        const fetchedCards = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
-        setCards(fetchedCards);
-      });
-    }
 
     return () => {
-      unsubExpenses();
-      unsubCards();
+      unsubIncomes();
     };
 
-  }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
-
-  const TABS = [
-    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} /> },
-    ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
-  ];
+  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
 
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <CardTitle>Análise de Gastos</CardTitle>
-            <CardDescription>Veja seus gastos por tags e cartão.</CardDescription>
+            <CardTitle>Análise de Receitas</CardTitle>
+            <CardDescription>Veja suas receitas por tags.</CardDescription>
           </div>
           <div>
             <Tabs
@@ -278,17 +218,13 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
       </CardHeader>
       <CardContent>
           <Tabs defaultValue="tags">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
-              {TABS.map(tab => (
-                 <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
-              ))}
+            <TabsList className="grid w-full grid-cols-1">
+              <TabsTrigger value="tags">Tags</TabsTrigger>
             </TabsList>
              {loading ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
-              TABS.map(tab => (
-                 <TabsContent key={tab.value} value={tab.value}>
-                  {tab.content}
-                </TabsContent>
-              ))
+              <TabsContent value="tags">
+                <IncomeChart incomes={incomes} />
+              </TabsContent>
              )}
           </Tabs>
       </CardContent>

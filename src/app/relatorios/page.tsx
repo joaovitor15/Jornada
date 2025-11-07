@@ -28,6 +28,7 @@ import {
 import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp, ShoppingCart, Users, Landmark, HardDrive, ClipboardList, ArrowUpCircle, TrendingDown, Wallet } from 'lucide-react';
 import { useTransactions } from '@/hooks/use-transactions';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
+import IncomeAnalysisTabs from '@/components/relatorios/IncomeAnalysisTabs';
 
 
 const generateYearOptions = () => {
@@ -747,8 +748,8 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+
+        <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -759,152 +760,18 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs 
-              selectedMonth={selectedMonth} 
-              selectedYear={selectedYear} 
-              showCardSpending={false} 
-            />
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-             <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.totalIncome}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={personalTotalIncomeViewMode}
-                      onValueChange={setPersonalTotalIncomeViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({homeIncomePeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(personalTotalIncome)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-             <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.outgoings}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={outgoingsViewMode}
-                      onValueChange={setOutgoingsViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({homeOutgoingsPeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                      <TrendingDown className="h-6 w-6 text-red-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(outgoings)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.finalBalance}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={finalBalanceViewMode}
-                      onValueChange={setFinalBalanceViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({homeFinalBalancePeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/50">
-                      <Wallet className="h-6 w-6 text-gray-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(finalBalance)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <CategoryCardSpendingTabs 
+                    selectedMonth={selectedMonth} 
+                    selectedYear={selectedYear} 
+                    showCardSpending={false} 
+                />
+                <IncomeAnalysisTabs 
+                    selectedMonth={selectedMonth} 
+                    selectedYear={selectedYear}
+                />
+            </div>
         </div>
       </div>
     );
