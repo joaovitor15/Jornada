@@ -29,10 +29,6 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
 
   const loading = cardsLoading || tagsLoading;
 
-  const cardPrincipalTag = useMemo((): HierarchicalTag | undefined => {
-    return hierarchicalTags.find((tag) => tag.name === 'Cartões');
-  }, [hierarchicalTags]);
-
   useEffect(() => {
     if (!loading) {
       if (cards.length > 0) {
@@ -67,11 +63,11 @@ export default function CardsList({ selectedCardId, onCardSelect }: CardsListPro
         <h1 className="text-2xl font-bold">Gerenciador de Tags de Cartão</h1>
       </div>
 
-       <div className="flex justify-between items-center p-3 rounded-lg border bg-muted/50 mb-4">
+       <div className="flex justify-between items-center p-3 rounded-lg border bg-muted/50 mb-4 gap-4">
         <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-muted-foreground"/>
             <span className="font-semibold">Cartões</span>
-            {cardPrincipalTag && <Badge variant="secondary" className="px-1.5 py-0.5 text-xs rounded-full">{cardPrincipalTag.children.length}</Badge>}
+            <Badge variant="secondary" className="px-1.5 py-0.5 text-xs rounded-full">{cards.length}</Badge>
         </div>
         <Button onClick={handleAddClick} size="sm">
           <PlusCircle className="mr-2 h-4 w-4" />
