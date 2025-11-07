@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -45,7 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const formSchema = z.object({
   values: z.string().min(1, text.sumExpensesForm.validation.atLeastOne),
   date: z.date({ required_error: 'A data é obrigatória.' }),
-  subcategory: z.string().optional(),
+  tag: z.string().optional(),
 });
 
 type SumExpensesFormProps = {
@@ -80,7 +79,7 @@ export default function SumExpensesForm({
     return hierarchicalTags.find(tag => tag.name === tagName);
   }, [isBusinessProfile, hierarchicalTags]);
 
-  const subcategoryOptions = useMemo(() => {
+  const tagOptions = useMemo(() => {
     return relevantMainTag?.children.filter(child => !child.isArchived) || [];
   }, [relevantMainTag]);
 
@@ -112,7 +111,7 @@ export default function SumExpensesForm({
       reset({
         values: '',
         date: initialDate,
-        subcategory: undefined,
+        tag: undefined,
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
       setTotal(0);
@@ -139,26 +138,29 @@ export default function SumExpensesForm({
       return;
     }
 
-    if (subcategoryOptions.length > 0 && !data.subcategory) {
-        form.setError('subcategory', { message: 'Por favor, selecione uma subcategoria.' });
+    if (tagOptions.length > 0 && !data.tag) {
+        form.setError('tag', { message: 'Por favor, selecione uma tag.' });
         return;
     }
 
+    const tags = data.tag ? [data.tag] : [];
     let expenseData;
 
     if (activeProfile === 'Home') {
       expenseData = {
-        description: data.subcategory || 'Alimentos',
+        description: 'Soma Alimentação',
         mainCategory: 'Alimentação',
-        subcategory: data.subcategory || 'Comida',
+        subcategory: 'Comida',
         paymentMethod: 'Dinheiro/Pix',
+        tags: tags,
       };
     } else if (activeProfile === 'Business') {
       expenseData = {
-        description: `Pagamento: ${data.subcategory || 'Fornecedores'}`,
+        description: `Soma Pagamentos Fornecedores`,
         mainCategory: 'Fornecedores',
-        subcategory: data.subcategory || 'Pagamentos Fonecedores',
+        subcategory: 'Pagamentos Fonecedores',
         paymentMethod: 'Dinheiro/Pix',
+        tags: tags,
       };
     } else {
         toast({
@@ -241,22 +243,22 @@ export default function SumExpensesForm({
                 {text.sumExpensesForm.total}: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
             </div>
 
-            {subcategoryOptions.length > 0 && (
+            {tagOptions.length > 0 && (
                  <FormField
                   control={control}
-                  name="subcategory"
+                  name="tag"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subcategoria</FormLabel>
+                      <FormLabel>Tag</FormLabel>
                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione a subcategoria" />
+                            <SelectValue placeholder="Selecione a tag" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {subcategoryOptions.map((sub) => (
-                            <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
+                          {tagOptions.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.name}>{tag.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
