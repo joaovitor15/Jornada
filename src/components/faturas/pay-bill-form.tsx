@@ -173,23 +173,13 @@ export default function AddBillTransactionForm({
     // Validation for 'payment' type
     if (values.type === 'payment') {
         const today = new Date();
-        const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const { closingDate } = getFaturaPeriod(
-          previousMonth.getFullYear(),
-          previousMonth.getMonth(),
-          selectedCard.closingDay,
-          selectedCard.dueDay
-        );
-        
         const closingDateThisMonth = set(new Date(), { date: selectedCard.closingDay });
 
-        if (isAfter(today, closingDateThisMonth)) {
-           // Fatura do mês atual já fechou, então ok
-        } else {
+        if (!isAfter(today, closingDateThisMonth)) {
              toast({
                 variant: 'destructive',
                 title: 'Pagamento não permitido',
-                description: `A fatura ainda não fechou. O fechamento é dia ${selectedCard.closingDay}.`,
+                description: `A fatura ainda não fechou. O fechamento é dia ${selectedCard.closingDay}. Use "Pagamento Antecipado".`,
             });
             return;
         }
@@ -197,6 +187,7 @@ export default function AddBillTransactionForm({
 
 
     const finalType = values.type === 'anticipate' ? 'payment' : values.type;
+    const description = values.type === 'anticipate' ? 'Antecipação de Fatura' : '';
 
     try {
       await addDoc(collection(db, 'billPayments'), {
@@ -206,6 +197,7 @@ export default function AddBillTransactionForm({
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
         type: finalType,
+        description: description,
         tags: [selectedCard.name],
       });
 

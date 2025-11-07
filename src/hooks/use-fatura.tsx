@@ -18,7 +18,7 @@ import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 import { subMonths, addMonths } from 'date-fns';
 
-type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' };
+type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' | 'anticipation'; description?: string };
 
 export function useFatura(card: CardType, selectedFatura: { month: number; year: number }) {
   const { user } = useAuth();
@@ -37,13 +37,12 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
     month: number, 
     year: number
   ) => {
-    const { startDate, endDate, closingDate } = getFaturaPeriod(year, month, localCard.closingDay, localCard.dueDay);
-    const prevFaturaPeriod = getFaturaPeriod(subMonths(closingDate, 1).getFullYear(), subMonths(closingDate, 1).getMonth(), localCard.closingDay, localCard.dueDay);
-
+    const { startDate, endDate } = getFaturaPeriod(year, month, localCard.closingDay, localCard.dueDay);
+    
     const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('paymentMethod', '==', `Cartão: ${localCard.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
     const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
-    const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'payment'), where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)), where('date', '<=', Timestamp.fromDate(closingDate))));
-
+    const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', localUser.uid), where('profile', '==', localProfile), where('cardId', '==', localCard.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+    
     const [expensesSnap, refundsSnap, paymentsSnap] = await Promise.all([expensesQuery, refundsQuery, paymentsQuery]);
 
     const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
@@ -77,8 +76,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       const expensesQuery = query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)), orderBy('date', 'desc'));
       const refundsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)));
       
-      const nextFaturaPeriod = getFaturaPeriod(addMonths(closingDate, 1).getFullYear(), addMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
-      const paymentsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(closingDate)), where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate)));
+      const paymentsQuery = query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate)));
 
       const combineData = (
         expenses: FaturaTransaction[],

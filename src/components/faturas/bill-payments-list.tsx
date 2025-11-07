@@ -227,7 +227,7 @@ export default function BillPaymentsList() {
                           )}
                         >
                           <TableCell className="py-2 px-2 align-middle font-medium">
-                            {cards.get(payment.cardId) || 'Cartão não encontrado'}
+                            {payment.description || cards.get(payment.cardId) || 'Cartão não encontrado'}
                           </TableCell>
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">

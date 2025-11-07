@@ -7,7 +7,7 @@ import {
   doc,
   deleteDoc,
 } from 'firebase/firestore';
-import { Card as CardType, Expense } from '@/lib/types';
+import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -116,11 +116,13 @@ export default function FaturaDetails({
                     const isExpense = tx.transactionType === 'expense';
                     const isPayment = tx.transactionType === 'payment';
                     const isRefund = tx.transactionType === 'refund';
+                    const isAnticipation = tx.description === 'Antecipação de Fatura';
 
                     let description = '';
-                    if(isPayment) description = text.payBillForm.title;
+                    if(isAnticipation) description = 'Antecipação de Fatura';
+                    else if(isPayment) description = text.payBillForm.title;
                     else if(isRefund) description = text.payBillForm.refundTitle;
-                    else description = tx.description;
+                    else description = tx.description || 'Lançamento';
                     
                     const expense = tx as Expense;
                     const isInstallment = isExpense && expense.installments && expense.installments > 1;
