@@ -77,41 +77,41 @@ export default function ManageTagsPageClient() {
     const allTags = hierarchicalTags;
 
     if (filter === 'inUse') {
-      return allTags
-        .map((tag) => {
-          if (tag.isArchived) return null;
-          const activeChildren = tag.children.filter(
-            (child) => !child.isArchived && usedTagNames.has(child.name)
-          );
-          if (usedTagNames.has(tag.name) || activeChildren.length > 0) {
-            return { ...tag, children: activeChildren };
-          }
-          return null;
-        })
-        .filter((tag): tag is HierarchicalTag => tag !== null);
+        return allTags
+            .map((tag) => {
+                if (tag.isArchived) return null;
+
+                const hasUsedChildren = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
+                const isPrincipalInUse = usedTagNames.has(tag.name);
+
+                if (isPrincipalInUse || hasUsedChildren) {
+                    const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
+                    return { ...tag, children: activeChildren };
+                }
+
+                return null;
+            })
+            .filter((tag): tag is HierarchicalTag => tag !== null);
     }
+
     if (filter === 'registered') {
-      return allTags
-        .map((tag) => {
-          if (tag.isArchived) return null;
+        return allTags
+            .map((tag) => {
+                if (tag.isArchived) return null;
 
-          const unusedChildren = tag.children.filter(
-            (child) => !child.isArchived && !usedTagNames.has(child.name)
-          );
-          const isPrincipalUnused = !usedTagNames.has(tag.name);
+                const hasUsedChildren = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
+                const isPrincipalInUse = usedTagNames.has(tag.name);
 
-          if (isPrincipalUnused && unusedChildren.length === 0 && tag.children.length === 0) {
-             return { ...tag, children: [] };
-          }
-          
-          if (unusedChildren.length > 0) {
-            return { ...tag, children: unusedChildren };
-          }
-
-          return null;
-        })
-        .filter((tag): tag is HierarchicalTag => tag !== null);
+                if (isPrincipalInUse || hasUsedChildren) {
+                    return null; 
+                }
+                
+                const unusedChildren = tag.children.filter(child => !child.isArchived);
+                return { ...tag, children: unusedChildren };
+            })
+            .filter((tag): tag is HierarchicalTag => tag !== null);
     }
+
     if (filter === 'archived') {
        return allTags
         .map(tag => {
