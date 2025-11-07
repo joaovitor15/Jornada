@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,10 +39,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import { text } from '@/lib/strings';
+import { useTags } from '@/hooks/use-tags';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
   values: z.string().min(1, text.sumExpensesForm.validation.atLeastOne),
   date: z.date({ required_error: 'A data é obrigatória.' }),
+  subcategory: z.string().optional(),
 });
 
 type SumExpensesFormProps = {
@@ -59,6 +62,7 @@ export default function SumExpensesForm({
   const { toast } = useToast();
   const [total, setTotal] = useState(0);
   const [dateInput, setDateInput] = useState('');
+  const { hierarchicalTags } = useTags();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,10 +75,19 @@ export default function SumExpensesForm({
   
   const isBusinessProfile = activeProfile === 'Business';
 
+  const relevantMainTag = useMemo(() => {
+    const tagName = isBusinessProfile ? 'Fornecedores' : 'Alimentação';
+    return hierarchicalTags.find(tag => tag.name === tagName);
+  }, [isBusinessProfile, hierarchicalTags]);
+
+  const subcategoryOptions = useMemo(() => {
+    return relevantMainTag?.children.filter(child => !child.isArchived) || [];
+  }, [relevantMainTag]);
+
   const dialogTexts = {
     title: isBusinessProfile ? "Somar Pagamentos a Fornecedores" : text.sumExpensesForm.title,
     description: isBusinessProfile 
-      ? 'Digite os valores dos pagamentos separados por espaço. O total será lançado como uma única despesa em "Fornecedores / Pagamentos Fonecedores".'
+      ? 'Digite os valores dos pagamentos separados por espaço. O total será lançado como uma única despesa na categoria "Fornecedores".'
       : text.sumExpensesForm.description,
   }
 
@@ -99,6 +112,7 @@ export default function SumExpensesForm({
       reset({
         values: '',
         date: initialDate,
+        subcategory: undefined,
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
       setTotal(0);
@@ -125,20 +139,25 @@ export default function SumExpensesForm({
       return;
     }
 
+    if (subcategoryOptions.length > 0 && !data.subcategory) {
+        form.setError('subcategory', { message: 'Por favor, selecione uma subcategoria.' });
+        return;
+    }
+
     let expenseData;
 
     if (activeProfile === 'Home') {
       expenseData = {
-        description: 'Alimentos',
+        description: data.subcategory || 'Alimentos',
         mainCategory: 'Alimentação',
-        subcategory: 'Comida',
+        subcategory: data.subcategory || 'Comida',
         paymentMethod: 'Dinheiro/Pix',
       };
     } else if (activeProfile === 'Business') {
       expenseData = {
-        description: 'Pagamento de Fornecedores',
+        description: `Pagamento: ${data.subcategory || 'Fornecedores'}`,
         mainCategory: 'Fornecedores',
-        subcategory: 'Pagamentos Fonecedores',
+        subcategory: data.subcategory || 'Pagamentos Fonecedores',
         paymentMethod: 'Dinheiro/Pix',
       };
     } else {
@@ -221,6 +240,31 @@ export default function SumExpensesForm({
             <div className="text-right font-bold text-lg">
                 {text.sumExpensesForm.total}: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
             </div>
+
+            {subcategoryOptions.length > 0 && (
+                 <FormField
+                  control={control}
+                  name="subcategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subcategoria</FormLabel>
+                       <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a subcategoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {subcategoryOptions.map((sub) => (
+                            <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            )}
 
             <FormField
               control={control}
