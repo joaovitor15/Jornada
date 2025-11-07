@@ -697,17 +697,25 @@ export default function ReportsPage() {
                 <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
               </CardContent>
             </Card>
-            <CategoryCardSpendingTabs 
-               selectedMonth={selectedMonth} 
-               selectedYear={selectedYear}
-               showCardSpending={activeProfile === 'Personal'}
-             />
-             {activeProfile === 'Home' && (
-                <IncomeAnalysisTabs 
+            {activeProfile === 'Home' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <CategoryCardSpendingTabs 
+                        selectedMonth={selectedMonth} 
+                        selectedYear={selectedYear}
+                        showCardSpending={activeProfile === 'Personal'}
+                    />
+                    <IncomeAnalysisTabs 
+                        selectedMonth={selectedMonth} 
+                        selectedYear={selectedYear}
+                    />
+                </div>
+            ) : (
+                 <CategoryCardSpendingTabs 
                     selectedMonth={selectedMonth} 
                     selectedYear={selectedYear}
+                    showCardSpending={activeProfile === 'Personal'}
                 />
-             )}
+            )}
           </div>
           <HomeAndPersonalCards isHome={activeProfile === 'Home'} />
         </div>
@@ -1410,3 +1418,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
