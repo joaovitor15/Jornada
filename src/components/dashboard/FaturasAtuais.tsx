@@ -56,9 +56,7 @@ export default function FaturasAtuais() {
   const { openModal } = useAddBillTransactionModal();
 
   const processFaturas = useCallback(async (cardsToProcess: CardType[]) => {
-      if (!user || !activeProfile) return [];
-
-      if (cardsToProcess.length === 0) {
+      if (!user || !activeProfile || cardsToProcess.length === 0) {
         return [];
       }
 
