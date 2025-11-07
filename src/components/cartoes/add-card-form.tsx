@@ -12,6 +12,10 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
+  query,
+  where,
+  getDocs,
+  setDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -37,7 +41,7 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Card } from '@/lib/types';
+import { type Card, type RawTag, type Profile } from '@/lib/types';
 
 const cardSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
@@ -57,6 +61,42 @@ type CardFormProps = {
   onOpenChange: (isOpen: boolean) => void;
   cardToEdit?: Card | null;
 };
+
+// Função para garantir que a tag principal "Cartões" exista
+async function ensurePrincipalCardTagExists(
+  userId: string,
+  profile: Profile
+): Promise<string> {
+  const tagsRef = collection(db, 'tags');
+  const q = query(
+    tagsRef,
+    where('userId', '==', userId),
+    where('profile', '==', profile),
+    where('name', '==', 'Cartões'),
+    where('isPrincipal', '==', true)
+  );
+
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    // Tag já existe, retorna o ID
+    return querySnapshot.docs[0].id;
+  } else {
+    // Tag não existe, cria uma nova
+    const newTagRef = doc(tagsRef);
+    const newTagData: Omit<RawTag, 'id'> & { id: string } = {
+      id: newTagRef.id,
+      userId: userId,
+      profile: profile,
+      name: 'Cartões',
+      isPrincipal: true,
+      parent: null,
+      order: 99, // Um número alto para colocar no final, pode ser ajustado
+    };
+    await setDoc(newTagRef, newTagData);
+    return newTagRef.id;
+  }
+}
 
 export default function CardForm({
   isOpen,
@@ -111,6 +151,13 @@ export default function CardForm({
     }
 
     try {
+      // Passo 1: Garantir que a tag principal "Cartões" exista.
+      const principalTagId = await ensurePrincipalCardTagExists(
+        user.uid,
+        activeProfile
+      );
+
+      // Passo 2: Salvar ou atualizar o cartão.
       if (isEditMode && cardToEdit?.id) {
         const cardRef = doc(db, 'cards', cardToEdit.id);
         await updateDoc(cardRef, values);
@@ -130,9 +177,10 @@ export default function CardForm({
           description: text.addCardForm.addSuccess,
         });
       }
+
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao salvar cartão:', error);
+      console.error('Erro ao salvar cartão ou gerenciar tags:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
