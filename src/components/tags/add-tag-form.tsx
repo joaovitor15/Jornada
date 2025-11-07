@@ -123,6 +123,22 @@ export default function AddTagForm({
         parent: values.parentId || null,
         order: 0,
       };
+      
+      // Auto-create 'Formas de Pagamento' and 'Dinheiro/Pix' if they don't exist
+       if (values.tagName === 'Formas de Pagamento' && values.type === 'principal') {
+          const pixTagRef = doc(collection(db, 'tags'));
+          const pixTagData: RawTag = {
+            id: pixTagRef.id,
+            userId: user.uid,
+            profile: activeProfile,
+            name: 'Dinheiro/Pix',
+            isPrincipal: false,
+            parent: newTagRef.id,
+            order: 0,
+          };
+          await setDoc(pixTagRef, pixTagData);
+       }
+
 
       await setDoc(newTagRef, newTagData);
 
@@ -273,5 +289,3 @@ export default function AddTagForm({
     </Dialog>
   );
 }
-
-    

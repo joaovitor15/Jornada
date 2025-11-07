@@ -87,7 +87,7 @@ const formSchema = z.object({
   subcategory: z
     .string()
     .min(1, { message: text.addExpenseForm.validation.pleaseSelectSubcategory }),
-  cardId: z.string().optional(),
+  paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
   tags: z.array(z.string()).optional(),
@@ -128,38 +128,44 @@ export default function AddTransactionForm() {
   
   const { watch, setValue, reset, control, formState: { isSubmitting }, trigger } = form;
   const transactionType = watch('type');
-  const selectedCardId = watch('cardId');
-  const isCreditCardPayment = !!selectedCardId;
+  const selectedPaymentMethod = watch('paymentMethod');
   
-  const { cardTags, nonCardTags } = useMemo(() => {
+  const { cardTags, nonCardTags, paymentMethodTags } = useMemo(() => {
     const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-    if (!cardsPrincipal) {
-      return { cardTags: [], nonCardTags: allTags.flatMap(t => t.children).map(c => c.name) };
-    }
-    const cardTagNames = new Set(cardsPrincipal.children.map(c => c.name));
-    const allChildTags = allTags.flatMap(t => t.children);
+    const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
 
+    const cardTagChildren = cardsPrincipal?.children || [];
+    const paymentMethodChildren = paymentMethodsPrincipal?.children || [];
+
+    const allPaymentTagNames = new Set([
+        ...(cardTagChildren.map(c => c.name)),
+        ...(paymentMethodChildren.map(c => c.name))
+    ]);
+
+    const allChildTags = allTags.flatMap(t => t.children);
+    
     return {
-      cardTags: cardsPrincipal.children.map(c => ({ id: c.id, name: c.name })),
-      nonCardTags: allChildTags.filter(t => !cardTagNames.has(t.name)).map(c => c.name),
+      cardTags: cardTagChildren,
+      paymentMethodTags: paymentMethodChildren,
+      nonCardTags: allChildTags.filter(t => !allPaymentTagNames.has(t.name)).map(c => c.name),
     };
   }, [allTags]);
+
+  const isCreditCardPayment = useMemo(() => {
+    if (!selectedPaymentMethod) return false;
+    return cardTags.some(card => card.name === selectedPaymentMethod);
+  }, [selectedPaymentMethod, cardTags]);
 
 
   useEffect(() => {
     if (isFormOpen) {
       if (isEditMode && transactionToEdit) {
          const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
-         let cardId;
-         if (type === 'expense') {
-            const expense = transactionToEdit as Expense;
-            if (expense.paymentMethod.startsWith('Cartão: ')) {
-                const cardName = expense.paymentMethod.replace('Cartão: ', '');
-                const foundCard = cardTags.find(c => c.name === cardName);
-                if (foundCard) {
-                    cardId = foundCard.id;
-                }
-            }
+         
+         const expense = transactionToEdit as Expense;
+         let paymentMethod = expense.paymentMethod;
+         if (paymentMethod?.startsWith('Cartão: ')) {
+             paymentMethod = paymentMethod.replace('Cartão: ', '');
          }
 
          reset({
@@ -168,7 +174,7 @@ export default function AddTransactionForm() {
             amount: transactionToEdit.amount,
             mainCategory: transactionToEdit.mainCategory,
             subcategory: transactionToEdit.subcategory,
-            cardId: cardId,
+            paymentMethod: paymentMethod,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
             tags: transactionToEdit.tags || [],
@@ -182,7 +188,7 @@ export default function AddTransactionForm() {
             amount: undefined,
             mainCategory: '',
             subcategory: '',
-            cardId: undefined,
+            paymentMethod: 'Dinheiro/Pix', // Default payment method
             date: initialDate,
             installments: 1,
             tags: [],
@@ -190,22 +196,18 @@ export default function AddTransactionForm() {
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
     }
-  }, [isFormOpen, isEditMode, transactionToEdit, reset, cardTags]);
+  }, [isFormOpen, isEditMode, transactionToEdit, reset]);
 
   // Handle dynamic form changes
   useEffect(() => {
     const subscription = watch((value, { name, type }) => {
-      if (name === 'type' && type === 'change' && !isEditMode) {
-          setValue('mainCategory', '');
-          setValue('subcategory', '');
-      }
-      
-      if (name === 'mainCategory' && type === 'change' && !isEditMode) {
+      if ((name === 'type' || name === 'mainCategory') && type === 'change' && !isEditMode) {
+        if(name === 'type') setValue('mainCategory', '');
         setValue('subcategory', '');
       }
 
       if (name === 'type' && value.type === 'income' && !isEditMode) {
-        setValue('cardId', undefined);
+        setValue('paymentMethod', undefined);
         setValue('installments', 1);
       }
       
@@ -213,14 +215,15 @@ export default function AddTransactionForm() {
         setDateInput(format(value.date, 'dd/MM/yyyy'));
       }
       
-      if (name === 'cardId') {
-        if(!value.cardId) {
+      if (name === 'paymentMethod') {
+        const isCard = cardTags.some(card => card.name === value.paymentMethod);
+        if(!isCard) {
             setValue('installments', 1);
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue, trigger, isEditMode]);
+  }, [watch, setValue, trigger, isEditMode, cardTags]);
 
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
@@ -246,9 +249,6 @@ export default function AddTransactionForm() {
     }
     
     try {
-        const selectedCard = cardTags.find(card => card.id === values.cardId);
-        
-        // Logic remains the same, but card selection is now fully isolated.
         const finalTags = values.tags || [];
 
         if (isEditMode && transactionToEdit) {
@@ -266,7 +266,8 @@ export default function AddTransactionForm() {
             };
 
             if (values.type === 'expense') {
-                (dataToUpdate as Partial<Expense>).paymentMethod = selectedCard ? `Cartão: ${selectedCard.name}` : "Dinheiro/Pix";
+                const isCard = cardTags.some(card => card.name === values.paymentMethod);
+                (dataToUpdate as Partial<Expense>).paymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
             }
 
             await updateDoc(docRef, dataToUpdate);
@@ -279,7 +280,8 @@ export default function AddTransactionForm() {
                 const installmentAmount = values.amount / installments;
                 const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
                 
-                const finalPaymentMethod = selectedCard ? `Cartão: ${selectedCard.name}` : "Dinheiro/Pix";
+                const isCard = cardTags.some(card => card.name === values.paymentMethod);
+                const finalPaymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
 
                 for (let i = 0; i < installments; i++) {
                   const installmentDate = addMonths(values.date, i);
@@ -438,19 +440,24 @@ export default function AddTransactionForm() {
                     {transactionType === 'expense' && (
                        <FormField
                           control={control}
-                          name="cardId"
+                          name="paymentMethod"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Tags Cartão</FormLabel>
+                              <FormLabel>Forma de Pagamento</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Dinheiro/Pix" />
+                                    <SelectValue placeholder="Selecione" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {cardTags.map((card) => (
-                                    <SelectItem key={card.id} value={card.id}>
+                                    {paymentMethodTags.map((tag) => (
+                                       <SelectItem key={tag.id} value={tag.name}>
+                                          {tag.name}
+                                        </SelectItem>
+                                    ))}
+                                    {cardTags.map((card) => (
+                                    <SelectItem key={card.id} value={card.name}>
                                       {card.name}
                                     </SelectItem>
                                   ))}
