@@ -144,6 +144,9 @@ export default function ExpensesList() {
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          {text.common.paymentMethod}
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           Tags
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
@@ -173,10 +176,13 @@ export default function ExpensesList() {
                           <TableCell className="font-medium py-2 px-2 align-middle">
                             {expense.description || '-'}
                           </TableCell>
+                          <TableCell className="py-2 px-2 align-middle">
+                            <Badge variant={cardName ? 'default' : 'outline'}>
+                                {cardName || expense.paymentMethod}
+                            </Badge>
+                          </TableCell>
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
-                              {cardName && <Badge variant="default">{cardName}</Badge>}
-                              {!isCardPayment && <Badge variant="outline">{expense.paymentMethod}</Badge>}
                               {expense.tags?.map((tag) => (
                                 <Badge key={tag} variant="secondary">
                                   {tag}
