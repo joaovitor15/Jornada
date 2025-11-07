@@ -10,8 +10,6 @@ import FaturaSelector from '@/components/cartoes/FaturaSelector';
 import { getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 import AnteciparParcelasForm from '@/components/cartoes/AnteciparParcelasForm';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
-import CardTagsManager from '@/components/cartoes/CardTagsManager';
-
 
 export default function CardsPage() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
@@ -56,48 +54,34 @@ export default function CardsPage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full flex flex-col">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
-        {/* Coluna de Faturas e Gerenciador de Tags */}
-        <div className="lg:col-span-2 flex flex-col gap-8">
-          <div className="flex flex-col h-full">
-             <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h1 className="text-2xl font-bold">{text.cards.myInvoices}</h1>
-                    <p className="text-muted-foreground">
-                        {text.cards.selectCardToSeeInvoice}
-                    </p>
-                </div>
-            </div>
-            {selectedCard ? (
-                <FaturaDetails 
-                card={selectedCard} 
-                selectedFatura={selectedFatura} 
-                onFaturaSelect={() => setIsFaturaSelectorOpen(true)}
-                onAnticipateExpense={handleAnticipateExpense}
-                />
-            ) : (
-                <div className="flex-1 flex items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <p className="text-muted-foreground">
-                    {text.cards.selectCardToStart}
-                </p>
-                </div>
-            )}
+        {/* Coluna de Faturas */}
+        <div className="lg:col-span-2 flex flex-col">
+           <div className="flex justify-between items-center mb-4">
+              <div>
+                  <h1 className="text-2xl font-bold">{text.cards.myInvoices}</h1>
+                  <p className="text-muted-foreground">
+                      {text.cards.selectCardToSeeInvoice}
+                  </p>
+              </div>
           </div>
-           <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Gerenciador de Tags de Cartão</h2>
-             <CardTagsManager />
-          </div>
+          {selectedCard ? (
+              <FaturaDetails 
+              card={selectedCard} 
+              selectedFatura={selectedFatura} 
+              onFaturaSelect={() => setIsFaturaSelectorOpen(true)}
+              onAnticipateExpense={handleAnticipateExpense}
+              />
+          ) : (
+              <div className="flex-1 flex items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              <p className="text-muted-foreground">
+                  {text.cards.selectCardToStart}
+              </p>
+              </div>
+          )}
         </div>
         
-        {/* Coluna de Cartões */}
+        {/* Coluna de Cartões / Gerenciador de Tags */}
         <div className="lg:col-span-1">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">{text.sidebar.cards}</h1>
-              <p className="text-muted-foreground">
-                {text.cards.manageYourCards}
-              </p>
-            </div>
-          </div>
           <CardsList
             selectedCardId={selectedCard?.id}
             onCardSelect={handleCardSelection}
