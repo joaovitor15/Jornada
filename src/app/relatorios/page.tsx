@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -29,6 +28,7 @@ import { HelpCircle, Loader2, CircleDollarSign, Percent, DollarSign, TrendingUp,
 import { useTransactions } from '@/hooks/use-transactions';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 import IncomeAnalysisTabs from '@/components/relatorios/IncomeAnalysisTabs';
+import HomeAndPersonalCards from '@/components/relatorios/HomeAndPersonalCards';
 
 
 const generateYearOptions = () => {
@@ -360,32 +360,40 @@ export default function ReportsPage() {
   
   if (activeProfile === 'Personal' || activeProfile === 'Home') {
      return (
-      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        {commonHeader}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {text.reports.financialSummary(selectedYear)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
-            </CardContent>
-          </Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <CategoryCardSpendingTabs 
-                selectedMonth={selectedMonth} 
-                selectedYear={selectedYear}
-                showCardSpending={activeProfile === 'Personal'}
-            />
-            <IncomeAnalysisTabs 
-                selectedMonth={selectedMonth} 
-                selectedYear={selectedYear}
-            />
+        <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
+          {commonHeader}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {text.reports.financialSummary(selectedYear)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
+                </CardContent>
+              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <CategoryCardSpendingTabs 
+                    selectedMonth={selectedMonth} 
+                    selectedYear={selectedYear}
+                    showCardSpending={activeProfile === 'Personal'}
+                />
+                <IncomeAnalysisTabs 
+                    selectedMonth={selectedMonth} 
+                    selectedYear={selectedYear}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-1 space-y-6">
+                <HomeAndPersonalCards 
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                />
+            </div>
           </div>
         </div>
-      </div>
     );
   }
 
