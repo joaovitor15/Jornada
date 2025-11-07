@@ -149,9 +149,6 @@ export default function ExpensesList() {
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.date}
                         </TableHead>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.common.paymentMethod}
-                        </TableHead>
                         <TableHead className="h-10 px-2 align-middle font-medium text-muted-foreground text-xs uppercase text-right">
                           {text.common.amount}
                         </TableHead>
@@ -161,7 +158,11 @@ export default function ExpensesList() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentExpenses.map((expense, index) => (
+                      {currentExpenses.map((expense, index) => {
+                        const isCardPayment = expense.paymentMethod.startsWith('Cartão: ');
+                        const cardName = isCardPayment ? expense.paymentMethod.replace('Cartão: ', '') : null;
+                        
+                        return (
                         <TableRow
                           key={expense.id}
                           className={cn(
@@ -174,6 +175,8 @@ export default function ExpensesList() {
                           </TableCell>
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
+                              {cardName && <Badge variant="default">{cardName}</Badge>}
+                              {!isCardPayment && <Badge variant="outline">{expense.paymentMethod}</Badge>}
                               {expense.tags?.map((tag) => (
                                 <Badge key={tag} variant="secondary">
                                   {tag}
@@ -183,11 +186,6 @@ export default function ExpensesList() {
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {expense.date ? format(expense.date.toDate(), 'dd/MM/yyyy') : '-'}
-                          </TableCell>
-                          <TableCell className="py-2 px-2 align-middle">
-                            <span className="text-muted-foreground text-sm">
-                              {expense.paymentMethod}
-                            </span>
                           </TableCell>
                           <TableCell className="text-right py-2 px-2 align-middle">
                             {new Intl.NumberFormat('pt-BR', {
@@ -229,7 +227,8 @@ export default function ExpensesList() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
