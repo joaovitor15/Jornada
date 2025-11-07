@@ -81,12 +81,8 @@ const formSchema = z.object({
       invalid_type_error: text.addExpenseForm.validation.amountRequired,
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
-  mainCategory: z
-    .string()
-    .min(1, { message: text.addExpenseForm.validation.pleaseSelectCategory }),
-  subcategory: z
-    .string()
-    .min(1, { message: text.addExpenseForm.validation.pleaseSelectSubcategory }),
+  mainCategory: z.string().optional(),
+  subcategory: z.string().optional(),
   paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
@@ -288,7 +284,7 @@ export default function AddTransactionForm() {
                   const expenseData: any = {
                     userId: user.uid, profile: activeProfile,
                     description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
-                    amount: installmentAmount, mainCategory: values.mainCategory, subcategory: values.subcategory,
+                    amount: installmentAmount, mainCategory: values.mainCategory || 'Geral', subcategory: values.subcategory || 'Geral',
                     paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
                     tags: finalTags,
@@ -303,7 +299,7 @@ export default function AddTransactionForm() {
             } else { // 'income'
                 const incomeData = {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
-                  amount: values.amount, mainCategory: values.mainCategory, subcategory: values.subcategory,
+                  amount: values.amount, mainCategory: values.mainCategory || 'Geral', subcategory: values.subcategory || 'Geral',
                   date: Timestamp.fromDate(values.date),
                   tags: finalTags,
                 };
