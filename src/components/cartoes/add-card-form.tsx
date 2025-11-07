@@ -63,17 +63,18 @@ type CardFormProps = {
   cardToEdit?: Card | null;
 };
 
-// Função para garantir que a tag principal "Cartões" exista e retornar seu ID
-async function getOrCreatePrincipalTagId(
+// Função para garantir que uma tag principal exista e retornar seu ID
+async function getOrCreatePrincipalTag(
   userId: string,
-  profile: Profile
+  profile: Profile,
+  tagName: 'Cartões' | 'Formas de Pagamento'
 ): Promise<string> {
   const tagsRef = collection(db, 'tags');
   const q = query(
     tagsRef,
     where('userId', '==', userId),
     where('profile', '==', profile),
-    where('name', '==', 'Cartões'),
+    where('name', '==', tagName),
     where('isPrincipal', '==', true)
   );
 
@@ -87,12 +88,27 @@ async function getOrCreatePrincipalTagId(
       id: newTagRef.id,
       userId: userId,
       profile: profile,
-      name: 'Cartões',
+      name: tagName,
       isPrincipal: true,
       parent: null,
-      order: 99, // High order to appear last
+      order: tagName === 'Cartões' ? 99 : 98, // Prioritize 'Formas de Pagamento' before 'Cartões'
     };
     await setDoc(newTagRef, newTagData);
+    
+     if (tagName === 'Formas de Pagamento') {
+      const pixTagRef = doc(collection(db, 'tags'));
+      const pixTagData: RawTag = {
+        id: pixTagRef.id,
+        userId: userId,
+        profile: profile,
+        name: 'Dinheiro/Pix',
+        isPrincipal: false,
+        parent: newTagRef.id,
+        order: 0,
+      };
+      await setDoc(pixTagRef, pixTagData);
+    }
+    
     return newTagRef.id;
   }
 }
@@ -178,8 +194,9 @@ export default function CardForm({
         });
 
       } else {
-        // This is a "transaction": if tag creation fails, card creation won't happen.
-        const principalTagId = await getOrCreatePrincipalTagId(user.uid, activeProfile);
+        // Guarantee essential principal tags exist
+        await getOrCreatePrincipalTag(user.uid, activeProfile, 'Formas de Pagamento');
+        const principalCartoesTagId = await getOrCreatePrincipalTag(user.uid, activeProfile, 'Cartões');
         
         const childTagRef = doc(collection(db, 'tags'));
         const childTagData: RawTag = {
@@ -188,13 +205,11 @@ export default function CardForm({
           profile: activeProfile,
           name: values.name.trim(),
           isPrincipal: false,
-          parent: principalTagId,
+          parent: principalCartoesTagId,
           order: 0,
         };
-        // Create the tag first
         await setDoc(childTagRef, childTagData);
 
-        // Only if tag creation is successful, create the card.
         await addDoc(collection(db, 'cards'), {
           ...values,
           userId: user.uid,

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, addDoc, doc, setDoc, getCountFromServer } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, getCountFromServer, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -112,6 +112,7 @@ export default function AddTagForm({
     }
 
     try {
+      const batch = writeBatch(db);
       const newTagRef = doc(collection(db, 'tags'));
       
       const newTagData: RawTag = {
@@ -124,7 +125,9 @@ export default function AddTagForm({
         order: 0,
       };
       
-      // Auto-create 'Formas de Pagamento' and 'Dinheiro/Pix' if they don't exist
+      batch.set(newTagRef, newTagData);
+
+      // Auto-create 'Dinheiro/Pix' if 'Formas de Pagamento' is being created
        if (values.tagName === 'Formas de Pagamento' && values.type === 'principal') {
           const pixTagRef = doc(collection(db, 'tags'));
           const pixTagData: RawTag = {
@@ -136,11 +139,10 @@ export default function AddTagForm({
             parent: newTagRef.id,
             order: 0,
           };
-          await setDoc(pixTagRef, pixTagData);
+          batch.set(pixTagRef, pixTagData);
        }
 
-
-      await setDoc(newTagRef, newTagData);
+      await batch.commit();
 
       toast({
         title: text.common.success,
