@@ -106,7 +106,7 @@ export default function CardForm({
   const { isSubmitting } = form.formState;
 
   const getOrCreatePrincipalTag = async (
-    batch: any,
+    batch: firebase.firestore.WriteBatch,
     userId: string,
     profile: string
   ): Promise<string> => {
@@ -126,14 +126,14 @@ export default function CardForm({
       return querySnapshot.docs[0].id;
     } else {
       const principalTagRef = doc(tagsRef);
-      const principalTagData = {
+      const principalTagData: Omit<RawTag, 'id'> & { id: string } = {
         id: principalTagRef.id,
         userId,
         profile,
         name: principalTagName,
         isPrincipal: true,
         parent: null,
-        order: -1, // Give it a special order to keep it separate
+        order: -1, // Dê uma ordem especial para mantê-lo separado
       };
       batch.set(principalTagRef, principalTagData);
       return principalTagRef.id;
@@ -147,15 +147,15 @@ export default function CardForm({
     if (!user || !activeProfile) return;
 
     const batch = writeBatch(db);
+    const tagsRef = collection(db, 'tags');
+
     const principalTagId = await getOrCreatePrincipalTag(
       batch,
       user.uid,
       activeProfile
     );
-    const tagsRef = collection(db, 'tags');
 
     if (isEditMode && cardToEdit && previousCardName !== cardName) {
-      // Logic for renaming
       const tagQuery = query(
         tagsRef,
         where('userId', '==', user.uid),
@@ -169,20 +169,18 @@ export default function CardForm({
         const tagToUpdateRef = tagSnapshot.docs[0].ref;
         batch.update(tagToUpdateRef, { name: cardName });
       } else {
-        // If the old tag doesn't exist, just create a new one
-         const newTagRef = doc(tagsRef);
-         const newTagData: RawTag = {
-           id: newTagRef.id,
-           userId: user.uid,
-           profile: activeProfile,
-           name: cardName,
-           isPrincipal: false,
-           parent: principalTagId,
-         };
-         batch.set(newTagRef, newTagData);
+        const newTagRef = doc(tagsRef);
+        const newTagData: RawTag = {
+          id: newTagRef.id,
+          userId: user.uid,
+          profile: activeProfile,
+          name: cardName,
+          isPrincipal: false,
+          parent: principalTagId,
+        };
+        batch.set(newTagRef, newTagData);
       }
     } else if (!isEditMode) {
-      // Logic for creating a new tag
       const newTagRef = doc(tagsRef);
       const newTagData: RawTag = {
         id: newTagRef.id,
@@ -194,7 +192,7 @@ export default function CardForm({
       };
       batch.set(newTagRef, newTagData);
     }
-    
+
     await batch.commit();
   };
 
@@ -364,4 +362,3 @@ export default function CardForm({
     </Dialog>
   );
 }
-
