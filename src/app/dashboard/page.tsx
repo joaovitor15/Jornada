@@ -28,7 +28,6 @@ import FinancialChart from '@/components/dashboard/FinancialChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
-import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
 import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
@@ -126,7 +125,7 @@ export default function DashboardPage() {
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(totalMonthlyExpenses);
     setTotalVendas(monthlyVendas);
-    setTotalAlimentacao(totalAlimentacao);
+    setTotalAlimentacao(monthlyAlimentacao);
     setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
   }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
 
@@ -347,8 +346,6 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-
-        <FaturasAtuais />
 
       </div>
       {(activeProfile === 'Home' || activeProfile === 'Business') && (
