@@ -12,6 +12,8 @@ import {
   getDocs,
   writeBatch,
   doc,
+  addDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -119,10 +121,12 @@ export default function AnteciparParcelasForm({
   }, [isOpen, user, activeProfile, expense, toast, form]);
 
   const originalTotal = useMemo(() => {
-    return futureInstallments
+     // Include the current expense in the total calculation
+    const selectedFutureTotal = futureInstallments
       .filter((p) => selectedParcelasIds?.includes(p.id))
       .reduce((acc, p) => acc + p.amount, 0);
-  }, [selectedParcelasIds, futureInstallments]);
+    return expense.amount + selectedFutureTotal;
+  }, [selectedParcelasIds, futureInstallments, expense]);
   
   const discount = useMemo(() => {
       const newTotal = form.getValues('novoValor') || 0;
@@ -135,36 +139,42 @@ export default function AnteciparParcelasForm({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user || !activeProfile) return;
+    if (discount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'O desconto deve ser maior que zero para criar um estorno.',
+      });
+      return;
+    }
 
     const batch = writeBatch(db);
 
-    // 1. Delete the current installment to avoid duplication if it's included in logic, but here we only anticipate future ones.
-    // The current expense is being replaced by the new anticipated one. So we delete it.
-    const currentInstallmentRef = doc(db, 'expenses', expense.id);
-    batch.delete(currentInstallmentRef);
-    
-    // 2. Delete selected future installments
+    // 1. Delete the current expense and all selected future installments
+    batch.delete(doc(db, 'expenses', expense.id));
     values.parcelas.forEach((parcelaId) => {
       const docRef = doc(db, 'expenses', parcelaId);
       batch.delete(docRef);
     });
 
-    // 3. Create a new single expense for the anticipation
+    // 2. Create a new single expense for the new value paid
     const newExpenseRef = doc(collection(db, 'expenses'));
-    const newExpense: Omit<Expense, 'id'> = {
-      userId: user.uid,
-      profile: activeProfile,
-      amount: values.novoValor,
-      description: `${text.anticipateInstallments.title}: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
-      date: expense.date, // Use a data da parcela atual
-      mainCategory: expense.mainCategory,
-      subcategory: expense.subcategory,
-      paymentMethod: expense.paymentMethod,
+    const newExpenseData = {
+        userId: user.uid,
+        profile: activeProfile,
+        amount: values.novoValor,
+        description: `${text.anticipateInstallments.title}: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
+        date: expense.date,
+        mainCategory: expense.mainCategory,
+        subcategory: expense.subcategory,
+        paymentMethod: expense.paymentMethod,
+        tags: expense.tags || [],
     };
-    batch.set(newExpenseRef, newExpense);
+    batch.set(newExpenseRef, newExpenseData);
 
     try {
       await batch.commit();
+
       toast({
         title: text.common.success,
         description: text.anticipateInstallments.success,
@@ -199,6 +209,9 @@ export default function AnteciparParcelasForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
                 <h4 className="font-medium">{text.anticipateInstallments.futureInstallments}</h4>
+                <p className="text-sm text-muted-foreground">
+                  A parcela atual ({expense.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}) já está incluída no cálculo.
+                </p>
                 <ScrollArea className="h-40 rounded-md border p-4">
                     <FormField
                         control={control}
@@ -278,7 +291,7 @@ export default function AnteciparParcelasForm({
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 {text.common.cancel}
               </Button>
-              <Button type="submit" disabled={isSubmitting || (selectedParcelasIds?.length || 0) === 0}>
+              <Button type="submit" disabled={isSubmitting || selectedParcelasIds?.length === 0}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {text.anticipateInstallments.submit}
               </Button>
@@ -290,5 +303,3 @@ export default function AnteciparParcelasForm({
     </Dialog>
   );
 }
-
-    
