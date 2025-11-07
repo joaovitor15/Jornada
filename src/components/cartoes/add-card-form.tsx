@@ -16,6 +16,7 @@ import {
   where,
   getDocs,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -62,8 +63,8 @@ type CardFormProps = {
   cardToEdit?: Card | null;
 };
 
-// Função para garantir que a tag principal "Cartões" exista
-async function ensurePrincipalCardTagExists(
+// Função para garantir que a tag principal "Cartões" exista e retornar seu ID
+async function getOrCreatePrincipalTagId(
   userId: string,
   profile: Profile
 ): Promise<string> {
@@ -79,19 +80,17 @@ async function ensurePrincipalCardTagExists(
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
-    // Tag já existe, retorna o ID
     return querySnapshot.docs[0].id;
   } else {
-    // Tag não existe, cria uma nova
     const newTagRef = doc(tagsRef);
-    const newTagData: Omit<RawTag, 'id'> & { id: string } = {
+    const newTagData = {
       id: newTagRef.id,
       userId: userId,
       profile: profile,
       name: 'Cartões',
       isPrincipal: true,
       parent: null,
-      order: 99, // Um número alto para colocar no final, pode ser ajustado
+      order: 99,
     };
     await setDoc(newTagRef, newTagData);
     return newTagRef.id;
@@ -151,13 +150,27 @@ export default function CardForm({
     }
 
     try {
-      // Passo 1: Garantir que a tag principal "Cartões" exista.
-      const principalTagId = await ensurePrincipalCardTagExists(
+      // Passo 1: Garantir que a tag principal "Cartões" exista e obter seu ID.
+      const principalTagId = await getOrCreatePrincipalTagId(
         user.uid,
         activeProfile
       );
 
-      // Passo 2: Salvar ou atualizar o cartão.
+      // Passo 2: Criar a tag filha (vinculada) para o cartão.
+      const childTagRef = doc(collection(db, 'tags'));
+      const childTagData: RawTag = {
+        id: childTagRef.id,
+        userId: user.uid,
+        profile: activeProfile,
+        name: values.name.trim(),
+        isPrincipal: false,
+        parent: principalTagId,
+        order: 0,
+      };
+      // Apenas esta operação precisa ser aguardada para garantir que a tag foi criada.
+      await setDoc(childTagRef, childTagData);
+
+      // Passo 3: Se a criação da tag filha foi bem-sucedida, criar o cartão.
       if (isEditMode && cardToEdit?.id) {
         const cardRef = doc(db, 'cards', cardToEdit.id);
         await updateDoc(cardRef, values);
