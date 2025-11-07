@@ -72,7 +72,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expenses: Expense[], groupBy: 'mainCategory' | 'subcategory', mainCategoryFilter?: string }) {
+function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expenses: Expense[], groupBy: 'mainCategory' | 'subcategory' | 'tags', mainCategoryFilter?: string }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
 
   useEffect(() => {
@@ -81,10 +81,23 @@ function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expe
       : expenses.filter(e => e.mainCategory === mainCategoryFilter);
 
     const totals: { [key: string]: number } = {};
-    filteredExpenses.forEach((expense) => {
-      const key = expense[groupBy];
-      totals[key] = (totals[key] || 0) + expense.amount;
-    });
+
+    if (groupBy === 'tags') {
+      filteredExpenses.forEach((expense) => {
+        if (expense.tags && expense.tags.length > 0) {
+          expense.tags.forEach(tag => {
+            totals[tag] = (totals[tag] || 0) + expense.amount;
+          });
+        }
+      });
+    } else {
+      filteredExpenses.forEach((expense) => {
+        const key = expense[groupBy];
+        if (key) {
+           totals[key] = (totals[key] || 0) + expense.amount;
+        }
+      });
+    }
 
     const totalSpending = Object.values(totals).reduce((acc, val) => acc + val, 0);
 
@@ -278,6 +291,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   const TABS = [
     { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
     { value: "subcategories", label: "Subcategorias", content: <SubcategoryTabContent expenses={expenses} /> },
+    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} groupBy="tags" /> },
     ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
   ];
 
