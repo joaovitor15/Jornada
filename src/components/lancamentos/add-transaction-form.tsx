@@ -130,26 +130,47 @@ export default function AddTransactionForm() {
   const { allPaymentMethods, nonCardTags } = useMemo(() => {
     const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
     const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
-
-    const cardTagChildren = cardsPrincipal?.children || [];
-    const paymentMethodChildren = paymentMethodsPrincipal?.children || [];
-
+  
+    const cardTagChildren = cardsPrincipal?.children.filter(c => !c.isArchived) || [];
+    const paymentMethodChildren = paymentMethodsPrincipal?.children.filter(c => !c.isArchived) || [];
+  
     const combined = [...paymentMethodChildren, ...cardTagChildren];
-    const uniquePaymentMethods = Array.from(new Map(combined.map(item => [item.name, item])).values());
     
-    const allPaymentTagNames = new Set(uniquePaymentMethods.map(c => c.name));
+    // Deduplicate by name, ignoring case
+    const uniquePaymentMethodsMap = new Map<string, RawTag>();
+    combined.forEach(item => {
+        const lowerCaseName = item.name.toLowerCase();
+        if (!uniquePaymentMethodsMap.has(lowerCaseName)) {
+            uniquePaymentMethodsMap.set(lowerCaseName, item);
+        }
+    });
+
+    const uniquePaymentMethods = Array.from(uniquePaymentMethodsMap.values());
+  
+    const allPaymentTagNames = new Set(uniquePaymentMethods.map(t => t.name.toLowerCase()));
+  
     const allChildTags = allTags.flatMap(t => t.children);
-    
+    const filteredNonCardTags = allChildTags
+      .filter(t => !t.isPrincipal && !t.parent?.includes('cards') && !t.parent?.includes('payment'))
+      .map(c => c.name);
+
+    // Get all tags that are not children of "Cartões" or "Formas de Pagamento"
+    const generalTags = allTags
+      .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
+      .flatMap(pt => [pt.name, ...pt.children.map(ct => ct.name)]);
+      
+    const finalNonCardTags = Array.from(new Set(generalTags));
+
     return {
       allPaymentMethods: uniquePaymentMethods,
-      nonCardTags: allChildTags.filter(t => !allPaymentTagNames.has(t.name)).map(c => c.name),
+      nonCardTags: finalNonCardTags,
     };
   }, [allTags]);
   
   const isCreditCardPayment = useMemo(() => {
     if (!selectedPaymentMethod) return false;
     const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-    return cardsPrincipal?.children.some(card => card.name === selectedPaymentMethod) ?? false;
+    return cardsPrincipal?.children.some(card => card.name.toLowerCase() === selectedPaymentMethod.toLowerCase()) ?? false;
   }, [selectedPaymentMethod, allTags]);
 
 
@@ -213,15 +234,13 @@ export default function AddTransactionForm() {
       }
       
       if (name === 'paymentMethod') {
-        const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-        const isCard = cardsPrincipal?.children.some(card => card.name === value.paymentMethod) ?? false;
-        if(!isCard) {
+        if(!isCreditCardPayment) {
             setValue('installments', 1);
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue, trigger, isEditMode, allTags]);
+  }, [watch, setValue, trigger, isEditMode, isCreditCardPayment]);
 
 
   const categoryConfig = getCategoryConfig(activeProfile, transactionType);
@@ -264,9 +283,7 @@ export default function AddTransactionForm() {
             };
 
             if (values.type === 'expense') {
-                const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-                const isCard = cardsPrincipal?.children.some(card => card.name === values.paymentMethod) ?? false;
-                (dataToUpdate as Partial<Expense>).paymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
+                (dataToUpdate as Partial<Expense>).paymentMethod = isCreditCardPayment ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
             }
 
             await updateDoc(docRef, dataToUpdate);
@@ -279,9 +296,7 @@ export default function AddTransactionForm() {
                 const installmentAmount = values.amount / installments;
                 const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
                 
-                const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
-                const isCard = cardsPrincipal?.children.some(card => card.name === values.paymentMethod) ?? false;
-                const finalPaymentMethod = isCard ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
+                const finalPaymentMethod = isCreditCardPayment ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
 
                 for (let i = 0; i < installments; i++) {
                   const installmentDate = addMonths(values.date, i);
