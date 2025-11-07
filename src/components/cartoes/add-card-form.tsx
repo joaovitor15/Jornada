@@ -109,70 +109,62 @@ export default function CardForm({
   const handleTagManagement = async (
     newCardName: string,
     oldCardName?: string
-  ) => {
-    if (!user || !activeProfile) return;
-
+  ): Promise<void> => {
+    if (!user || !activeProfile) {
+      throw new Error('Usuário ou perfil não encontrado.');
+    }
+  
     const principalTagName = 'Cartões';
     const tagsRef = collection(db, 'tags');
-
-    try {
-      // --- Passo 1: Garantir que a tag principal "Cartões" exista ---
-      const principalQuery = query(
+  
+    // 1. Garantir que a tag principal "Cartões" exista e obter seu ID
+    const principalQuery = query(
+      tagsRef,
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
+      where('name', '==', principalTagName),
+      where('isPrincipal', '==', true),
+      limit(1)
+    );
+  
+    const principalSnapshot = await getDocs(principalQuery);
+    let principalTagId: string;
+  
+    if (principalSnapshot.empty) {
+      const principalRef = doc(tagsRef);
+      principalTagId = principalRef.id;
+      await setDoc(principalRef, {
+        id: principalTagId,
+        userId: user.uid,
+        profile: activeProfile,
+        name: principalTagName,
+        isPrincipal: true,
+        parent: null,
+        order: -1, // Fixo para "Cartões"
+      });
+    } else {
+      principalTagId = principalSnapshot.docs[0].id;
+    }
+  
+    // 2. Lidar com a tag filha (o nome do cartão)
+    const childQuery = query(
         tagsRef,
         where('userId', '==', user.uid),
         where('profile', '==', activeProfile),
-        where('name', '==', principalTagName),
-        where('isPrincipal', '==', true),
+        where('name', '==', (isEditMode && oldCardName) ? oldCardName : newCardName),
+        where('parent', '==', principalTagId),
         limit(1)
-      );
-
-      const principalSnapshot = await getDocs(principalQuery);
-      let principalTagId: string;
-
-      if (principalSnapshot.empty) {
-        const principalRef = doc(tagsRef);
-        principalTagId = principalRef.id;
-        await setDoc(principalRef, {
-          id: principalTagId,
-          userId: user.uid,
-          profile: activeProfile,
-          name: principalTagName,
-          isPrincipal: true,
-          parent: null,
-          order: -1, 
-        });
+    );
+  
+    const childSnapshot = await getDocs(childQuery);
+  
+    if (isEditMode && oldCardName && oldCardName !== newCardName) {
+      // Renomear: Encontrar a tag antiga e atualizar seu nome
+      if (!childSnapshot.empty) {
+        const oldTagRef = childSnapshot.docs[0].ref;
+        await updateDoc(oldTagRef, { name: newCardName });
       } else {
-        principalTagId = principalSnapshot.docs[0].id;
-      }
-      
-      // --- Passo 2: Lidar com a tag filha (o nome do cartão) ---
-      if (isEditMode && oldCardName && oldCardName !== newCardName) {
-        // Renomear: Encontrar a tag filha antiga e atualizar seu nome
-        const childQuery = query(
-          tagsRef,
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('name', '==', oldCardName),
-          where('parent', '==', principalTagId),
-          limit(1)
-        );
-        const childSnapshot = await getDocs(childQuery);
-        if (!childSnapshot.empty) {
-          const oldTagRef = childSnapshot.docs[0].ref;
-          await updateDoc(oldTagRef, { name: newCardName });
-        } else {
-           const newChildRef = doc(tagsRef);
-            await setDoc(newChildRef, {
-                id: newChildRef.id,
-                userId: user.uid,
-                profile: activeProfile,
-                name: newCardName,
-                isPrincipal: false,
-                parent: principalTagId,
-            });
-        }
-      } else if (!isEditMode) {
-        // Criar nova: Criar uma nova tag filha para o novo cartão
+        // Se a tag antiga não for encontrada por algum motivo, crie uma nova
         const newChildRef = doc(tagsRef);
         await setDoc(newChildRef, {
           id: newChildRef.id,
@@ -183,14 +175,19 @@ export default function CardForm({
           parent: principalTagId,
         });
       }
-
-    } catch (error) {
-      console.error("Erro ao gerenciar tags de cartão:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro de Sincronização",
-        description: "O cartão foi salvo, mas houve um erro ao criar/atualizar a tag associada.",
-      });
+    } else if (!isEditMode) {
+      // Criar nova: Só cria se não existir
+      if (childSnapshot.empty) {
+        const newChildRef = doc(tagsRef);
+        await setDoc(newChildRef, {
+          id: newChildRef.id,
+          userId: user.uid,
+          profile: activeProfile,
+          name: newCardName,
+          isPrincipal: false,
+          parent: principalTagId,
+        });
+      }
     }
   };
 
@@ -206,11 +203,14 @@ export default function CardForm({
     }
 
     try {
+      // Passo 1: Tentar criar/atualizar as tags PRIMEIRO.
+      // Se isso falhar, a função vai disparar um erro e não vai prosseguir.
+      await handleTagManagement(values.name, cardToEdit?.name);
+
+      // Passo 2: Se a gestão das tags foi bem-sucedida, criar/atualizar o cartão.
       if (isEditMode && cardToEdit?.id) {
-        const previousName = cardToEdit.name;
         const cardRef = doc(db, 'cards', cardToEdit.id);
         await updateDoc(cardRef, values);
-        await handleTagManagement(values.name, previousName);
         toast({
           title: text.common.success,
           description: text.addCardForm.updateSuccess,
@@ -222,7 +222,6 @@ export default function CardForm({
           profile: activeProfile,
           createdAt: serverTimestamp(),
         });
-        await handleTagManagement(values.name);
         toast({
           title: text.common.success,
           description: text.addCardForm.addSuccess,
@@ -230,11 +229,11 @@ export default function CardForm({
       }
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao salvar cartão:', error);
+      console.error('Erro ao salvar cartão ou gerenciar tags:', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: text.addCardForm.saveError(isEditMode),
+        description: `Falha na operação: ${error instanceof Error ? error.message : text.addCardForm.saveError(isEditMode)}`,
       });
     }
   };
