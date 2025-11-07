@@ -441,7 +441,7 @@ export default function AddTransactionForm() {
                           name="cardId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Cartão (Opcional)</FormLabel>
+                              <FormLabel>Tags Cartão</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || (isEditMode && isCreditCardPayment)}>
                                 <FormControl>
                                   <SelectTrigger>
