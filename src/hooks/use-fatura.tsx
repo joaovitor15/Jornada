@@ -58,34 +58,37 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       orderBy('date', 'desc')
     );
     
-    const nextFaturaPeriod = getFaturaPeriod(
-      addMonths(closingDate, 1).getFullYear(), 
-      addMonths(closingDate, 1).getMonth(), 
-      card.closingDay, 
-      card.dueDay
-    );
+    // CORREÇÃO: O período de busca de pagamentos deve corresponder ao ciclo da fatura.
+    // Pagamentos para a fatura de 'Outubro' (que fecha em Outubro) são feitos
+    // entre o fechamento de Outubro e o fechamento de Novembro.
+    const paymentStart = closingDate;
+    const paymentEnd = addMonths(closingDate, 1);
 
     const paymentsQuery = query(
         collection(db, 'billPayments'),
         where('userId', '==', user.uid),
         where('profile', '==', activeProfile),
         where('cardId', '==', card.id),
-        where('date', '>=', Timestamp.fromDate(closingDate)),
-        where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
+        where('date', '>=', Timestamp.fromDate(paymentStart)),
+        where('date', '<', Timestamp.fromDate(paymentEnd))
     );
+
 
     let localExpenses: FaturaTransaction[] = [];
     let localPayments: FaturaTransaction[] = [];
 
     const handleDataUpdate = () => {
         const totalExpenses = localExpenses.reduce((acc, tx) => acc + tx.amount, 0);
+        
         const totalPaymentsValue = localPayments
             .filter(p => p.type === 'payment')
             .reduce((acc, p) => acc + p.amount, 0);
+
         const totalRefunds = localPayments
             .filter(p => p.type === 'refund')
             .reduce((acc, p) => acc + p.amount, 0);
 
+        // O valor total da fatura é o gasto menos os estornos.
         const faturaValue = totalExpenses - totalRefunds;
 
         setTotal(faturaValue < 0 ? 0 : faturaValue);
@@ -97,6 +100,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
         const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
         const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
       
+        // O status é calculado com base no valor da fatura e nos pagamentos feitos.
         const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaymentsValue, dueDate, closingDate, isCurrentFatura, isFutureFatura);
         setStatus(faturaStatus);
 
