@@ -241,8 +241,8 @@ export default function BillPaymentsList() {
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {format(payment.date.toDate(), 'dd/MM/yyyy')}
                           </TableCell>
-                          <TableCell className={`text-right py-2 px-2 align-middle font-semibold ${payment.type === 'refund' ? 'text-green-500' : 'text-red-500'}`}>
-                            {payment.type === 'refund' ? '+' : '-'}
+                          <TableCell className={`text-right py-2 px-2 align-middle font-semibold ${payment.type === 'refund' ? 'text-green-500' : ''}`}>
+                            {payment.type === 'refund' ? '+' : ''}
                             {new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',

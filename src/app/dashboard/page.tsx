@@ -115,8 +115,10 @@ export default function DashboardPage() {
       .filter(e => !e.paymentMethod.startsWith('Cartão:'))
       .reduce((acc, curr) => acc + curr.amount, 0);
     
+    // Only 'payment' type bill payments are considered expenses for the dashboard
     const monthlyBillPayments = billPayments
       .filter(filterByMonthAndYear)
+      .filter(p => p.type === 'payment')
       .reduce((acc, curr) => acc + curr.amount, 0);
 
     const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
@@ -124,9 +126,10 @@ export default function DashboardPage() {
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(totalMonthlyExpenses);
     setTotalVendas(monthlyVendas);
-    setTotalAlimentacao(monthlyAlimentacao);
+    setTotalAlimentacao(totalAlimentacao);
     setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
-  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth]);
+  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
+
 
   if (authLoading || !user) {
     return (
