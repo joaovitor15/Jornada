@@ -11,6 +11,10 @@ import {
   writeBatch,
   doc,
   updateDoc,
+  getDocs,
+  query,
+  where,
+  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -39,7 +43,9 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -55,7 +61,7 @@ import {
   type Profile,
   Expense,
   Income,
-  RawTag,
+  HierarchicalTag,
 } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import {
@@ -127,12 +133,17 @@ export default function AddTransactionForm() {
   const transactionType = watch('type');
   const selectedPaymentMethod = watch('paymentMethod');
   
-  const { paymentMethodTags, cardTags, nonCardTags } = useMemo(() => {
-    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+  const { paymentMethodOptions, cardOptions, nonCardTags } = useMemo(() => {
     const paymentMethodsPrincipal = allTags.find(t => t.name === 'Formas de Pagamento');
-  
-    const pmt = paymentMethodsPrincipal?.children.filter(c => !c.isArchived) || [];
-    const ct = cardsPrincipal?.children.filter(c => !c.isArchived) || [];
+    const cardsPrincipal = allTags.find(t => t.name === 'Cartões');
+    
+    const pmtOptions = paymentMethodsPrincipal?.children
+      .filter(c => !c.isArchived)
+      .map(c => c.name) || [];
+
+    const cardOpts = cardsPrincipal?.children
+      .filter(c => !c.isArchived)
+      .map(c => c.name) || [];
 
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
@@ -141,16 +152,16 @@ export default function AddTransactionForm() {
       .map(t => t.name);
 
     return {
-      paymentMethodTags: pmt,
-      cardTags: ct,
+      paymentMethodOptions: pmtOptions,
+      cardOptions: cardOpts,
       nonCardTags: Array.from(new Set(generalTags)),
     };
   }, [allTags]);
   
   const isCreditCardPayment = useMemo(() => {
     if (!selectedPaymentMethod) return false;
-    return cardTags.some(card => card.name === selectedPaymentMethod);
-  }, [selectedPaymentMethod, cardTags]);
+    return cardOptions.includes(selectedPaymentMethod);
+  }, [selectedPaymentMethod, cardOptions]);
 
 
 
@@ -445,22 +456,22 @@ export default function AddTransactionForm() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {paymentMethodTags.length > 0 && (
+                                    {paymentMethodOptions.length > 0 && (
                                         <SelectGroup>
                                             <SelectLabel>Formas de Pagamento</SelectLabel>
-                                            {paymentMethodTags.map((tag: RawTag) => (
-                                               <SelectItem key={tag.id} value={tag.name}>
-                                                  {tag.name}
+                                            {paymentMethodOptions.map((tag) => (
+                                               <SelectItem key={tag} value={tag}>
+                                                  {tag}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
                                     )}
-                                    {cardTags.length > 0 && (
+                                    {cardOptions.length > 0 && (
                                         <SelectGroup>
                                             <SelectLabel>Cartões</SelectLabel>
-                                            {cardTags.map((tag: RawTag) => (
-                                               <SelectItem key={tag.id} value={tag.name}>
-                                                  {tag.name}
+                                            {cardOptions.map((tag) => (
+                                               <SelectItem key={tag} value={tag}>
+                                                  {tag}
                                                 </SelectItem>
                                             ))}
                                         </SelectGroup>
