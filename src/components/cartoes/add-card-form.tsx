@@ -17,6 +17,7 @@ import {
   getDocs,
   writeBatch,
   limit,
+  setDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -113,82 +114,91 @@ export default function CardForm({
 
     const principalTagName = 'Cartões';
     const tagsRef = collection(db, 'tags');
-    const batch = writeBatch(db);
 
-    // 1. Find or Create the Principal "Cartões" Tag
-    const principalTagQuery = query(
-      tagsRef,
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('name', '==', principalTagName),
-      where('isPrincipal', '==', true),
-      limit(1)
-    );
+    try {
+        // --- Passo 1: Garantir que a tag principal "Cartões" exista ---
+        const principalQuery = query(
+            tagsRef,
+            where('userId', '==', user.uid),
+            where('profile', '==', activeProfile),
+            where('name', '==', principalTagName),
+            where('isPrincipal', '==', true),
+            limit(1)
+        );
 
-    const principalTagSnapshot = await getDocs(principalTagQuery);
-    let principalTagId: string;
-    let principalTagRef;
+        const principalSnapshot = await getDocs(principalQuery);
+        let principalTagId: string;
 
-    if (principalTagSnapshot.empty) {
-      principalTagRef = doc(tagsRef);
-      principalTagId = principalTagRef.id;
-      const principalTagData: Omit<RawTag, 'id'> & { id: string } = {
-        id: principalTagRef.id,
-        userId: user.uid,
-        profile: activeProfile,
-        name: principalTagName,
-        isPrincipal: true,
-        parent: null,
-        order: -1, // Special order to keep it separate or at the top
-      };
-      batch.set(principalTagRef, principalTagData);
-    } else {
-      principalTagId = principalTagSnapshot.docs[0].id;
-      principalTagRef = principalTagSnapshot.docs[0].ref;
-    }
+        if (principalSnapshot.empty) {
+            const principalRef = doc(tagsRef);
+            principalTagId = principalRef.id;
+            await setDoc(principalRef, {
+                id: principalTagId,
+                userId: user.uid,
+                profile: activeProfile,
+                name: principalTagName,
+                isPrincipal: true,
+                parent: null,
+                order: -1, // Ordem especial para garantir que apareça no topo ou de forma distinta
+            });
+        } else {
+            principalTagId = principalSnapshot.docs[0].id;
+        }
 
-    // 2. Create or Update the Child Tag
-    if (isEditMode && cardToEdit && previousCardName !== cardName) {
-      // Find the old tag and update it
-      const childTagQuery = query(
-        tagsRef,
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile),
-        where('name', '==', previousCardName),
-        where('parent', '==', principalTagId),
-        limit(1)
-      );
-      const childTagSnapshot = await getDocs(childTagQuery);
-      if (!childTagSnapshot.empty) {
-        const tagToUpdateRef = childTagSnapshot.docs[0].ref;
-        batch.update(tagToUpdateRef, { name: cardName });
-      } else {
-        // If it doesn't exist for some reason, create it
-        const newChildTagRef = doc(tagsRef);
-        batch.set(newChildTagRef, {
-          id: newChildTagRef.id,
-          userId: user.uid,
-          profile: activeProfile,
-          name: cardName,
-          isPrincipal: false,
-          parent: principalTagId,
+        // --- Passo 2: Lidar com a tag filha (o nome do cartão) ---
+        const batch = writeBatch(db);
+
+        if (isEditMode && cardToEdit && previousCardName !== cardName) {
+            // Renomear: Encontrar a tag filha antiga e atualizar seu nome
+            const childQuery = query(
+                tagsRef,
+                where('userId', '==', user.uid),
+                where('profile', '==', activeProfile),
+                where('name', '==', previousCardName),
+                where('parent', '==', principalTagId),
+                limit(1)
+            );
+            const childSnapshot = await getDocs(childQuery);
+            if (!childSnapshot.empty) {
+                const oldTagRef = childSnapshot.docs[0].ref;
+                batch.update(oldTagRef, { name: cardName });
+            } else {
+                // Se a tag antiga não for encontrada por algum motivo, crie a nova.
+                const newChildRef = doc(tagsRef);
+                batch.set(newChildRef, {
+                    id: newChildRef.id,
+                    userId: user.uid,
+                    profile: activeProfile,
+                    name: cardName,
+                    isPrincipal: false,
+                    parent: principalTagId,
+                });
+            }
+        } else if (!isEditMode) {
+            // Criar nova: Criar uma nova tag filha para o novo cartão
+            const newChildRef = doc(tagsRef);
+            batch.set(newChildRef, {
+                id: newChildRef.id,
+                userId: user.uid,
+                profile: activeProfile,
+                name: cardName,
+                isPrincipal: false,
+                parent: principalTagId,
+            });
+        }
+
+        await batch.commit();
+
+    } catch (error) {
+        console.error("Erro ao gerenciar tags de cartão:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro de Sincronização",
+            description: "O cartão foi salvo, mas houve um erro ao criar a tag associada.",
         });
-      }
-    } else if (!isEditMode) {
-      // Create a new child tag
-      const newChildTagRef = doc(tagsRef);
-      batch.set(newChildTagRef, {
-        id: newChildTagRef.id,
-        userId: user.uid,
-        profile: activeProfile,
-        name: cardName,
-        isPrincipal: false,
-        parent: principalTagId,
-      });
     }
-
-    await batch.commit();
   };
+
 
   const handleSubmitCard = async (values: z.infer<typeof cardSchema>) => {
     if (!user || !activeProfile) {
