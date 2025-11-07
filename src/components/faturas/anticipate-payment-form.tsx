@@ -54,7 +54,6 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { type Card } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
   cardId: z
@@ -67,22 +66,17 @@ const formSchema = z.object({
     })
     .positive({ message: text.payBillForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
-  type: z.enum(['payment', 'refund'], {
-    required_error: text.payBillForm.validation.typeRequired,
-  }),
 });
 
-type AddBillTransactionFormProps = {
+type AnticipatePaymentFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  initialType?: 'payment' | 'refund';
 };
 
-export default function AddBillTransactionForm({
+export default function AnticipatePaymentForm({
   isOpen,
   onOpenChange,
-  initialType = 'payment',
-}: AddBillTransactionFormProps) {
+}: AnticipatePaymentFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
@@ -91,14 +85,9 @@ export default function AddBillTransactionForm({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      type: initialType,
-    },
   });
 
   const { isSubmitting, watch, setValue, control, reset } = form;
-
-  const transactionType = watch('type');
 
   useEffect(() => {
     if (isOpen) {
@@ -107,11 +96,10 @@ export default function AddBillTransactionForm({
         cardId: '',
         amount: undefined,
         date: initialDate,
-        type: initialType,
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset, initialType]);
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -157,7 +145,7 @@ export default function AddBillTransactionForm({
       });
       return;
     }
-
+    
     const selectedCard = cards.find((card) => card.id === values.cardId);
     if (!selectedCard) {
       toast({
@@ -168,6 +156,7 @@ export default function AddBillTransactionForm({
       return;
     }
 
+
     try {
       await addDoc(collection(db, 'billPayments'), {
         userId: user.uid,
@@ -175,16 +164,14 @@ export default function AddBillTransactionForm({
         cardId: values.cardId,
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
-        type: values.type,
+        type: 'payment', // Pagamento antecipado é um 'payment'
+        description: 'Pagamento Antecipado',
         tags: [selectedCard.name],
       });
 
       toast({
         title: text.common.success,
-        description:
-          values.type === 'payment'
-            ? text.payBillForm.addSuccess
-            : text.payBillForm.refundSuccess,
+        description: 'Pagamento antecipado registrado com sucesso.',
       });
       onOpenChange(false);
     } catch (error) {
@@ -192,7 +179,7 @@ export default function AddBillTransactionForm({
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: text.payBillForm.addError,
+        description: 'Falha ao registrar pagamento antecipado.',
       });
     }
   }
@@ -221,13 +208,9 @@ export default function AddBillTransactionForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>
-            {transactionType === 'payment'
-              ? text.payBillForm.title
-              : text.payBillForm.refundTitle}
-          </DialogTitle>
+          <DialogTitle>Pagamento Antecipado</DialogTitle>
           <DialogDescription>
-            {text.payBillForm.description}
+            Registre um pagamento para abater o saldo da sua fatura em aberto.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -235,37 +218,6 @@ export default function AddBillTransactionForm({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
-            <FormField
-              control={control}
-              name="type"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>{text.payBillForm.transactionType}</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="payment" />
-                        </FormControl>
-                        <FormLabel className="font-normal">{text.payBillForm.payment}</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="refund" />
-                        </FormControl>
-                        <FormLabel className="font-normal">{text.payBillForm.refund}</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={control}
               name="cardId"
@@ -303,7 +255,7 @@ export default function AddBillTransactionForm({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{transactionType === 'payment' ? text.payBillForm.amountLabel : text.payBillForm.refundAmountLabel}</FormLabel>
+                    <FormLabel>Valor a Pagar</FormLabel>
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.addExpenseForm.amountPlaceholder}
@@ -324,7 +276,7 @@ export default function AddBillTransactionForm({
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>{transactionType === 'payment' ? text.payBillForm.paymentDateLabel : text.payBillForm.refundDateLabel}</FormLabel>
+                    <FormLabel>{text.payBillForm.paymentDateLabel}</FormLabel>
                     <Popover>
                       <div className="flex items-center gap-2">
                         <FormControl>
@@ -373,7 +325,7 @@ export default function AddBillTransactionForm({
                 {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {transactionType === 'payment' ? text.payBillForm.submitButton : text.payBillForm.refundSubmitButton}
+                Registrar Pagamento Antecipado
               </Button>
             </DialogFooter>
           </form>

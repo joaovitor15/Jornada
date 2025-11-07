@@ -5,18 +5,18 @@ import { AuthProvider } from '@/components/auth-provider';
 import { ProfileProvider } from '@/components/profile-provider';
 import { Toaster } from '@/components/ui/toaster';
 import AppLayout from '@/components/layout/AppLayout';
-import { AddPayBillModalProvider } from '@/contexts/AddPayBillModalContext';
+import { AddBillTransactionModalProvider } from '@/contexts/AddBillTransactionModalContext';
 import { AddTransactionModalProvider } from '@/contexts/AddTransactionModalContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <ProfileProvider>
-        <AddPayBillModalProvider>
+        <AddBillTransactionModalProvider>
           <AddTransactionModalProvider>
             <AppLayout>{children}</AppLayout>
           </AddTransactionModalProvider>
-        </AddPayBillModalProvider>
+        </AddBillTransactionModalProvider>
         <Toaster />
       </ProfileProvider>
     </AuthProvider>

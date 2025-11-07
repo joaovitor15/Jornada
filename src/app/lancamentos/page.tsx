@@ -6,14 +6,16 @@ import BillPaymentsList from '@/components/faturas/bill-payments-list';
 import { Button } from '@/components/ui/button';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { text } from '@/lib/strings';
-import { Shield, PlusCircle } from 'lucide-react';
+import { Shield, PlusCircle, CreditCard } from 'lucide-react';
 import EmergencyReserveList from '@/components/lancamentos/emergency-reserve-list';
 import { useState } from 'react';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
+import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
 
 export default function LancamentosPage() {
   const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
+  const { openModal } = useAddBillTransactionModal();
 
   return (
     <>
@@ -28,6 +30,22 @@ export default function LancamentosPage() {
             >
               <Shield className="mr-2 h-4 w-4" />
               Movimentar Reserva
+            </Button>
+            <Button
+              onClick={() => openModal('anticipate')}
+              size="sm"
+              variant="outline"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Pgto Antecipado
+            </Button>
+            <Button
+              onClick={() => openModal('pay')}
+              size="sm"
+              variant="outline"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Pagar Fatura
             </Button>
             <Button
               onClick={() => setIsTransactionFormOpen(true)}

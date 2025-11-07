@@ -12,16 +12,17 @@ import {
 } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
-import PayBillForm from '../faturas/pay-bill-form';
+import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
+import AddBillTransactionForm from '../faturas/pay-bill-form';
+import AnticipatePaymentForm from '../faturas/anticipate-payment-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import AddTransactionForm from '../lancamentos/add-transaction-form';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { isFormOpen: isPayBillFormOpen, setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
-  const { isFormOpen: isTransactionFormOpen, setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
+  const { payBillModal, anticipateModal, closeModal } = useAddBillTransactionModal();
+  const { isFormOpen: isTransactionFormOpen } = useAddTransactionModal();
   const isMobile = useIsMobile();
 
   if (!user) {
@@ -64,15 +65,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 p-4 sm:p-6 md:p-8 h-[calc(100vh-56px)] overflow-auto border-t">{children}</main>
         </div>
         
-        <PayBillForm
-          isOpen={isPayBillFormOpen}
-          onOpenChange={setIsPayBillFormOpen}
+        <AddBillTransactionForm
+          isOpen={payBillModal.isOpen}
+          onOpenChange={() => closeModal('pay')}
+          initialType={payBillModal.type}
+        />
+        
+        <AnticipatePaymentForm
+          isOpen={anticipateModal.isOpen}
+          onOpenChange={() => closeModal('anticipate')}
         />
 
-        <AddTransactionForm
-          isOpen={isTransactionFormOpen}
-          onOpenChange={setIsTransactionFormOpen}
-        />
+        <AddTransactionForm />
 
       </div>
     </Sheet>

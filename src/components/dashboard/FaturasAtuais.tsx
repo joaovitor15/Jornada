@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Landmark } from 'lucide-react';
 import { text } from '@/lib/strings';
-import { useAddPayBillModal } from '@/contexts/AddPayBillModalContext';
+import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
 
 interface FaturaInfo {
   id: string;
@@ -53,7 +53,7 @@ export default function FaturasAtuais() {
   const { activeProfile } = useProfile();
   const [faturas, setFaturas] = useState<FaturaInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const { setIsFormOpen: setIsPayBillFormOpen } = useAddPayBillModal();
+  const { openModal } = useAddBillTransactionModal();
 
   useEffect(() => {
     if (!user || !activeProfile) {
@@ -108,7 +108,7 @@ export default function FaturasAtuais() {
         ];
 
         return faturasToFetch.map(async (faturaMeta) => {
-          const {
+           const {
             startDate,
             endDate,
             closingDate,
@@ -128,7 +128,34 @@ export default function FaturasAtuais() {
             where('date', '>=', Timestamp.fromDate(startDate)),
             where('date', '<=', Timestamp.fromDate(endDate))
           );
+          
+          const refundsQuery = query(
+              collection(db, 'billPayments'),
+              where('userId', '==', user.uid),
+              where('profile', '==', activeProfile),
+              where('cardId', '==', card.id),
+              where('type', '==', 'refund'),
+              where('date', '>=', Timestamp.fromDate(startDate)),
+              where('date', '<=', Timestamp.fromDate(endDate))
+          );
+          
+          const prevFaturaPeriod = getFaturaPeriod(
+            subMonths(closingDate, 1).getFullYear(),
+            subMonths(closingDate, 1).getMonth(),
+            card.closingDay,
+            card.dueDay
+          );
 
+          const paymentsQuery = query(
+              collection(db, 'billPayments'),
+              where('userId', '==', user.uid),
+              where('profile', '==', activeProfile),
+              where('cardId', '==', card.id),
+              where('type', '==', 'payment'),
+              where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)),
+              where('date', '<=', Timestamp.fromDate(closingDate))
+          );
+          
           const futureExpensesQuery = query(
             collection(db, 'expenses'),
             where('userId', '==', user.uid),
@@ -136,66 +163,38 @@ export default function FaturasAtuais() {
             where('paymentMethod', '==', `Cartão: ${card.name}`),
             where('date', '>', Timestamp.fromDate(endDate))
           );
-          
-          const paymentClosingDate = closingDate;
-          const paymentDueDate = dueDate;
-          
-          // Lógica de período de pagamento ajustada
-           const nextFaturaPeriod = getFaturaPeriod(addMonths(paymentClosingDate, 1).getFullYear(), addMonths(paymentClosingDate, 1).getMonth(), card.closingDay, card.dueDay);
 
-          const paymentsQuery = query(
-            collection(db, 'billPayments'),
-            where('userId', '==', user.uid),
-            where('profile', '==', activeProfile),
-            where('cardId', '==', card.id),
-            where('date', '>=', Timestamp.fromDate(paymentClosingDate)),
-            where('date', '<', Timestamp.fromDate(nextFaturaPeriod.closingDate))
-          );
-
-          const [expensesSnap, paymentsSnap, futureExpensesSnap] =
+          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] =
             await Promise.all([
               getDocs(expensesQuery),
               getDocs(paymentsQuery),
-              getDocs(futureExpensesQuery),
+              getDocs(futureExpensesSnap),
+              getDocs(refundsQuery)
             ]);
 
-          const faturaValue = expensesSnap.docs.reduce(
-            (acc, doc) => acc + doc.data().amount,
-            0
-          );
-          const pagamentos = paymentsSnap.docs.reduce(
-            (acc, doc) => acc + doc.data().amount,
-            0
-          );
-          const parcelasFuturas = futureExpensesSnap.docs.reduce(
-            (acc, doc) => acc + doc.data().amount,
-            0
-          );
+          const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+          const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+          const faturaValue = totalExpenses - totalRefunds;
 
-          const isCurrentFatura =
-            faturaMeta.month === currentFaturaMonth &&
-            faturaMeta.year === currentFaturaYear;
-            
+          const pagamentos = paymentsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+          const parcelasFuturas = futureExpensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+
+          const isCurrentFatura = faturaMeta.month === currentFaturaMonth && faturaMeta.year === currentFaturaYear;
           const isFutureFatura = new Date(faturaMeta.year, faturaMeta.month) > new Date(currentFaturaYear, currentFaturaMonth);
 
 
           const { status } = getFaturaStatus(
             faturaValue,
             pagamentos,
-            paymentDueDate,
-            paymentClosingDate,
+            dueDate,
+            closingDate,
             isCurrentFatura,
             isFutureFatura
           );
 
-          // Condição para fatura fechada: é do mês anterior, e tem valor a pagar
-          const isFaturaFechada =
-            !isCurrentFatura &&
-            status.includes(text.payBillForm.billClosed) &&
-            faturaValue - pagamentos > 0;
+          const isFaturaFechada = !isCurrentFatura && status.includes(text.payBillForm.billClosed) && faturaValue - pagamentos > 0;
 
-          const limiteDisponivel =
-            card.limit - faturaValue - parcelasFuturas + pagamentos;
+          const limiteDisponivel = card.limit - faturaValue - parcelasFuturas + pagamentos;
 
           return {
             id: `${card.id}-${faturaMeta.year}-${faturaMeta.month}`,
@@ -215,9 +214,6 @@ export default function FaturasAtuais() {
 
       const resolvedFaturas = await Promise.all(allFaturasPromises.flat());
 
-      // Filtra para mostrar:
-      // 1. A fatura atual sempre.
-      // 2. A fatura anterior apenas se estiver fechada com valor a pagar.
       const filteredFaturas = resolvedFaturas.filter((f) => {
         const { month: currentMonth, year: currentYear } =
           getCurrentFaturaMonthAndYear(new Date(), f.card.closingDay);
@@ -225,9 +221,8 @@ export default function FaturasAtuais() {
           f.closingDate.getMonth() === currentMonth &&
           f.closingDate.getFullYear() === currentYear;
 
-        // Sempre mostra a fatura atual
         if (isCurrent) return true;
-        // Mostra a fatura anterior se estiver fechada com saldo
+
         if (f.faturaValue > 0 && f.faturaValue - f.pagamentos > 0) return true;
 
         return false;
@@ -279,7 +274,7 @@ export default function FaturasAtuais() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsPayBillFormOpen(true)}
+                  onClick={() => openModal('pay')}
                 >
                   <Landmark className="mr-2 h-4 w-4" />
                   {text.sidebar.payBill}
@@ -334,5 +329,3 @@ export default function FaturasAtuais() {
     </div>
   );
 }
-
-    

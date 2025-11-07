@@ -7,10 +7,11 @@ type EditableTransaction = Expense | Income;
 
 interface AddTransactionModalContextType {
   isFormOpen: boolean;
-  setIsFormOpen: (isOpen: boolean) => void;
+  setIsFormOpen: (isOpen: boolean) => void; // Manter para compatibilidade
   transactionToEdit: EditableTransaction | null;
   setTransactionToEdit: (transaction: EditableTransaction) => void;
   closeForm: () => void;
+  openForm: () => void; // Novo método
 }
 
 const AddTransactionModalContext = createContext<AddTransactionModalContextType | undefined>(undefined);
@@ -18,6 +19,8 @@ const AddTransactionModalContext = createContext<AddTransactionModalContextType 
 export function AddTransactionModalProvider({ children }: { children: ReactNode }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [transactionToEdit, setTransactionToEditState] = useState<EditableTransaction | null>(null);
+
+  const openForm = () => setIsFormOpen(true);
 
   const setTransactionToEdit = (transaction: EditableTransaction) => {
     setTransactionToEditState(transaction);
@@ -31,10 +34,11 @@ export function AddTransactionModalProvider({ children }: { children: ReactNode 
   
   const value = {
     isFormOpen,
-    setIsFormOpen,
+    setIsFormOpen, // Manter por enquanto
     transactionToEdit,
     setTransactionToEdit,
     closeForm,
+    openForm,
   }
 
   return (
