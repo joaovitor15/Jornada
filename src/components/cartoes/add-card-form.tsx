@@ -90,7 +90,7 @@ async function getOrCreatePrincipalTagId(
       name: 'Cartões',
       isPrincipal: true,
       parent: null,
-      order: 99,
+      order: 99, // High order to appear last
     };
     await setDoc(newTagRef, newTagData);
     return newTagRef.id;
@@ -150,41 +150,55 @@ export default function CardForm({
     }
 
     try {
-      // Passo 1: Garantir que a tag principal "Cartões" exista e obter seu ID.
-      const principalTagId = await getOrCreatePrincipalTagId(
-        user.uid,
-        activeProfile
-      );
-
-      // Passo 2: Criar a tag filha (vinculada) para o cartão.
-      const childTagRef = doc(collection(db, 'tags'));
-      const childTagData: RawTag = {
-        id: childTagRef.id,
-        userId: user.uid,
-        profile: activeProfile,
-        name: values.name.trim(),
-        isPrincipal: false,
-        parent: principalTagId,
-        order: 0,
-      };
-      // Apenas esta operação precisa ser aguardada para garantir que a tag foi criada.
-      await setDoc(childTagRef, childTagData);
-
-      // Passo 3: Se a criação da tag filha foi bem-sucedida, criar o cartão.
       if (isEditMode && cardToEdit?.id) {
         const cardRef = doc(db, 'cards', cardToEdit.id);
-        await updateDoc(cardRef, values);
+        await updateDoc(cardRef, { ...values, isArchived: false });
+
+        // Also update the corresponding tag
+        const tagsQuery = query(
+          collection(db, 'tags'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('name', '==', cardToEdit.name),
+          where('parent', '!=', null)
+        );
+        const tagsSnapshot = await getDocs(tagsQuery);
+        if (!tagsSnapshot.empty) {
+          const tagDoc = tagsSnapshot.docs[0];
+          const tagRef = doc(db, 'tags', tagDoc.id);
+          await updateDoc(tagRef, { name: values.name.trim() });
+        }
+        
         toast({
           title: text.common.success,
           description: text.addCardForm.updateSuccess,
         });
+
       } else {
+        // This is a "transaction": if tag creation fails, card creation won't happen.
+        const principalTagId = await getOrCreatePrincipalTagId(user.uid, activeProfile);
+        
+        const childTagRef = doc(collection(db, 'tags'));
+        const childTagData: RawTag = {
+          id: childTagRef.id,
+          userId: user.uid,
+          profile: activeProfile,
+          name: values.name.trim(),
+          isPrincipal: false,
+          parent: principalTagId,
+          order: 0,
+        };
+        await setDoc(childTagRef, childTagData);
+
+        // Only if tag creation is successful, create the card.
         await addDoc(collection(db, 'cards'), {
           ...values,
           userId: user.uid,
           profile: activeProfile,
           createdAt: serverTimestamp(),
+          isArchived: false,
         });
+
         toast({
           title: text.common.success,
           description: text.addCardForm.addSuccess,

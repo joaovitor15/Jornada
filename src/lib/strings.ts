@@ -92,6 +92,8 @@ export const text = {
     loading: 'Carregando cartões...',
     openMenu: 'Abrir menu',
     deleteCardConfirmation: 'Essa ação não pode ser desfeita. Isso excluirá permanentemente seu cartão e todos os dados associados a ele.',
+    deleteSuccess: 'Cartão excluído com sucesso.',
+    deleteError: 'Falha ao excluir o cartão.',
   },
   addCardForm: {
     title: 'Adicionar Novo Cartão',
@@ -408,8 +410,8 @@ export const text = {
     unarchiveSuccess: 'Tag desarquivada com sucesso.',
     filters: {
       inUse: 'Em Uso',
-      registered: 'Cadastradas',
-      archived: 'Arquivadas',
+      registered: 'Cadastrados',
+      archived: 'Arquivados',
     }
   }
 };

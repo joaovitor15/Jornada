@@ -42,13 +42,13 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
       await deleteDoc(doc(db, 'cards', card.id));
       toast({
         title: text.common.success,
-        description: text.incomesList.deleteSuccess,
+        description: text.cards.deleteSuccess,
       });
     } catch (error) {
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: text.incomesList.deleteError,
+        description: text.cards.deleteError,
       });
       console.error('Error deleting card: ', error);
     }
@@ -100,5 +100,3 @@ export default function CardActionsMenu({ card, onEdit }: CardActionsMenuProps) 
     </>
   );
 }
-
-    

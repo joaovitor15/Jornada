@@ -3,7 +3,7 @@
 
 import { text } from '@/lib/strings';
 import { type Card } from '@/lib/types';
-import CardActionsMenu from './card-actions-menu';
+import { Badge } from '../ui/badge';
 
 interface CardDetailsProps {
   card: Card;
@@ -13,10 +13,10 @@ interface CardDetailsProps {
 export default function CardDetails({ card, onEdit }: CardDetailsProps) {
   return (
     <>
-      <div className="absolute top-1 right-1">
-        <CardActionsMenu card={card} onEdit={onEdit} />
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-semibold pr-8">{card.name}</h3>
+        {card.isArchived && <Badge variant="outline">Arquivado</Badge>}
       </div>
-      <h3 className="text-lg font-semibold pr-8">{card.name}</h3>
       <p className="text-sm text-muted-foreground">
         {text.cards.cardDetails.limit}:{' '}
         {card.limit.toLocaleString('pt-BR', {
@@ -33,5 +33,3 @@ export default function CardDetails({ card, onEdit }: CardDetailsProps) {
     </>
   );
 }
-
-    

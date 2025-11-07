@@ -42,6 +42,7 @@ export type Card = {
   closingDay: number;
   dueDay: number;
   createdAt: Timestamp;
+  isArchived?: boolean;
 };
 
 export type SubItem = {
