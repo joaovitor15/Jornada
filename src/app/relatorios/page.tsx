@@ -68,11 +68,6 @@ export default function ReportsPage() {
   const [impostosViewMode, setImpostosViewMode] = useState('mensal');
   const [sistemaViewMode, setSistemaViewMode] = useState('mensal');
   const [fixedCostsViewMode, setFixedCostsViewMode] = useState('mensal');
-  const [personalTotalIncomeViewMode, setPersonalTotalIncomeViewMode] = useState('mensal');
-  const [investmentsViewMode, setInvestmentsViewMode] = useState('mensal');
-  const [outgoingsViewMode, setOutgoingsViewMode] = useState('mensal');
-  const [finalBalanceViewMode, setFinalBalanceViewMode] = useState('mensal');
-
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -85,126 +80,6 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-  // --- Personal Profile Calculations ---
-  const personalTotalIncome = useMemo(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = personalTotalIncomeViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = personalTotalIncomeViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    return allIncomes
-      .filter(income => {
-        if (!income.date) return false;
-        const incomeDate = income.date.toDate();
-        return incomeDate >= startDate && incomeDate <= endDate;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-  }, [allIncomes, selectedYear, selectedMonth, activeProfile, personalTotalIncomeViewMode]);
-
-  const investments = useMemo(() => {
-    if (activeProfile !== 'Personal') return 0;
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = investmentsViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = investmentsViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    return allExpenses
-      .filter(expense => {
-        if (!expense.date) return false;
-        const expenseDate = expense.date.toDate();
-        return expenseDate >= startDate && expenseDate <= endDate && expense.mainCategory === 'Bolsa de Valores';
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-  }, [allExpenses, selectedYear, selectedMonth, activeProfile, investmentsViewMode]);
-
-  const outgoings = useMemo(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = outgoingsViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = outgoingsViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const nonCardExpensesTotal = allExpenses
-      .filter(expense => {
-        if (!expense.date) return false;
-        const expenseDate = expense.date.toDate();
-        return (
-          expenseDate >= startDate &&
-          expenseDate <= endDate &&
-          expense.mainCategory !== 'Bolsa de Valores' &&
-          !expense.paymentMethod.startsWith('Cartão:')
-        );
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-      
-    const billPaymentsTotal = allBillPayments
-      .filter(payment => {
-        if (!payment.date) return false;
-        const paymentDate = payment.date.toDate();
-        return paymentDate >= startDate && paymentDate <= endDate;
-      })
-      .reduce((acc, payment) => acc + payment.amount, 0);
-
-    return nonCardExpensesTotal + billPaymentsTotal;
-  }, [allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, outgoingsViewMode]);
-
-  const finalBalance = useMemo(() => {
-    if (activeProfile !== 'Personal' && activeProfile !== 'Home') return 0;
-    
-    // We need to recalculate income/outgoings based on the finalBalance view mode, not their own modes.
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = finalBalanceViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = finalBalanceViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const incomeForPeriod = allIncomes
-      .filter(income => {
-        if (!income.date) return false;
-        const incomeDate = income.date.toDate();
-        return incomeDate >= startDate && incomeDate <= endDate;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-
-    const outgoingsForPeriod = allExpenses
-      .filter(expense => {
-        if (!expense.date) return false;
-        const expenseDate = expense.date.toDate();
-        return (
-          expenseDate >= startDate &&
-          expenseDate <= endDate &&
-          expense.mainCategory !== 'Bolsa de Valores' &&
-          !expense.paymentMethod.startsWith('Cartão:')
-        );
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0) +
-      allBillPayments
-        .filter(payment => {
-          if (!payment.date) return false;
-          const paymentDate = payment.date.toDate();
-          return paymentDate >= startDate && paymentDate <= endDate;
-        })
-        .reduce((acc, payment) => acc + payment.amount, 0);
-
-    const investmentsForPeriod = activeProfile === 'Personal' ? allExpenses
-      .filter(expense => {
-        if (!expense.date) return false;
-        const expenseDate = expense.date.toDate();
-        return expenseDate >= startDate && expenseDate <= endDate && expense.mainCategory === 'Bolsa de Valores';
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0) : 0;
-      
-    return incomeForPeriod - outgoingsForPeriod - investmentsForPeriod;
-  }, [allIncomes, allExpenses, allBillPayments, selectedYear, selectedMonth, activeProfile, finalBalanceViewMode]);
-
 
   // --- Business Profile Calculations ---
   const netRevenue = useMemo(() => {
@@ -482,242 +357,33 @@ export default function ReportsPage() {
     </div>
   );
 
-  const HomeAndPersonalCards = ({ isHome }: { isHome: boolean }) => {
-    const isLoading = dataLoading;
-    const incomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
-    const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
-    const finalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
-    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
-
-    return (
-      <div className="lg:col-span-1 space-y-6">
-        <Card>
-           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">
-                  {text.reports.totalIncome}
-                </CardTitle>
-              </div>
-               <div>
-                <Tabs
-                  value={personalTotalIncomeViewMode}
-                  onValueChange={setPersonalTotalIncomeViewMode}
-                  className="w-auto"
-                >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                      {text.reports.monthly}
-                    </TabsTrigger>
-                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                      {text.reports.annual}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  ({incomePeriodLabel})
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-16">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                  <ArrowUpCircle className="h-6 w-6 text-green-500" />
-                </div>
-                <span className="text-2xl font-bold">
-                  {formatCurrency(personalTotalIncome)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        {!isHome && (
-          <Card>
-             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">
-                    {text.reports.investments}
-                  </CardTitle>
-                </div>
-                 <div>
-                  <Tabs
-                    value={investmentsViewMode}
-                    onValueChange={setInvestmentsViewMode}
-                    className="w-auto"
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                        {text.reports.monthly}
-                      </TabsTrigger>
-                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                        {text.reports.annual}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    ({investmentsPeriodLabel})
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-16">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                    <TrendingUp className="h-6 w-6 text-blue-500" />
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {formatCurrency(investments)}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-        <Card>
-           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">
-                  {text.reports.outgoings}
-                </CardTitle>
-              </div>
-               <div>
-                <Tabs
-                  value={outgoingsViewMode}
-                  onValueChange={setOutgoingsViewMode}
-                  className="w-auto"
-                >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                      {text.reports.monthly}
-                    </TabsTrigger>
-                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                      {text.reports.annual}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  ({outgoingsPeriodLabel})
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-16">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                  <TrendingDown className="h-6 w-6 text-red-500" />
-                </div>
-                <span className="text-2xl font-bold">
-                  {formatCurrency(outgoings)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-         <Card>
-           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">
-                  {text.reports.finalBalance}
-                </CardTitle>
-              </div>
-               <div>
-                <Tabs
-                  value={finalBalanceViewMode}
-                  onValueChange={setFinalBalanceViewMode}
-                  className="w-auto"
-                >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                      {text.reports.monthly}
-                    </TabsTrigger>
-                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                      {text.reports.annual}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  ({finalBalancePeriodLabel})
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-16">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/50">
-                  <Wallet className="h-6 w-6 text-gray-500" />
-                </div>
-                <span className="text-2xl font-bold">
-                  {formatCurrency(finalBalance)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
   
   if (activeProfile === 'Personal' || activeProfile === 'Home') {
      return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
         {commonHeader}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-             <Card>
-              <CardHeader>
-                <CardTitle>
-                  {text.reports.financialSummary(selectedYear)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
-              </CardContent>
-            </Card>
-            {activeProfile === 'Home' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <CategoryCardSpendingTabs 
-                        selectedMonth={selectedMonth} 
-                        selectedYear={selectedYear}
-                        showCardSpending={activeProfile === 'Personal'}
-                    />
-                    <IncomeAnalysisTabs 
-                        selectedMonth={selectedMonth} 
-                        selectedYear={selectedYear}
-                    />
-                </div>
-            ) : (
-                 <CategoryCardSpendingTabs 
-                    selectedMonth={selectedMonth} 
-                    selectedYear={selectedYear}
-                    showCardSpending={activeProfile === 'Personal'}
-                />
-            )}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {text.reports.financialSummary(selectedYear)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CategoryCardSpendingTabs 
+                  selectedMonth={selectedMonth} 
+                  selectedYear={selectedYear}
+                  showCardSpending={activeProfile === 'Personal'}
+              />
+              <IncomeAnalysisTabs 
+                  selectedMonth={selectedMonth} 
+                  selectedYear={selectedYear}
+              />
           </div>
-          <HomeAndPersonalCards isHome={activeProfile === 'Home'} />
         </div>
       </div>
     );
