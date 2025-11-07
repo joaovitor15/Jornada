@@ -6,7 +6,7 @@ import BillPaymentsList from '@/components/faturas/bill-payments-list';
 import { Button } from '@/components/ui/button';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { text } from '@/lib/strings';
-import { Shield, PlusCircle, CreditCard } from 'lucide-react';
+import { Shield, PlusCircle, CreditCard, Undo2 } from 'lucide-react';
 import EmergencyReserveList from '@/components/lancamentos/emergency-reserve-list';
 import { useState } from 'react';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
@@ -32,15 +32,23 @@ export default function LancamentosPage() {
               Movimentar Reserva
             </Button>
             <Button
-              onClick={() => openModal('anticipate')}
+              onClick={() => openModal('pay', 'anticipate')}
               size="sm"
               variant="outline"
             >
               <CreditCard className="mr-2 h-4 w-4" />
               Pgto Antecipado
             </Button>
+             <Button
+              onClick={() => openModal('pay', 'refund')}
+              size="sm"
+              variant="outline"
+            >
+              <Undo2 className="mr-2 h-4 w-4" />
+              Estornar
+            </Button>
             <Button
-              onClick={() => openModal('pay')}
+              onClick={() => openModal('pay', 'payment')}
               size="sm"
               variant="outline"
             >

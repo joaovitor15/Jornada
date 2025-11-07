@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-type ModalType = 'pay' | 'anticipate';
-type BillTransactionType = 'payment' | 'refund';
+type ModalType = 'pay'; // The only modal type now
+type BillTransactionType = 'payment' | 'anticipate' | 'refund';
 
 interface ModalState {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface ModalState {
 
 interface AddBillTransactionModalContextType {
   payBillModal: ModalState;
-  anticipateModal: { isOpen: boolean };
   openModal: (type: ModalType, billType?: BillTransactionType) => void;
   closeModal: (type: ModalType) => void;
 }
@@ -21,27 +20,21 @@ const AddBillTransactionModalContext = createContext<AddBillTransactionModalCont
 
 export function AddBillTransactionModalProvider({ children }: { children: ReactNode }) {
   const [payBillModal, setPayBillModal] = useState<ModalState>({ isOpen: false });
-  const [anticipateModal, setAnticipateModal] = useState({ isOpen: false });
 
   const openModal = (type: ModalType, billType: BillTransactionType = 'payment') => {
     if (type === 'pay') {
       setPayBillModal({ isOpen: true, type: billType });
-    } else {
-      setAnticipateModal({ isOpen: true });
     }
   };
 
   const closeModal = (type: ModalType) => {
     if (type === 'pay') {
       setPayBillModal({ isOpen: false });
-    } else {
-      setAnticipateModal({ isOpen: false });
     }
   };
 
-
   return (
-    <AddBillTransactionModalContext.Provider value={{ payBillModal, anticipateModal, openModal, closeModal }}>
+    <AddBillTransactionModalContext.Provider value={{ payBillModal, openModal, closeModal }}>
       {children}
     </AddBillTransactionModalContext.Provider>
   );

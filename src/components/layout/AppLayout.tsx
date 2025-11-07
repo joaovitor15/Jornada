@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,14 +13,13 @@ import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
 import AddBillTransactionForm from '../faturas/pay-bill-form';
-import AnticipatePaymentForm from '../faturas/anticipate-payment-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import AddTransactionForm from '../lancamentos/add-transaction-form';
 
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { payBillModal, anticipateModal, closeModal } = useAddBillTransactionModal();
+  const { payBillModal, closeModal } = useAddBillTransactionModal();
   const { isFormOpen: isTransactionFormOpen } = useAddTransactionModal();
   const isMobile = useIsMobile();
 
@@ -69,11 +67,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           isOpen={payBillModal.isOpen}
           onOpenChange={() => closeModal('pay')}
           initialType={payBillModal.type}
-        />
-        
-        <AnticipatePaymentForm
-          isOpen={anticipateModal.isOpen}
-          onOpenChange={() => closeModal('anticipate')}
         />
 
         <AddTransactionForm />
