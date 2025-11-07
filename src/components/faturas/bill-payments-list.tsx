@@ -54,6 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import PayBillForm from './pay-bill-form';
+import { Badge } from '../ui/badge';
 
 export default function BillPaymentsList() {
   const { user } = useAuth();
@@ -200,10 +201,10 @@ export default function BillPaymentsList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.billPaymentsList.type}
+                          {text.payBillForm.cardLabel}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.payBillForm.cardLabel}
+                          TAGS
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.payBillForm.paymentDateLabel}
@@ -225,16 +226,23 @@ export default function BillPaymentsList() {
                             index % 2 === 0 ? 'bg-muted/25' : ''
                           )}
                         >
-                          <TableCell className={`py-2 px-2 align-middle font-medium ${payment.type === 'refund' ? 'text-green-500' : ''}`}>
-                            {payment.type === 'payment' ? text.billPaymentsList.payment : text.billPaymentsList.refund}
-                          </TableCell>
                           <TableCell className="py-2 px-2 align-middle font-medium">
                             {cards.get(payment.cardId) || 'Cartão não encontrado'}
+                          </TableCell>
+                           <TableCell className="py-2 px-2 align-middle">
+                            <div className="flex flex-wrap gap-1">
+                              {payment.tags?.map((tag) => (
+                                <Badge key={tag} variant="secondary">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {format(payment.date.toDate(), 'dd/MM/yyyy')}
                           </TableCell>
-                          <TableCell className="text-right py-2 px-2 align-middle">
+                          <TableCell className={`text-right py-2 px-2 align-middle font-semibold ${payment.type === 'refund' ? 'text-green-500' : 'text-red-500'}`}>
+                            {payment.type === 'refund' ? '+' : '-'}
                             {new Intl.NumberFormat('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
@@ -338,5 +346,3 @@ export default function BillPaymentsList() {
     </>
   );
 }
-
-    

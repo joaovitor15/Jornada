@@ -157,6 +157,16 @@ export default function PayBillForm({
       return;
     }
 
+    const selectedCard = cards.find((card) => card.id === values.cardId);
+    if (!selectedCard) {
+      toast({
+        variant: 'destructive',
+        title: text.common.error,
+        description: 'Cartão selecionado não encontrado.',
+      });
+      return;
+    }
+
     try {
       await addDoc(collection(db, 'billPayments'), {
         userId: user.uid,
@@ -165,6 +175,7 @@ export default function PayBillForm({
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
         type: values.type,
+        tags: [selectedCard.name],
       });
 
       toast({
@@ -370,5 +381,3 @@ export default function PayBillForm({
     </Dialog>
   );
 }
-
-    

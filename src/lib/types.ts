@@ -73,6 +73,7 @@ export type BillPayment = {
   amount: number;
   date: Timestamp;
   type: 'payment' | 'refund';
+  tags?: string[];
 };
 
 export type Transaction = Expense | BillPayment;
