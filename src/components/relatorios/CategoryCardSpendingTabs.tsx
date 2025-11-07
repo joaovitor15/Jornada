@@ -67,40 +67,57 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses, selectedPrincipalTagId }: { expenses: Expense[], selectedPrincipalTagId: string | 'all' }) {
+function SpendingChart({ expenses, selectedPrincipalTagId, analysisType }: { expenses: Expense[], selectedPrincipalTagId: string | 'all', analysisType: 'principal' | 'secundaria' }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
   const { hierarchicalTags } = useTags();
 
-  const relevantSubTags = useMemo(() => {
-    if (selectedPrincipalTagId === 'all') {
-      // Pega todas as tags filhas de todas as tags principais
-      return hierarchicalTags.flatMap(pt => pt.children.map(st => st.name));
-    }
-    const principalTag = hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId);
-    return principalTag ? principalTag.children.map(st => st.name) : [];
-  }, [selectedPrincipalTagId, hierarchicalTags]);
-
   useEffect(() => {
     const totals: { [key: string]: number } = {};
+    const totalSpending = expenses.reduce((acc, exp) => acc + exp.amount, 0);
 
-    expenses.forEach((expense) => {
-      if (expense.tags && expense.tags.length > 0) {
-        expense.tags.forEach(tag => {
-          if(relevantSubTags.includes(tag)) {
-            totals[tag] = (totals[tag] || 0) + expense.amount;
-          }
+    if (analysisType === 'principal') {
+        const tagToPrincipalMap: { [key: string]: string } = {};
+        hierarchicalTags.forEach(pt => {
+            pt.children.forEach(st => {
+                tagToPrincipalMap[st.name] = pt.name;
+            });
         });
-      }
-    });
 
-    const totalSpending = Object.values(totals).reduce((acc, val) => acc + val, 0);
+        expenses.forEach(expense => {
+            if (expense.tags && expense.tags.length > 0) {
+                const uniquePrincipalTags = new Set<string>();
+                expense.tags.forEach(tag => {
+                    if (tagToPrincipalMap[tag]) {
+                        uniquePrincipalTags.add(tagToPrincipalMap[tag]);
+                    }
+                });
+                uniquePrincipalTags.forEach(principalTag => {
+                    totals[principalTag] = (totals[principalTag] || 0) + expense.amount;
+                });
+            }
+        });
+    } else { // 'secundaria'
+        const relevantSubTags = selectedPrincipalTagId === 'all'
+            ? hierarchicalTags.flatMap(pt => pt.children.map(st => st.name))
+            : hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId)?.children.map(st => st.name) || [];
+
+        expenses.forEach((expense) => {
+            if (expense.tags && expense.tags.length > 0) {
+                expense.tags.forEach(tag => {
+                    if (relevantSubTags.includes(tag)) {
+                        totals[tag] = (totals[tag] || 0) + expense.amount;
+                    }
+                });
+            }
+        });
+    }
 
     const data = Object.entries(totals)
       .map(([name, value]) => ({ name, value, percent: totalSpending > 0 ? (value / totalSpending) * 100 : 0 }))
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [expenses, relevantSubTags]);
+  }, [expenses, selectedPrincipalTagId, analysisType, hierarchicalTags]);
 
   if (expenses.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos neste período.</div>;
@@ -204,6 +221,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('mensal');
+  const [analysisType, setAnalysisType] = useState<'principal' | 'secundaria'>('principal');
   const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
 
   const principalTags = useMemo(() => {
@@ -263,10 +281,10 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
     };
 
   }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
-
-  const TABS = [
-    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} selectedPrincipalTagId={selectedPrincipalTagId} /> },
-    ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
+  
+  const TAG_TABS = [
+     { value: 'principal', label: 'Tag Principal' },
+     { value: 'secundaria', label: 'Tag Secundária' },
   ];
 
   return (
@@ -299,29 +317,31 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
         </div>
       </CardHeader>
       <CardContent>
-          <Tabs defaultValue="tags">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
-              {TABS.map(tab => (
+          <Tabs defaultValue="principal" value={analysisType} onValueChange={(v) => setAnalysisType(v as any)}>
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${TAG_TABS.length}, 1fr)` }}>
+              {TAG_TABS.map(tab => (
                  <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
               ))}
             </TabsList>
-            <div className="mt-4">
-                <Select value={selectedPrincipalTagId} onValueChange={setSelectedPrincipalTagId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma Tag Principal" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Todas as Tags Principais</SelectItem>
-                        {principalTags.map(tag => (
-                            <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
              {(loading || tagsLoading) ? <Loader2 className="mx-auto my-12 h-8 w-8 animate-spin" /> : (
-              TABS.map(tab => (
+              TAG_TABS.map(tab => (
                  <TabsContent key={tab.value} value={tab.value} className="mt-4">
-                  {tab.content}
+                  {tab.value === 'secundaria' && (
+                     <div className="mb-4">
+                        <Select value={selectedPrincipalTagId} onValueChange={setSelectedPrincipalTagId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma Tag Principal" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todas as Tags</SelectItem>
+                                {principalTags.map(tag => (
+                                    <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                  )}
+                  <SpendingChart expenses={expenses} selectedPrincipalTagId={selectedPrincipalTagId} analysisType={tab.value as any} />
                 </TabsContent>
               ))
              )}
