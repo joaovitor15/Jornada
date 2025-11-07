@@ -72,32 +72,19 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expenses: Expense[], groupBy: 'mainCategory' | 'subcategory' | 'tags', mainCategoryFilter?: string }) {
+function SpendingChart({ expenses }: { expenses: Expense[] }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
 
   useEffect(() => {
-    const filteredExpenses = mainCategoryFilter === 'all'
-      ? expenses
-      : expenses.filter(e => e.mainCategory === mainCategoryFilter);
-
     const totals: { [key: string]: number } = {};
 
-    if (groupBy === 'tags') {
-      filteredExpenses.forEach((expense) => {
-        if (expense.tags && expense.tags.length > 0) {
-          expense.tags.forEach(tag => {
-            totals[tag] = (totals[tag] || 0) + expense.amount;
-          });
-        }
-      });
-    } else {
-      filteredExpenses.forEach((expense) => {
-        const key = expense[groupBy];
-        if (key) {
-           totals[key] = (totals[key] || 0) + expense.amount;
-        }
-      });
-    }
+    expenses.forEach((expense) => {
+      if (expense.tags && expense.tags.length > 0) {
+        expense.tags.forEach(tag => {
+          totals[tag] = (totals[tag] || 0) + expense.amount;
+        });
+      }
+    });
 
     const totalSpending = Object.values(totals).reduce((acc, val) => acc + val, 0);
 
@@ -106,14 +93,14 @@ function SpendingChart({ expenses, groupBy, mainCategoryFilter = 'all' }: { expe
       .sort((a, b) => b.value - a.value);
 
     setChartData(data);
-  }, [expenses, groupBy, mainCategoryFilter]);
+  }, [expenses]);
 
   if (expenses.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos neste período.</div>;
   }
   
   if (chartData.length === 0) {
-     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos para a categoria selecionada.</div>;
+     return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com tags neste período.</div>;
   }
 
   return (
@@ -200,32 +187,6 @@ interface CategoryCardSpendingTabsProps {
   selectedYear: number;
 }
 
-function SubcategoryTabContent({ expenses }: { expenses: Expense[] }) {
-  const [selectedMainCategory, setSelectedMainCategory] = useState('all');
-  
-  const availableCategories = useMemo(() => {
-    const categories = new Set(expenses.map(e => e.mainCategory));
-    return Array.from(categories).sort();
-  }, [expenses]);
-  
-  return (
-    <div className="space-y-4">
-       <Select value={selectedMainCategory} onValueChange={setSelectedMainCategory}>
-        <SelectTrigger className="w-full md:w-1/2 mx-auto">
-          <SelectValue placeholder="Filtrar por categoria principal" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas as Categorias</SelectItem>
-          {availableCategories.map(cat => (
-            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <SpendingChart expenses={expenses} groupBy="subcategory" mainCategoryFilter={selectedMainCategory} />
-    </div>
-  )
-}
-
 
 // --- Main Tabs Component ---
 export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
@@ -289,9 +250,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
 
   const TABS = [
-    { value: "categories", label: "Categorias", content: <SpendingChart expenses={expenses} groupBy="mainCategory" /> },
-    { value: "subcategories", label: "Subcategorias", content: <SubcategoryTabContent expenses={expenses} /> },
-    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} groupBy="tags" /> },
+    { value: "tags", label: "Tags", content: <SpendingChart expenses={expenses} /> },
     ...(showCardSpending ? [{ value: "cards", label: "Cartões", content: <CardSpendingList expenses={expenses} cards={cards} /> }] : [])
   ];
 
@@ -301,7 +260,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <CardTitle>Análise de Gastos</CardTitle>
-            <CardDescription>Veja seus gastos por categoria e cartão.</CardDescription>
+            <CardDescription>Veja seus gastos por tags e cartão.</CardDescription>
           </div>
           <div>
             <Tabs
@@ -325,7 +284,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
         </div>
       </CardHeader>
       <CardContent>
-          <Tabs defaultValue="categories">
+          <Tabs defaultValue="tags">
             <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
               {TABS.map(tab => (
                  <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
