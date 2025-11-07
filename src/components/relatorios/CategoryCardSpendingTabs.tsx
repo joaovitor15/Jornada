@@ -21,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
-import type { Expense, Card as CardType } from '@/lib/types';
+import type { Expense, Card as CardType, HierarchicalTag } from '@/lib/types';
 import {
   ResponsiveContainer,
   PieChart,
@@ -73,7 +73,7 @@ function SpendingChart({ expenses, selectedPrincipalTagId, analysisType }: { exp
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
-    const totalSpending = expenses.reduce((acc, exp) => acc + exp.amount, 0);
+    let totalSpending = 0;
 
     if (analysisType === 'principal') {
         const tagToPrincipalMap: { [key: string]: string } = {};
@@ -96,12 +96,20 @@ function SpendingChart({ expenses, selectedPrincipalTagId, analysisType }: { exp
                 });
             }
         });
+        totalSpending = Object.values(totals).reduce((acc, val) => acc + val, 0);
+
     } else { // 'secundaria'
         const relevantSubTags = selectedPrincipalTagId === 'all'
             ? hierarchicalTags.flatMap(pt => pt.children.map(st => st.name))
             : hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId)?.children.map(st => st.name) || [];
 
-        expenses.forEach((expense) => {
+        const filteredExpenses = expenses.filter(expense => 
+            expense.tags && expense.tags.some(tag => relevantSubTags.includes(tag))
+        );
+
+        totalSpending = filteredExpenses.reduce((acc, exp) => acc + exp.amount, 0);
+
+        filteredExpenses.forEach((expense) => {
             if (expense.tags && expense.tags.length > 0) {
                 expense.tags.forEach(tag => {
                     if (relevantSubTags.includes(tag)) {
@@ -166,45 +174,6 @@ function SpendingChart({ expenses, selectedPrincipalTagId, analysisType }: { exp
   );
 }
 
-
-// --- Card Spending Component ---
-interface CardSpendingData {
-  card: CardType;
-  total: number;
-}
-
-function CardSpendingList({ expenses, cards }: { expenses: Expense[], cards: CardType[] }) {
-
-  const cardSpending = cards.map(card => {
-    const total = expenses
-      .filter(e => e.paymentMethod === `Cartão: ${card.name}`)
-      .reduce((acc, e) => acc + e.amount, 0);
-    return { card, total };
-  }).filter(cs => cs.total > 0)
-    .sort((a, b) => b.total - a.total);
-
-  if (cardSpending.length === 0) {
-    return <div className="flex justify-center items-center h-64 text-muted-foreground">Sem gastos com cartão neste período.</div>;
-  }
-
-  return (
-    <div className="space-y-4 p-4 max-h-[300px] overflow-y-auto">
-      {cardSpending.map(({ card, total }) => {
-        const percentage = card.limit > 0 ? (total / card.limit) * 100 : 0;
-        return (
-          <div key={card.id}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-semibold text-sm">{card.name}</span>
-              <span className="text-sm">{formatCurrency(total)} / <span className="text-xs text-muted-foreground">{formatCurrency(card.limit)}</span></span>
-            </div>
-            <Progress value={percentage} indicatorClassName="bg-primary" />
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 interface CategoryCardSpendingTabsProps {
   showCardSpending?: boolean;
   selectedMonth: number;
@@ -218,16 +187,10 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
   const { activeProfile } = useProfile();
   const { hierarchicalTags, loading: tagsLoading } = useTags();
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('mensal');
   const [analysisType, setAnalysisType] = useState<'principal' | 'secundaria'>('principal');
   const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
-
-  const principalTags = useMemo(() => {
-    return hierarchicalTags.filter(t => t.isPrincipal && t.children.length > 0);
-  }, [hierarchicalTags]);
-
 
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
@@ -262,25 +225,39 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
       setLoading(false);
     }, () => setLoading(false));
     
-    let unsubCards = () => {};
-    if (showCardSpending) {
-      const cardsQuery = query(
-        collection(db, 'cards'),
-        where('userId', '==', user.uid),
-        where('profile', '==', activeProfile)
-      );
-      unsubCards = onSnapshot(cardsQuery, (snap) => {
-        const fetchedCards = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
-        setCards(fetchedCards);
-      });
-    }
 
     return () => {
       unsubExpenses();
-      unsubCards();
     };
 
   }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
+
+  const activePrincipalTags = useMemo(() => {
+    if (tagsLoading || expenses.length === 0) return [];
+    
+    const tagToPrincipalMap = new Map<string, HierarchicalTag>();
+     hierarchicalTags.forEach(pt => {
+        pt.children.forEach(st => {
+            tagToPrincipalMap.set(st.name, pt);
+        });
+    });
+
+    const activeIds = new Set<string>();
+    expenses.forEach(expense => {
+      if (expense.tags) {
+        expense.tags.forEach(tag => {
+          const principal = tagToPrincipalMap.get(tag);
+          if (principal) {
+            activeIds.add(principal.id);
+          }
+        });
+      }
+    });
+
+    return hierarchicalTags.filter(pt => activeIds.has(pt.id));
+
+  }, [expenses, hierarchicalTags, tagsLoading]);
+
   
   const TAG_TABS = [
      { value: 'principal', label: 'Tag Principal' },
@@ -334,7 +311,7 @@ export default function CategoryCardSpendingTabs({ showCardSpending = true, sele
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todas as Tags</SelectItem>
-                                {principalTags.map(tag => (
+                                {activePrincipalTags.map(tag => (
                                     <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
                                 ))}
                             </SelectContent>

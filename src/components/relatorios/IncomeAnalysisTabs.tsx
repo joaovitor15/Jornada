@@ -21,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { text } from '@/lib/strings';
-import type { Income } from '@/lib/types';
+import type { Income, HierarchicalTag } from '@/lib/types';
 import {
   ResponsiveContainer,
   PieChart,
@@ -72,7 +72,7 @@ function IncomeChart({ incomes, selectedPrincipalTagId, analysisType }: { income
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
-    const totalIncomes = incomes.reduce((acc, inc) => acc + inc.amount, 0);
+    let totalIncomes = 0;
 
     if (analysisType === 'principal') {
         const tagToPrincipalMap: { [key: string]: string } = {};
@@ -95,12 +95,20 @@ function IncomeChart({ incomes, selectedPrincipalTagId, analysisType }: { income
                 });
             }
         });
+        totalIncomes = Object.values(totals).reduce((acc, val) => acc + val, 0);
+
     } else { // 'secundaria'
         const relevantSubTags = selectedPrincipalTagId === 'all'
             ? hierarchicalTags.flatMap(pt => pt.children.map(st => st.name))
             : hierarchicalTags.find(pt => pt.id === selectedPrincipalTagId)?.children.map(st => st.name) || [];
 
-        incomes.forEach((income) => {
+        const filteredIncomes = incomes.filter(income => 
+            income.tags && income.tags.some(tag => relevantSubTags.includes(tag))
+        );
+        
+        totalIncomes = filteredIncomes.reduce((acc, inc) => acc + inc.amount, 0);
+
+        filteredIncomes.forEach((income) => {
             if (income.tags && income.tags.length > 0) {
                 income.tags.forEach(tag => {
                     if (relevantSubTags.includes(tag)) {
@@ -183,10 +191,6 @@ export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: Inco
   const [analysisType, setAnalysisType] = useState<'principal' | 'secundaria'>('principal');
   const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
 
-  const principalTags = useMemo(() => {
-    return hierarchicalTags.filter(t => t.isPrincipal && t.children.length > 0);
-  }, [hierarchicalTags]);
-
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
     return viewMode === 'mensal' ? `${months[selectedMonth]} de ${selectedYear}` : selectedYear;
@@ -224,6 +228,32 @@ export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: Inco
     };
 
   }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
+
+  const activePrincipalTags = useMemo(() => {
+    if (tagsLoading || incomes.length === 0) return [];
+    
+    const tagToPrincipalMap = new Map<string, HierarchicalTag>();
+     hierarchicalTags.forEach(pt => {
+        pt.children.forEach(st => {
+            tagToPrincipalMap.set(st.name, pt);
+        });
+    });
+
+    const activeIds = new Set<string>();
+    incomes.forEach(income => {
+      if (income.tags) {
+        income.tags.forEach(tag => {
+          const principal = tagToPrincipalMap.get(tag);
+          if (principal) {
+            activeIds.add(principal.id);
+          }
+        });
+      }
+    });
+
+    return hierarchicalTags.filter(pt => activeIds.has(pt.id));
+
+  }, [incomes, hierarchicalTags, tagsLoading]);
 
   const TAG_TABS = [
      { value: 'principal', label: 'Tag Principal' },
@@ -277,7 +307,7 @@ export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: Inco
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todas as Tags</SelectItem>
-                                {principalTags.map(tag => (
+                                {activePrincipalTags.map(tag => (
                                     <SelectItem key={tag.id} value={tag.id}>{tag.name}</SelectItem>
                                 ))}
                             </SelectContent>
