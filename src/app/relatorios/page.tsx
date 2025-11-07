@@ -434,63 +434,260 @@ export default function ReportsPage() {
   const periodLabel = useMemo(() => {
     return `${months[selectedMonth].label} de ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
+  
+  const commonHeader = (
+    <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <div>
+        <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
+        <p className="text-muted-foreground">{text.reports.description}</p>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
+          <Select
+            value={String(selectedMonth)}
+            onValueChange={(value) => setSelectedMonth(Number(value))}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((month) => (
+                <SelectItem key={month.value} value={String(month.value)}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
+          <Select
+            value={String(selectedYear)}
+            onValueChange={(value) => setSelectedYear(Number(value))}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder={text.dashboard.selectPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
 
-  if (activeProfile === 'Personal') {
+  const HomeAndPersonalCards = ({ isHome }: { isHome: boolean }) => {
     const isLoading = dataLoading;
-    const personalIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
-    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
+    const incomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
     const outgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
     const finalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
+    const investmentsPeriodLabel = investmentsViewMode === 'anual' ? selectedYear : periodLabel;
 
     return (
+      <div className="lg:col-span-1 space-y-6">
+        <Card>
+           <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg">
+                  {text.reports.totalIncome}
+                </CardTitle>
+              </div>
+               <div>
+                <Tabs
+                  value={personalTotalIncomeViewMode}
+                  onValueChange={setPersonalTotalIncomeViewMode}
+                  className="w-auto"
+                >
+                  <TabsList className="h-8">
+                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                      {text.reports.monthly}
+                    </TabsTrigger>
+                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                      {text.reports.annual}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  ({incomePeriodLabel})
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-16">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                  <ArrowUpCircle className="h-6 w-6 text-green-500" />
+                </div>
+                <span className="text-2xl font-bold">
+                  {formatCurrency(personalTotalIncome)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {!isHome && (
+          <Card>
+             <CardHeader>
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg">
+                    {text.reports.investments}
+                  </CardTitle>
+                </div>
+                 <div>
+                  <Tabs
+                    value={investmentsViewMode}
+                    onValueChange={setInvestmentsViewMode}
+                    className="w-auto"
+                  >
+                    <TabsList className="h-8">
+                      <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                        {text.reports.monthly}
+                      </TabsTrigger>
+                      <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                        {text.reports.annual}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    ({investmentsPeriodLabel})
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center h-16">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                    <TrendingUp className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(investments)}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        <Card>
+           <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg">
+                  {text.reports.outgoings}
+                </CardTitle>
+              </div>
+               <div>
+                <Tabs
+                  value={outgoingsViewMode}
+                  onValueChange={setOutgoingsViewMode}
+                  className="w-auto"
+                >
+                  <TabsList className="h-8">
+                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                      {text.reports.monthly}
+                    </TabsTrigger>
+                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                      {text.reports.annual}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  ({outgoingsPeriodLabel})
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-16">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                  <TrendingDown className="h-6 w-6 text-red-500" />
+                </div>
+                <span className="text-2xl font-bold">
+                  {formatCurrency(outgoings)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+         <Card>
+           <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg">
+                  {text.reports.finalBalance}
+                </CardTitle>
+              </div>
+               <div>
+                <Tabs
+                  value={finalBalanceViewMode}
+                  onValueChange={setFinalBalanceViewMode}
+                  className="w-auto"
+                >
+                  <TabsList className="h-8">
+                    <TabsTrigger value="mensal" className="text-xs px-2 py-1">
+                      {text.reports.monthly}
+                    </TabsTrigger>
+                    <TabsTrigger value="anual" className="text-xs px-2 py-1">
+                      {text.reports.annual}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <p className="text-xs text-muted-foreground text-center mt-1">
+                  ({finalBalancePeriodLabel})
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-16">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/50">
+                  <Wallet className="h-6 w-6 text-gray-500" />
+                </div>
+                <span className="text-2xl font-bold">
+                  {formatCurrency(finalBalance)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+  
+  if (activeProfile === 'Personal' || activeProfile === 'Home') {
+     return (
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
-            <p className="text-muted-foreground">{text.reports.description}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
-              <Select
-                value={String(selectedMonth)}
-                onValueChange={(value) => setSelectedMonth(Number(value))}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={String(month.value)}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
-              <Select
-                value={String(selectedYear)}
-                onValueChange={(value) => setSelectedYear(Number(value))}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+        {commonHeader}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
+             <Card>
               <CardHeader>
                 <CardTitle>
                   {text.reports.financialSummary(selectedYear)}
@@ -503,275 +700,16 @@ export default function ReportsPage() {
             <CategoryCardSpendingTabs 
                selectedMonth={selectedMonth} 
                selectedYear={selectedYear}
+               showCardSpending={activeProfile === 'Personal'}
              />
-          </div>
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.totalIncome}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={personalTotalIncomeViewMode}
-                      onValueChange={setPersonalTotalIncomeViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({personalIncomePeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                      <ArrowUpCircle className="h-6 w-6 text-green-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(personalTotalIncome)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.investments}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={investmentsViewMode}
-                      onValueChange={setInvestmentsViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({investmentsPeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                      <TrendingUp className="h-6 w-6 text-blue-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(investments)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.outgoings}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={outgoingsViewMode}
-                      onValueChange={setOutgoingsViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({outgoingsPeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                      <TrendingDown className="h-6 w-6 text-red-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(outgoings)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-             <Card>
-               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      {text.reports.finalBalance}
-                    </CardTitle>
-                  </div>
-                   <div>
-                    <Tabs
-                      value={finalBalanceViewMode}
-                      onValueChange={setFinalBalanceViewMode}
-                      className="w-auto"
-                    >
-                      <TabsList className="h-8">
-                        <TabsTrigger value="mensal" className="text-xs px-2 py-1">
-                          {text.reports.monthly}
-                        </TabsTrigger>
-                        <TabsTrigger value="anual" className="text-xs px-2 py-1">
-                          {text.reports.annual}
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      ({finalBalancePeriodLabel})
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-16">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/50">
-                      <Wallet className="h-6 w-6 text-gray-500" />
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {formatCurrency(finalBalance)}
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  if (activeProfile === 'Home') {
-    const isLoading = dataLoading;
-    const homeIncomePeriodLabel = personalTotalIncomeViewMode === 'anual' ? selectedYear : periodLabel;
-    const homeOutgoingsPeriodLabel = outgoingsViewMode === 'anual' ? selectedYear : periodLabel;
-    const homeFinalBalancePeriodLabel = finalBalanceViewMode === 'anual' ? selectedYear : periodLabel;
-
-    return (
-      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
-            <p className="text-muted-foreground">{text.reports.description}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">{text.dashboard.monthLabel}:</label>
-              <Select
-                value={String(selectedMonth)}
-                onValueChange={(value) => setSelectedMonth(Number(value))}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={String(month.value)}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">{text.dashboard.yearLabel}:</label>
-              <Select
-                value={String(selectedYear)}
-                onValueChange={(value) => setSelectedYear(Number(value))}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {text.reports.financialSummary(selectedYear)}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AnnualFinancialChart year={selectedYear} onMonthSelect={setSelectedMonth} />
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <CategoryCardSpendingTabs 
-                    selectedMonth={selectedMonth} 
-                    selectedYear={selectedYear} 
-                    showCardSpending={false} 
-                />
+             {activeProfile === 'Home' && (
                 <IncomeAnalysisTabs 
                     selectedMonth={selectedMonth} 
                     selectedYear={selectedYear}
                 />
-            </div>
+             )}
+          </div>
+          <HomeAndPersonalCards isHome={activeProfile === 'Home'} />
         </div>
       </div>
     );
@@ -781,55 +719,7 @@ export default function ReportsPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{text.sidebar.reports}</h1>
-          <p className="text-muted-foreground">{text.reports.description}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">
-              {text.dashboard.monthLabel}:
-            </label>
-            <Select
-              value={String(selectedMonth)}
-              onValueChange={(value) => setSelectedMonth(Number(value))}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={String(month.value)}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">
-              {text.dashboard.yearLabel}:
-            </label>
-            <Select
-              value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder={text.dashboard.selectPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
+      {commonHeader}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
@@ -1520,5 +1410,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
