@@ -87,8 +87,11 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
         const totalRefunds = refunds.reduce((acc, p) => acc + p.amount, 0);
         const totalPaymentsValue = payments.reduce((acc, p) => acc + p.amount, 0);
         
-        const faturaValue = totalExpenses - totalRefunds;
-        setTotal(faturaValue);
+        const faturaBruta = totalExpenses - totalRefunds;
+        const totalPagoNaPropriaFatura = totalPaymentsValue + creditFromPreviousMonth;
+        const faturaLiquida = faturaBruta - totalPagoNaPropriaFatura;
+
+        setTotal(faturaLiquida);
         
         const allTransactions = [...expenses, ...refunds, ...payments].sort((a, b) => (b.date as Timestamp).toMillis() - (a.date as Timestamp).toMillis());
         setTransactions(allTransactions);
@@ -97,7 +100,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
         const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
         const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
         
-        const { status: faturaStatus } = getFaturaStatus(faturaValue, totalPaymentsValue + creditFromPreviousMonth, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+        const { status: faturaStatus } = getFaturaStatus(faturaBruta, totalPagoNaPropriaFatura, dueDate, closingDate, isCurrentFatura, isFutureFatura);
         setStatus(faturaStatus);
         
         setLoading(false);
@@ -118,7 +121,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       }, (error) => console.error("Error fetching refunds: ", error));
 
       const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
-          localPayments = snap.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'payment' } as FaturaTransaction));
+          localPayments = snap.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: doc.data().description === 'Antecipação de Fatura' ? 'anticipation' : 'payment' } as FaturaTransaction));
           combineData(localExpenses, localRefunds, localPayments);
       }, (error) => console.error("Error fetching payments: ", error));
       
