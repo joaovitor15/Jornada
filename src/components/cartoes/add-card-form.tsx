@@ -107,8 +107,8 @@ export default function CardForm({
   const { isSubmitting } = form.formState;
 
   const handleTagManagement = async (
-    cardName: string,
-    previousCardName?: string
+    newCardName: string,
+    oldCardName?: string
   ) => {
     if (!user || !activeProfile) return;
 
@@ -116,86 +116,81 @@ export default function CardForm({
     const tagsRef = collection(db, 'tags');
 
     try {
-        // --- Passo 1: Garantir que a tag principal "Cartões" exista ---
-        const principalQuery = query(
-            tagsRef,
-            where('userId', '==', user.uid),
-            where('profile', '==', activeProfile),
-            where('name', '==', principalTagName),
-            where('isPrincipal', '==', true),
-            limit(1)
+      // --- Passo 1: Garantir que a tag principal "Cartões" exista ---
+      const principalQuery = query(
+        tagsRef,
+        where('userId', '==', user.uid),
+        where('profile', '==', activeProfile),
+        where('name', '==', principalTagName),
+        where('isPrincipal', '==', true),
+        limit(1)
+      );
+
+      const principalSnapshot = await getDocs(principalQuery);
+      let principalTagId: string;
+
+      if (principalSnapshot.empty) {
+        const principalRef = doc(tagsRef);
+        principalTagId = principalRef.id;
+        await setDoc(principalRef, {
+          id: principalTagId,
+          userId: user.uid,
+          profile: activeProfile,
+          name: principalTagName,
+          isPrincipal: true,
+          parent: null,
+          order: -1, 
+        });
+      } else {
+        principalTagId = principalSnapshot.docs[0].id;
+      }
+      
+      // --- Passo 2: Lidar com a tag filha (o nome do cartão) ---
+      if (isEditMode && oldCardName && oldCardName !== newCardName) {
+        // Renomear: Encontrar a tag filha antiga e atualizar seu nome
+        const childQuery = query(
+          tagsRef,
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile),
+          where('name', '==', oldCardName),
+          where('parent', '==', principalTagId),
+          limit(1)
         );
-
-        const principalSnapshot = await getDocs(principalQuery);
-        let principalTagId: string;
-
-        if (principalSnapshot.empty) {
-            const principalRef = doc(tagsRef);
-            principalTagId = principalRef.id;
-            await setDoc(principalRef, {
-                id: principalTagId,
-                userId: user.uid,
-                profile: activeProfile,
-                name: principalTagName,
-                isPrincipal: true,
-                parent: null,
-                order: -1, // Ordem especial para garantir que apareça no topo ou de forma distinta
-            });
+        const childSnapshot = await getDocs(childQuery);
+        if (!childSnapshot.empty) {
+          const oldTagRef = childSnapshot.docs[0].ref;
+          await updateDoc(oldTagRef, { name: newCardName });
         } else {
-            principalTagId = principalSnapshot.docs[0].id;
-        }
-
-        // --- Passo 2: Lidar com a tag filha (o nome do cartão) ---
-        const batch = writeBatch(db);
-
-        if (isEditMode && cardToEdit && previousCardName !== cardName) {
-            // Renomear: Encontrar a tag filha antiga e atualizar seu nome
-            const childQuery = query(
-                tagsRef,
-                where('userId', '==', user.uid),
-                where('profile', '==', activeProfile),
-                where('name', '==', previousCardName),
-                where('parent', '==', principalTagId),
-                limit(1)
-            );
-            const childSnapshot = await getDocs(childQuery);
-            if (!childSnapshot.empty) {
-                const oldTagRef = childSnapshot.docs[0].ref;
-                batch.update(oldTagRef, { name: cardName });
-            } else {
-                // Se a tag antiga não for encontrada por algum motivo, crie a nova.
-                const newChildRef = doc(tagsRef);
-                batch.set(newChildRef, {
-                    id: newChildRef.id,
-                    userId: user.uid,
-                    profile: activeProfile,
-                    name: cardName,
-                    isPrincipal: false,
-                    parent: principalTagId,
-                });
-            }
-        } else if (!isEditMode) {
-            // Criar nova: Criar uma nova tag filha para o novo cartão
-            const newChildRef = doc(tagsRef);
-            batch.set(newChildRef, {
+           const newChildRef = doc(tagsRef);
+            await setDoc(newChildRef, {
                 id: newChildRef.id,
                 userId: user.uid,
                 profile: activeProfile,
-                name: cardName,
+                name: newCardName,
                 isPrincipal: false,
                 parent: principalTagId,
             });
         }
-
-        await batch.commit();
+      } else if (!isEditMode) {
+        // Criar nova: Criar uma nova tag filha para o novo cartão
+        const newChildRef = doc(tagsRef);
+        await setDoc(newChildRef, {
+          id: newChildRef.id,
+          userId: user.uid,
+          profile: activeProfile,
+          name: newCardName,
+          isPrincipal: false,
+          parent: principalTagId,
+        });
+      }
 
     } catch (error) {
-        console.error("Erro ao gerenciar tags de cartão:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro de Sincronização",
-            description: "O cartão foi salvo, mas houve um erro ao criar a tag associada.",
-        });
+      console.error("Erro ao gerenciar tags de cartão:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro de Sincronização",
+        description: "O cartão foi salvo, mas houve um erro ao criar/atualizar a tag associada.",
+      });
     }
   };
 
@@ -272,6 +267,9 @@ export default function CardForm({
                     <Input
                       placeholder={text.addCardForm.cardNamePlaceholder}
                       {...field}
+                      id="cardNameInput"
+                      name="cardNameInput"
+                      autoComplete="off"
                     />
                   </FormControl>
                   <FormMessage />
