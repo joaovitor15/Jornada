@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -79,7 +80,21 @@ export function useTags() {
   }, [refreshTags]);
   
   const hierarchicalTags = useMemo((): HierarchicalTag[] => {
-    const principals = rawTags
+    // Excluir a tag 'Cartões' e suas filhas da visualização geral
+    const cardsPrincipalTag = rawTags.find(tag => tag.name === 'Cartões' && tag.isPrincipal);
+    const cardTagIds = new Set<string>();
+    if (cardsPrincipalTag) {
+        cardTagIds.add(cardsPrincipalTag.id);
+        rawTags.forEach(tag => {
+            if (tag.parent === cardsPrincipalTag.id) {
+                cardTagIds.add(tag.id);
+            }
+        });
+    }
+
+    const filteredRawTags = rawTags.filter(tag => !cardTagIds.has(tag.id));
+
+    const principals = filteredRawTags
       .filter((tag) => tag.isPrincipal)
       .map(
         (tag): HierarchicalTag => ({
@@ -88,7 +103,7 @@ export function useTags() {
         })
       );
 
-    const children = rawTags.filter((tag) => !tag.isPrincipal && tag.parent);
+    const children = filteredRawTags.filter((tag) => !tag.isPrincipal && tag.parent);
     const tagMap = new Map(principals.map((tag) => [tag.id, tag]));
 
     children.forEach((child) => {
@@ -102,8 +117,15 @@ export function useTags() {
   }, [rawTags]);
   
   const childTags = useMemo(() => {
+     // Excluir a tag 'Cartões' e suas filhas
+    const cardsPrincipalTag = rawTags.find(tag => tag.name === 'Cartões' && tag.isPrincipal);
+    const cardTagIds = new Set<string>();
+    if (cardsPrincipalTag) {
+      cardTagIds.add(cardsPrincipalTag.id);
+    }
+
     return rawTags
-      .filter(tag => !tag.isPrincipal && !tag.isArchived)
+      .filter(tag => !tag.isPrincipal && !tag.isArchived && !cardTagIds.has(tag.parent || ''))
       .map(tag => tag.name)
       .sort();
   }, [rawTags]);
