@@ -95,11 +95,10 @@ export default function ReportsPage() {
     const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
-    const receitaTagNames = new Set<string>();
-    if (receitasTag) {
-        receitaTagNames.add(receitasTag.name);
-        receitasTag.children.forEach(child => receitaTagNames.add(child.name));
-    }
+    if (!receitasTag) return 0;
+
+    const receitaTagNames = new Set<string>([receitasTag.name]);
+    receitasTag.children.forEach(child => receitaTagNames.add(child.name));
 
     return allIncomes
       .filter(income => {
@@ -124,12 +123,11 @@ export default function ReportsPage() {
     const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
-    const fornecedorTagNames = new Set<string>();
-    if (fornecedoresTag) {
-      fornecedorTagNames.add(fornecedoresTag.name);
-      fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
-    }
+    if (!fornecedoresTag) return { grossProfit: netRevenue, grossMargin: netRevenue > 0 ? 100 : 0 };
 
+    const fornecedorTagNames = new Set<string>([fornecedoresTag.name]);
+    fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
+    
     const supplierCosts = allExpenses
       .filter(e => {
         if (!e.date) return false;
@@ -156,11 +154,10 @@ export default function ReportsPage() {
     const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
     
     const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
-    const receitaTagNames = new Set<string>();
-    if (receitasTag) {
-        receitaTagNames.add(receitasTag.name);
-        receitasTag.children.forEach(child => receitaTagNames.add(child.name));
-    }
+    if (!receitasTag) return { netProfit: 0, netMargin: 0 };
+
+    const receitaTagNames = new Set<string>([receitasTag.name]);
+    receitasTag.children.forEach(child => receitaTagNames.add(child.name));
 
     const totalRevenueFromTags = allIncomes
       .filter(income => {
@@ -196,11 +193,10 @@ export default function ReportsPage() {
     const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
-    const fornecedorTagNames = new Set<string>();
-    if (fornecedoresTag) {
-        fornecedorTagNames.add(fornecedoresTag.name);
-        fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
-    }
+    if (!fornecedoresTag) return { cmv: 0, costMargin: 0 };
+
+    const fornecedorTagNames = new Set<string>([fornecedoresTag.name]);
+    fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
 
     const calculatedCmv = allExpenses
       .filter(e => {
@@ -227,11 +223,10 @@ export default function ReportsPage() {
     const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Recursos Humanos');
-    const tagNames = new Set<string>();
-    if (tagPrincipal) {
-      tagNames.add(tagPrincipal.name);
-      tagPrincipal.children.forEach(child => tagNames.add(child.name));
-    }
+    if (!tagPrincipal) return { personnelCost: 0, personnelCostMargin: 0 };
+    
+    const tagNames = new Set<string>([tagPrincipal.name]);
+    tagPrincipal.children.forEach(child => tagNames.add(child.name));
 
     const calculatedCost = allExpenses
       .filter(e => {
@@ -257,11 +252,10 @@ export default function ReportsPage() {
     const endDate = impostosViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Impostos');
-    const tagNames = new Set<string>();
-    if (tagPrincipal) {
-      tagNames.add(tagPrincipal.name);
-      tagPrincipal.children.forEach(child => tagNames.add(child.name));
-    }
+    if (!tagPrincipal) return { impostos: 0, impostosMargin: 0 };
+
+    const tagNames = new Set<string>([tagPrincipal.name]);
+    tagPrincipal.children.forEach(child => tagNames.add(child.name));
       
     const calculatedImpostos = allExpenses
       .filter(e => {
@@ -287,11 +281,10 @@ export default function ReportsPage() {
     const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
 
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistemas e Tecnologias');
-    const tagNames = new Set<string>();
-    if (tagPrincipal) {
-      tagNames.add(tagPrincipal.name);
-      tagPrincipal.children.forEach(child => tagNames.add(child.name));
-    }
+    if (!tagPrincipal) return { sistema: 0, sistemaMargin: 0 };
+    
+    const tagNames = new Set<string>([tagPrincipal.name]);
+    tagPrincipal.children.forEach(child => tagNames.add(child.name));
 
     const calculatedSistema = allExpenses
       .filter(e => {
@@ -455,6 +448,15 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <CategoryCardSpendingTabs 
+                 selectedMonth={selectedMonth} 
+                 selectedYear={selectedYear} 
+                 showCardSpending={false} 
+                />
+               <IncomeAnalysisTabs 
+                 selectedMonth={selectedMonth} 
+                 selectedYear={selectedYear}
+               />
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -798,13 +800,6 @@ export default function ReportsPage() {
                   )}
                 </CardContent>
               </Card>
-              <div className="md:col-span-2">
-                 <CategoryCardSpendingTabs 
-                   selectedMonth={selectedMonth} 
-                   selectedYear={selectedYear} 
-                   showCardSpending={false} 
-                  />
-              </div>
             </div>
           </div>
 
