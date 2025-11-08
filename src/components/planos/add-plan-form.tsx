@@ -41,6 +41,7 @@ import { type Plan, type Profile, type Card } from '@/lib/types';
 import { Separator } from '../ui/separator';
 import { onSnapshot, query, where } from 'firebase/firestore';
 import TagInput from '../ui/tag-input';
+import { useTags } from '@/hooks/use-tags';
 
 const planSchema = z
   .object({
@@ -100,6 +101,7 @@ export default function PlanForm({
   const { toast } = useToast();
   const [cards, setCards] = useState<Card[]>([]);
   const isEditMode = !!planToEdit;
+  const { hierarchicalTags: allTags } = useTags();
 
   const form = useForm<z.infer<typeof planSchema>>({
     resolver: zodResolver(planSchema),
@@ -119,6 +121,13 @@ export default function PlanForm({
     control,
     name: 'subItems',
   });
+  
+  const availableTags = useMemo(() => {
+    return allTags
+      .flatMap(pt => pt.children)
+      .filter(t => !t.isArchived)
+      .map(t => t.name);
+  }, [allTags]);
 
   const planType = watch('type');
   
@@ -319,6 +328,7 @@ export default function PlanForm({
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
                         <TagInput
+                            availableTags={availableTags}
                             placeholder="Selecione as tags..."
                             value={field.value || []}
                             onChange={field.onChange}

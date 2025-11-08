@@ -133,7 +133,7 @@ export default function AddTransactionForm() {
   const transactionType = watch('type');
   const selectedPaymentMethod = watch('paymentMethod');
   
-  const { paymentMethodOptions, cardOptions, nonCardTags } = useMemo(() => {
+  const { paymentMethodOptions, cardOptions, availableTags } = useMemo(() => {
     const paymentMethodsPrincipal = allTags.find(
       (tag) => tag.name === 'Formas de Pagamento' && tag.isPrincipal
     );
@@ -150,17 +150,18 @@ export default function AddTransactionForm() {
       cardsPrincipal?.children
         .filter((c) => !c.isArchived)
         .map((c) => c.name) || [];
-
+    
+    // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Formas de Pagamento')
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
-      .flatMap(pt => [pt, ...pt.children])
+      .flatMap(pt => pt.children) // Pega apenas as tags filhas
       .filter(t => !t.isArchived)
       .map(t => t.name);
 
     return {
       paymentMethodOptions: pmtOptions,
       cardOptions: cardOpts,
-      nonCardTags: Array.from(new Set(generalTags)),
+      availableTags: Array.from(new Set(generalTags)),
     };
   }, [allTags]);
   
@@ -517,7 +518,7 @@ export default function AddTransactionForm() {
                     <FormLabel>Tags (Opcional)</FormLabel>
                     <FormControl>
                       <TagInput
-                          availableTags={nonCardTags}
+                          availableTags={availableTags}
                           placeholder="Selecione as tags..."
                           value={field.value || []}
                           onChange={field.onChange}
