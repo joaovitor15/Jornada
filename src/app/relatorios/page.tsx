@@ -113,9 +113,8 @@ export default function ReportsPage() {
   }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
  const { grossProfit, grossMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) {
-      return { grossProfit: 0, grossMargin: 0 };
-    }
+    if (activeProfile !== 'Business' || tagsLoading) return { grossProfit: 0, grossMargin: 0 };
+    
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -142,7 +141,7 @@ export default function ReportsPage() {
     const calculatedGrossProfit = netRevenue - supplierCosts;
     const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
     return { grossProfit: calculatedGrossProfit, grossMargin: calculatedGrossMargin };
-}, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
+}, [allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { netProfit, netMargin } = useMemo(() => {
     if (activeProfile !== 'Business' || tagsLoading) return { netProfit: 0, netMargin: 0 };
@@ -214,7 +213,8 @@ export default function ReportsPage() {
 }, [allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
   
   const { personnelCost, personnelCostMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { personnelCost: 0, personnelCostMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { personnelCost: 0, personnelCostMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -222,28 +222,28 @@ export default function ReportsPage() {
     const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-      
-    const calculatedPersonnelCost = allExpenses
+    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Funcionários');
+    const tagNames = new Set<string>();
+    if (tagPrincipal) {
+      tagPrincipal.children.forEach(child => tagNames.add(child.name));
+    }
+
+    const calculatedCost = allExpenses
       .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
-        return d >= startDate && d <= endDate && e.mainCategory === 'Funcionários';
+        if (!(d >= startDate && d <= endDate)) return false;
+        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
 
-    const calculatedPersonnelCostMargin = currentNetRevenue > 0 ? (calculatedPersonnelCost / currentNetRevenue) * 100 : 0;
-    return { personnelCost: calculatedPersonnelCost, personnelCostMargin: calculatedPersonnelCostMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile]);
+    const calculatedMargin = netRevenue > 0 ? (calculatedCost / netRevenue) * 100 : 0;
+    return { personnelCost: calculatedCost, personnelCostMargin: calculatedMargin };
+  }, [allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { impostos, impostosMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { impostos: 0, impostosMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { impostos: 0, impostosMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -251,28 +251,28 @@ export default function ReportsPage() {
     const startDate = impostosViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = impostosViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-
+    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Impostos');
+    const tagNames = new Set<string>();
+    if (tagPrincipal) {
+      tagPrincipal.children.forEach(child => tagNames.add(child.name));
+    }
+      
     const calculatedImpostos = allExpenses
       .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
-        return d >= startDate && d <= endDate && e.mainCategory === 'Impostos';
+        if (!(d >= startDate && d <= endDate)) return false;
+        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
       
-    const calculatedImpostosMargin = currentNetRevenue > 0 ? (calculatedImpostos / currentNetRevenue) * 100 : 0;
+    const calculatedImpostosMargin = netRevenue > 0 ? (calculatedImpostos / netRevenue) * 100 : 0;
     return { impostos: calculatedImpostos, impostosMargin: calculatedImpostosMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile]);
+  }, [allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { sistema, sistemaMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { sistema: 0, sistemaMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { sistema: 0, sistemaMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -280,28 +280,28 @@ export default function ReportsPage() {
     const startDate = sistemaViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
+    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistema');
+    const tagNames = new Set<string>();
+    if (tagPrincipal) {
+      tagPrincipal.children.forEach(child => tagNames.add(child.name));
+    }
 
     const calculatedSistema = allExpenses
       .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
-        return d >= startDate && d <= endDate && e.mainCategory === 'Sistema';
+        if (!(d >= startDate && d <= endDate)) return false;
+        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
       
-    const calculatedSistemaMargin = currentNetRevenue > 0 ? (calculatedSistema / currentNetRevenue) * 100 : 0;
+    const calculatedSistemaMargin = netRevenue > 0 ? (calculatedSistema / netRevenue) * 100 : 0;
     return { sistema: calculatedSistema, sistemaMargin: calculatedSistemaMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile]);
+  }, [allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { fixedCosts, fixedCostsMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { fixedCosts: 0, fixedCostsMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { fixedCosts: 0, fixedCostsMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -309,25 +309,30 @@ export default function ReportsPage() {
     const startDate = fixedCostsViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = fixedCostsViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
+    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
+    const fornecedorTagNames = new Set<string>();
+    if (fornecedoresTag) {
+        fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
+    }
       
-    const calculatedFixedCosts = allExpenses
+    const allPeriodExpenses = allExpenses
       .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
-        return d >= startDate && d <= endDate && e.mainCategory !== 'Fornecedores';
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
+        return d >= startDate && d <= endDate;
+      });
+
+    const supplierCosts = allPeriodExpenses
+        .filter(e => e.tags?.some(tag => fornecedorTagNames.has(tag)) ?? false)
+        .reduce((acc, expense) => acc + expense.amount, 0);
+
+    const totalExpenses = allPeriodExpenses.reduce((acc, expense) => acc + expense.amount, 0);
+    
+    const calculatedFixedCosts = totalExpenses - supplierCosts;
       
-    const calculatedFixedCostsMargin = currentNetRevenue > 0 ? (calculatedFixedCosts / currentNetRevenue) * 100 : 0;
+    const calculatedFixedCostsMargin = netRevenue > 0 ? (calculatedFixedCosts / netRevenue) * 100 : 0;
     return { fixedCosts: calculatedFixedCosts, fixedCostsMargin: calculatedFixedCostsMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile]);
+  }, [allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
 
   const periodLabel = useMemo(() => {
