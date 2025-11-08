@@ -76,46 +76,36 @@ export default function ManageTagsPageClient() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
-    const allTags = hierarchicalTags;
+    let baseList: HierarchicalTag[] = [];
 
     if (filter === 'inUse') {
-        return allTags
+        baseList = hierarchicalTags
             .map((tag) => {
                 if (tag.isArchived) return null;
-
                 const hasUsedChildren = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
                 const isPrincipalInUse = usedTagNames.has(tag.name);
-
                 if (isPrincipalInUse || hasUsedChildren) {
                     const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
                     return { ...tag, children: activeChildren };
                 }
-
                 return null;
             })
             .filter((tag): tag is HierarchicalTag => tag !== null);
-    }
-
-    if (filter === 'registered') {
-        return allTags
+    } else if (filter === 'registered') {
+        baseList = hierarchicalTags
             .map((tag) => {
                 if (tag.isArchived) return null;
-
                 const hasUsedChildren = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
                 const isPrincipalInUse = usedTagNames.has(tag.name);
-
                 if (isPrincipalInUse || hasUsedChildren) {
-                    return null; 
+                    return null;
                 }
-                
                 const unusedChildren = tag.children.filter(child => !child.isArchived);
                 return { ...tag, children: unusedChildren };
             })
             .filter((tag): tag is HierarchicalTag => tag !== null);
-    }
-
-    if (filter === 'archived') {
-       let archived = allTags
+    } else if (filter === 'archived') {
+       baseList = hierarchicalTags
         .map(tag => {
             const archivedChildren = tag.children.filter(child => child.isArchived);
             if (tag.isArchived || archivedChildren.length > 0) {
@@ -124,20 +114,29 @@ export default function ManageTagsPageClient() {
             return null;
         })
         .filter((tag): tag is HierarchicalTag => tag !== null);
-        
-      if (searchTerm) {
-          return archived.map(tag => {
-              const matchingChildren = tag.children.filter(child => child.name.toLowerCase().includes(searchTerm.toLowerCase()));
-              if (tag.name.toLowerCase().includes(searchTerm.toLowerCase()) || matchingChildren.length > 0) {
-                  return { ...tag, children: matchingChildren };
-              }
-              return null;
-          }).filter((tag): tag is HierarchicalTag => tag !== null);
-      }
-      return archived;
     }
-    return [];
+
+    if (!searchTerm) {
+      return baseList;
+    }
+    
+    return baseList
+      .map(tag => {
+        const matchingChildren = tag.children.filter(child => child.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        if (tag.name.toLowerCase().includes(searchTerm.toLowerCase()) || matchingChildren.length > 0) {
+          // If parent matches, show all its (filtered by tab) children, not just matching ones
+          if (tag.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return tag;
+          }
+          // If only children match, show parent with only matching children
+          return { ...tag, children: matchingChildren };
+        }
+        return null;
+      })
+      .filter((tag): tag is HierarchicalTag => tag !== null);
+
   }, [hierarchicalTags, filter, usedTagNames, searchTerm]);
+
 
   const selectedTag = useMemo(() => {
     return filteredTags.find((tag) => tag.id === selectedTagId) || null;
@@ -359,7 +358,7 @@ export default function ManageTagsPageClient() {
   return (
     <>
       <div className="flex flex-col mb-4 gap-4">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-end items-start">
           <Button size="sm" onClick={() => setIsAddFormOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Nova Tag
@@ -379,19 +378,17 @@ export default function ManageTagsPageClient() {
         </div>
       </div>
       
-       {filter === 'archived' && (
-        <div className="relative mb-4">
+       <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Buscar em tags arquivadas..."
+            placeholder="Buscar tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-140px)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-180px)]">
         {/* Coluna de Tags Principais */}
         <div className="md:col-span-1 space-y-3 overflow-y-auto">
           {filteredTags.length > 0 ? (
