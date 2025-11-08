@@ -280,7 +280,7 @@ export default function ReportsPage() {
     const startDate = sistemaViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistema');
+    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistemas e Tecnologias');
     const tagNames = new Set<string>();
     if (tagPrincipal) {
       tagPrincipal.children.forEach(child => tagNames.add(child.name));
