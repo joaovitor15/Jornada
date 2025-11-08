@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Landmark } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
+import { Progress } from '../ui/progress';
 
 interface FaturaInfo {
   id: string;
@@ -174,13 +175,16 @@ export default function FaturasAtuais() {
 
           const faturaPercent = (faturaValue / card.limit) * 100;
           const parcelasFuturasPercent = (parcelasFuturas / card.limit) * 100;
-          const barColor = isFaturaFechada ? 'bg-red-500' : 'bg-blue-500';
+          
+          let indicatorColor = "bg-blue-500"; // Default for current bill
+          if(isFaturaFechada) indicatorColor = "bg-red-500";
+
 
           return (
             <Card key={id}>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">{card.name}</CardTitle>
-                <Button
+                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openModal('pay', isFaturaFechada ? 'payment' : 'anticipate')}
@@ -189,19 +193,19 @@ export default function FaturasAtuais() {
                   {isFaturaFechada ? text.sidebar.payBill : 'Antecipar'}
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm font-medium">
                       {faturaLabel}
                     </span>
-                    <span className="text-lg font-bold">
+                    <span className="text-2xl font-bold">
                       {formatCurrency(faturaValue)}
                     </span>
                   </div>
                   <div className="flex justify-between items-baseline mt-1">
                     <span className="text-sm text-muted-foreground">
-                      {text.cards.cardDetails.limit}
+                      {text.cards.cardDetails.limit} disponível
                     </span>
                     <span className="text-sm font-semibold text-green-600">
                       {formatCurrency(limiteDisponivel)}
@@ -209,24 +213,24 @@ export default function FaturasAtuais() {
                   </div>
                 </div>
 
-                <div className="relative h-4 w-full overflow-hidden rounded-full bg-green-200">
-                  <div
-                    className="absolute h-full bg-gray-300"
-                    style={{
-                      width: `${faturaPercent + parcelasFuturasPercent}%`,
-                      zIndex: 1,
-                    }}
-                  />
-                  <div
-                    className={`absolute h-full ${barColor}`}
-                    style={{ width: `${faturaPercent}%`, zIndex: 2 }}
-                  />
+                <div className="space-y-2">
+                  <Progress value={faturaPercent + parcelasFuturasPercent} className="h-2"/>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className='flex items-center gap-2'>
+                        <div className={`h-2 w-2 rounded-full ${indicatorColor}`}></div>
+                        <span>Fatura: {formatCurrency(faturaValue)}</span>
+                    </div>
+                     <div className='flex items-center gap-2'>
+                        <div className="h-2 w-2 rounded-full bg-yellow-400"></div>
+                        <span>Futuro: {formatCurrency(parcelasFuturas)}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <div className="flex justify-between text-xs text-muted-foreground pt-2">
                   <span>
                     {text.payBillForm.closing}:{' '}
-                    {format(closingDate, 'dd MMM', { locale: ptBR })}
+                    {format(closingDate, 'dd/MM')}
                   </span>
                   <span>{text.cards.cardDetails.limit}: {formatCurrency(card.limit)}</span>
                 </div>
