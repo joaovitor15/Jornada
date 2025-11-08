@@ -165,8 +165,6 @@ export default function AnteciparParcelasForm({
         amount: values.novoValor,
         description: `${text.anticipateInstallments.title}: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
         date: expense.date,
-        mainCategory: expense.mainCategory,
-        subcategory: expense.subcategory,
         paymentMethod: expense.paymentMethod,
         tags: expense.tags || [],
     };
