@@ -112,7 +112,7 @@ export default function ReportsPage() {
       .reduce((acc, income) => acc + income.amount, 0);
   }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
-  const { grossProfit, grossMargin } = useMemo(() => {
+ const { grossProfit, grossMargin } = useMemo(() => {
     if (activeProfile !== 'Business' || tagsLoading) {
       return { grossProfit: 0, grossMargin: 0 };
     }
@@ -122,21 +122,13 @@ export default function ReportsPage() {
     const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
     const startDate = grossProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
-    
-    const fornecedoresTag = hierarchicalTags.find(tag => tag.name === 'Fornecedores');
+
+    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
     const fornecedorTagNames = new Set<string>();
     if (fornecedoresTag) {
-        fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
+      fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
     }
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-      
     const supplierCosts = allExpenses
       .filter(e => {
         if (!e.date) return false;
@@ -153,7 +145,8 @@ export default function ReportsPage() {
 }, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { netProfit, netMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { netProfit: 0, netMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { netProfit: 0, netMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -161,11 +154,19 @@ export default function ReportsPage() {
     const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
     
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
+    const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
+    const receitaTagNames = new Set<string>();
+    if (receitasTag) {
+        receitasTag.children.forEach(child => receitaTagNames.add(child.name));
+    }
+
+    const totalRevenueFromTags = allIncomes
+      .filter(income => {
+        if (!income.date) return false;
+        const incomeDate = income.date.toDate();
+        const isInDateRange = incomeDate >= startDate && incomeDate <= endDate;
+        if (!isInDateRange) return false;
+        return income.tags?.some(tag => receitaTagNames.has(tag)) ?? false;
       })
       .reduce((acc, income) => acc + income.amount, 0);
 
@@ -177,10 +178,10 @@ export default function ReportsPage() {
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
       
-    const calculatedNetProfit = currentNetRevenue - totalExpenses;
-    const calculatedNetMargin = currentNetRevenue > 0 ? (calculatedNetProfit / currentNetRevenue) * 100 : 0;
+    const calculatedNetProfit = totalRevenueFromTags - totalExpenses;
+    const calculatedNetMargin = totalRevenueFromTags > 0 ? (calculatedNetProfit / totalRevenueFromTags) * 100 : 0;
     return { netProfit: calculatedNetProfit, netMargin: calculatedNetMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile]);
+  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
   const { cmv, costMargin } = useMemo(() => {
     if (activeProfile !== 'Business') return { cmv: 0, costMargin: 0 };
