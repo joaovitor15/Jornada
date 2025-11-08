@@ -32,6 +32,7 @@ import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
 import { useTransactions } from '@/hooks/use-transactions';
+import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -92,17 +93,26 @@ export default function DashboardPage() {
       return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
     };
     
-    const monthlyExpenses = expenses
+    // Filtra despesas que NÃO são de cartão de crédito para o resumo principal
+    const monthlyNonCardExpenses = expenses
+      .filter(filterByMonthAndYear)
+      .filter((e) => !e.paymentMethod?.startsWith('Cartão:'))
+      .reduce((acc, curr) => acc + curr.amount, 0);
+      
+    // Inclui pagamentos de fatura nas despesas totais
+    const monthlyBillPayments = billPayments
       .filter(filterByMonthAndYear)
       .reduce((acc, curr) => acc + curr.amount, 0);
+
+    const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
 
     const monthlyIncomes = incomes
         .filter(filterByMonthAndYear)
         .reduce((acc, curr) => acc + curr.amount, 0);
 
     setTotalIncomes(monthlyIncomes);
-    setTotalExpenses(monthlyExpenses);
-    setTotalBalance(monthlyIncomes - monthlyExpenses);
+    setTotalExpenses(totalMonthlyExpenses);
+    setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
   }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
 
 
@@ -258,6 +268,8 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
+        
+        <FaturasAtuais />
 
       </div>
       {(activeProfile === 'Home' || activeProfile === 'Business') && (

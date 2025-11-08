@@ -44,10 +44,6 @@ export const text = {
       december: 'Dezembro',
     },
     currentInvoices: 'Faturas Atuais',
-    pfpbProgram: 'Programa PFPB',
-    totalCredits: 'Total Recebido no Mês',
-    food: 'Alimentação',
-    totalFood: 'Total em Alimentação',
   },
   auth: {
     login: 'Entrar',
@@ -74,6 +70,8 @@ export const text = {
   },
   summary: {
     totalBalance: 'Consolidação',
+    income: 'Receitas',
+    expenses: 'Despesas',
     goToDashboard: 'Ver Lançamentos',
     newTransaction: 'Nova Despesa',
     newIncome: 'Nova Receita',
@@ -117,9 +115,6 @@ export const text = {
     title: 'Adicionar Nova Despesa',
     description:
       'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
-    selectCategory: 'Selecione uma categoria',
-    selectSubcategory: 'Selecione uma subcategoria',
-    noSubcategoryFound: 'Nenhuma subcategoria encontrada.',
     selectPaymentMethod: 'Selecione uma forma de pagamento',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
@@ -132,16 +127,12 @@ export const text = {
       descriptionMinChars: 'A descrição deve ter pelo menos 2 caracteres.',
       amountPositive: 'O valor deve ser maior que zero.',
       amountRequired: 'O valor é obrigatório.',
-      pleaseSelectCategory: 'Por favor, selecione uma categoria.',
-      pleaseSelectSubcategory: 'Por favor, selecione uma subcategoria.',
       pleaseSelectPaymentMethod: 'Por favor, selecione uma forma de pagamento.',
     },
   },
   addIncomeForm: {
     title: 'Adicionar Nova Receita',
     description: 'Preencha os detalhes para adicionar uma nova receita.',
-    selectCategory: 'Selecione uma categoria',
-    selectSubcategory: 'Selecione uma subcategoria',
     incomeDate: 'Data da Receita',
     pickDate: 'Escolha uma data',
     addIncome: 'Adicionar Receita',
@@ -151,8 +142,6 @@ export const text = {
     validation: {
       amountPositive: 'O valor deve ser maior que zero.',
       amountRequired: 'O valor é obrigatório.',
-      pleaseSelectCategory: 'Por favor, selecione uma categoria.',
-      pleaseSelectSubcategory: 'Por favor, selecione uma subcategoria.',
     },
   },
   editExpenseForm: {
@@ -215,9 +204,6 @@ export const text = {
   common: {
     description: 'Descrição',
     amount: 'Valor',
-    category: 'Categoria',
-    mainCategory: 'Categoria Principal',
-    subcategory: 'Subcategoria',
     date: 'Data',
     paymentMethod: 'Forma de Pagamento',
     actions: 'Ações',

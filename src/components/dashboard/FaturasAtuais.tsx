@@ -84,7 +84,7 @@ export default function FaturasAtuais() {
           const prevFaturaPeriod = getFaturaPeriod(subMonths(closingDate, 1).getFullYear(), subMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
           const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)), where('date', '<=', Timestamp.fromDate(closingDate))));
           
-          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, paymentsQuery, futureExpensesQuery, refundsQuery]);
+          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, paymentsQuery, futureExpensesSnap, refundsQuery]);
 
           const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
           const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
@@ -96,7 +96,7 @@ export default function FaturasAtuais() {
           const { status } = getFaturaStatus(faturaValue, pagamentos, dueDate, closingDate, faturaMeta.isCurrent, isFutureFatura);
           const isFaturaFechada = !faturaMeta.isCurrent && status.includes(text.payBillForm.billClosed) && faturaValue > 0 && (faturaValue - pagamentos) > 0.01;
 
-          const limiteDisponivel = card.limit - faturaValue - parcelasFuturas + pagamentos;
+          const limiteDisponivel = card.limit - faturaValue - parcelasFuturas;
 
           return {
             id: `${card.id}-${faturaMeta.year}-${faturaMeta.month}`, card, faturaValue, faturaStatus: status,

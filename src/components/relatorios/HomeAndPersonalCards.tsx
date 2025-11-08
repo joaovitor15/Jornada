@@ -9,7 +9,7 @@ import { useTransactions } from '@/hooks/use-transactions';
 import { useProfile } from '@/hooks/use-profile';
 import { getMonth, getYear } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { Transaction, BillPayment } from '@/lib/types';
+import { Transaction, BillPayment, Expense } from '@/lib/types';
 
 
 interface HomeAndPersonalCardsProps {
@@ -41,7 +41,7 @@ export default function HomeAndPersonalCards({ selectedMonth, selectedYear }: Ho
 
         const monthlyNonCardExpenses = expenses
             .filter(filterByMonthAndYear)
-            .filter((e) => !e.paymentMethod.startsWith('Cartão:'))
+            .filter((e) => !(e.paymentMethod?.startsWith('Cartão:')))
             .reduce((acc, curr) => acc + curr.amount, 0);
         
         const monthlyBillPayments = billPayments

@@ -15,7 +15,7 @@ export type Expense = {
   installments?: number;
   currentInstallment?: number;
   originalExpenseId?: string;
-  tags?: string[];
+  tags: string[];
 };
 
 export type Income = {
@@ -25,7 +25,7 @@ export type Income = {
   description: string;
   amount: number;
   date: Timestamp;
-  tags?: string[];
+  tags: string[];
 };
 
 export type Card = {

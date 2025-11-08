@@ -102,11 +102,9 @@ export default function AnnualFinancialChart({
                 const entry = monthlyData.get(monthKey);
                 if (entry) {
                     if (type === 'income') {
-                      if((transaction as Income).subcategory !== text.businessCategories.pfpbSubcategory){
                         entry.income += transaction.amount;
-                      }
                     } else if (type === 'expense') {
-                      if (!(transaction as Transaction).paymentMethod.startsWith('Cartão:')) {
+                      if (!(transaction as Expense).paymentMethod?.startsWith('Cartão:')) {
                         entry.expense += transaction.amount;
                       }
                     } else if (type === 'billPayment') {
@@ -226,5 +224,3 @@ export default function AnnualFinancialChart({
     </ResponsiveContainer>
   );
 }
-
-    
