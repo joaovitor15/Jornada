@@ -226,7 +226,7 @@ export default function ReportsPage() {
     const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Funcionários');
+    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Recursos Humanos');
     const tagNames = new Set<string>();
     if (tagPrincipal) {
       tagNames.add(tagPrincipal.name);
