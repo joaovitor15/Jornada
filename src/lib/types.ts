@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
@@ -11,8 +10,6 @@ export type Expense = {
   profile: Profile;
   description: string;
   amount: number;
-  mainCategory: string;
-  subcategory: string;
   date: Timestamp;
   paymentMethod: PaymentMethod;
   installments?: number;
@@ -27,8 +24,6 @@ export type Income = {
   profile: Profile;
   description: string;
   amount: number;
-  mainCategory: string;
-  subcategory: string;
   date: Timestamp;
   tags?: string[];
 };

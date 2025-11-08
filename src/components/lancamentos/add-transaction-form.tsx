@@ -11,10 +11,6 @@ import {
   writeBatch,
   doc,
   updateDoc,
-  getDocs,
-  query,
-  where,
-  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -57,21 +53,8 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
-import {
-  type Profile,
-  Expense,
-  Income,
-  HierarchicalTag,
-} from '@/lib/types';
+import { type Expense, type Income } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
-import {
-  personalExpenseCategories,
-  homeExpenseCategories,
-  businessExpenseCategories,
-  personalIncomeCategories,
-  homeIncomeCategories,
-  businessIncomeCategories,
-} from '@/lib/categories';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import TagInput from '../ui/tag-input';
@@ -88,32 +71,11 @@ const formSchema = z.object({
       invalid_type_error: text.addExpenseForm.validation.amountRequired,
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
-  mainCategory: z.string().optional(),
-  subcategory: z.string().optional(),
   paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).min(1, 'Selecione pelo menos uma tag.'),
 });
-
-
-const getCategoryConfig = (profile: Profile, type: 'expense' | 'income') => {
-  if (type === 'expense') {
-    switch (profile) {
-      case 'Personal': return personalExpenseCategories;
-      case 'Home': return homeExpenseCategories;
-      case 'Business': return businessExpenseCategories;
-      default: return {};
-    }
-  } else {
-     switch (profile) {
-      case 'Personal': return personalIncomeCategories;
-      case 'Home': return homeIncomeCategories;
-      case 'Business': return businessIncomeCategories;
-      default: return {};
-    }
-  }
-};
 
 export default function AddTransactionForm() {
   const { user } = useAuth();
@@ -154,7 +116,7 @@ export default function AddTransactionForm() {
     // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Formas de Pagamento')
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
-      .flatMap(pt => pt.children) // Pega apenas as tags filhas
+      .flatMap(pt => [pt, ...pt.children]) // Pega a principal e as filhas
       .filter(t => !t.isArchived)
       .map(t => t.name);
 
@@ -187,8 +149,6 @@ export default function AddTransactionForm() {
             type: type,
             description: transactionToEdit.description,
             amount: transactionToEdit.amount,
-            mainCategory: transactionToEdit.mainCategory,
-            subcategory: transactionToEdit.subcategory,
             paymentMethod: paymentMethod,
             date: transactionToEdit.date.toDate(),
             installments: type === 'expense' ? (transactionToEdit as Expense).installments || 1 : 1,
@@ -201,8 +161,6 @@ export default function AddTransactionForm() {
             type: undefined,
             description: '',
             amount: undefined,
-            mainCategory: '',
-            subcategory: '',
             paymentMethod: 'Dinheiro/Pix', // Default payment method
             date: initialDate,
             installments: 1,
@@ -216,11 +174,6 @@ export default function AddTransactionForm() {
   // Handle dynamic form changes
   useEffect(() => {
     const subscription = watch((value, { name, type }) => {
-      if ((name === 'type' || name === 'mainCategory') && type === 'change' && !isEditMode) {
-        if(name === 'type') setValue('mainCategory', '');
-        setValue('subcategory', '');
-      }
-
       if (name === 'type' && value.type === 'income' && !isEditMode) {
         setValue('paymentMethod', undefined);
         setValue('installments', 1);
@@ -238,15 +191,6 @@ export default function AddTransactionForm() {
     });
     return () => subscription.unsubscribe();
   }, [watch, setValue, trigger, isEditMode, isCreditCardPayment]);
-
-
-  const categoryConfig = getCategoryConfig(activeProfile, transactionType);
-  const allCategories = Object.keys(categoryConfig);
-  const selectedCategory = watch('mainCategory');
-  const subcategories =
-    selectedCategory && categoryConfig[selectedCategory]
-      ? categoryConfig[selectedCategory]
-      : [];
       
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -263,8 +207,6 @@ export default function AddTransactionForm() {
     }
     
     try {
-        const finalTags = values.tags || [];
-
         if (isEditMode && transactionToEdit) {
             // EDIT LOGIC
             const collectionName = values.type === 'expense' ? 'expenses' : 'incomes';
@@ -273,10 +215,8 @@ export default function AddTransactionForm() {
             const dataToUpdate: Partial<Expense | Income> = {
                 description: values.description || '',
                 amount: values.amount,
-                mainCategory: values.mainCategory,
-                subcategory: values.subcategory,
                 date: Timestamp.fromDate(values.date),
-                tags: finalTags,
+                tags: values.tags,
             };
 
             if (values.type === 'expense') {
@@ -300,10 +240,10 @@ export default function AddTransactionForm() {
                   const expenseData: any = {
                     userId: user.uid, profile: activeProfile,
                     description: installments > 1 ? `${values.description || 'Compra Parcelada'} (${i + 1}/${installments})` : values.description || '',
-                    amount: installmentAmount, mainCategory: values.mainCategory || 'Geral', subcategory: values.subcategory || 'Geral',
+                    amount: installmentAmount, 
                     paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
-                    tags: finalTags,
+                    tags: values.tags,
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -315,9 +255,9 @@ export default function AddTransactionForm() {
             } else { // 'income'
                 const incomeData = {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
-                  amount: values.amount, mainCategory: values.mainCategory || 'Geral', subcategory: values.subcategory || 'Geral',
+                  amount: values.amount, 
                   date: Timestamp.fromDate(values.date),
-                  tags: finalTags,
+                  tags: values.tags,
                 };
                 await addDoc(collection(db, 'incomes'), incomeData);
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });
@@ -386,51 +326,6 @@ export default function AddTransactionForm() {
                   </FormItem>
                 )}
               />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={control} name="mainCategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.mainCategory}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || !transactionType}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={text.addExpenseForm.selectCategory} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {allCategories.map((category) => (
-                            <SelectItem key={category} value={category}>{category}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={control} name="subcategory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.common.subcategory}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || subcategories.length === 0 || !transactionType}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={text.addExpenseForm.selectSubcategory} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {subcategories.map((sub) => (
-                            <SelectItem key={sub} value={sub}>{sub}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               
               <div className="grid grid-cols-2 gap-4 items-end">
                     <FormField
@@ -515,7 +410,7 @@ export default function AddTransactionForm() {
                 control={control} name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tags (Opcional)</FormLabel>
+                    <FormLabel>Tags</FormLabel>
                     <FormControl>
                       <TagInput
                           availableTags={availableTags}
