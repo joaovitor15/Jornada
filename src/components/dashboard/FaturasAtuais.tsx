@@ -17,10 +17,8 @@ import { Card as CardType } from '@/lib/types';
 import {
   getCurrentFaturaMonthAndYear,
   getFaturaPeriod,
-  getFaturaStatus,
 } from '@/lib/fatura-utils';
-import { format, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Landmark } from 'lucide-react';
@@ -32,12 +30,9 @@ interface FaturaInfo {
   id: string;
   card: CardType;
   faturaValue: number;
-  faturaStatus: string;
   isFaturaFechada: boolean;
   limiteDisponivel: number;
   closingDate: Date;
-  dueDate: Date;
-  pagamentos: number;
   parcelasFuturas: number;
   faturaLabel: string;
 }
@@ -61,62 +56,37 @@ export default function FaturasAtuais() {
         return [];
       }
 
-      const allFaturasPromises = cardsToProcess.flatMap((card) => {
+      const allFaturasPromises = cardsToProcess.map(async (card) => {
         const today = new Date();
         const { month: currentFaturaMonth, year: currentFaturaYear } =
           getCurrentFaturaMonthAndYear(today, card.closingDay);
+        
+        const { startDate, endDate, closingDate } = getFaturaPeriod(currentFaturaYear, currentFaturaMonth, card.closingDay, card.dueDay);
 
-        const previousFaturaDate = subMonths(new Date(currentFaturaYear, currentFaturaMonth), 1);
-        const previousFaturaMonth = previousFaturaDate.getMonth();
-        const previousFaturaYear = previousFaturaDate.getFullYear();
+        const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+        const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
+        const futureExpensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>', Timestamp.fromDate(endDate))));
+        
+        const [expensesSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, futureExpensesSnap, refundsQuery]);
 
-        // We are interested in the previous month's bill (if it's closed and unpaid)
-        // and the current open bill.
-        return [
-            { month: previousFaturaMonth, year: previousFaturaYear, isCurrent: false },
-            { month: currentFaturaMonth, year: currentFaturaYear, isCurrent: true },
-        ].map(async (faturaMeta) => {
-          const { startDate, endDate, closingDate, dueDate } = getFaturaPeriod(faturaMeta.year, faturaMeta.month, card.closingDay, card.dueDay);
-          
-          const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
-          const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
-          const futureExpensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>', Timestamp.fromDate(endDate))));
-          
-          const prevFaturaPeriod = getFaturaPeriod(subMonths(closingDate, 1).getFullYear(), subMonths(closingDate, 1).getMonth(), card.closingDay, card.dueDay);
-          const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>', Timestamp.fromDate(prevFaturaPeriod.closingDate)), where('date', '<=', Timestamp.fromDate(closingDate))));
-          
-          const [expensesSnap, paymentsSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, paymentsQuery, futureExpensesSnap, refundsQuery]);
+        const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+        const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+        const faturaValue = totalExpenses - totalRefunds;
+        
+        const parcelasFuturas = futureExpensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
+        
+        const isFaturaFechada = today > closingDate;
 
-          const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-          const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-          const faturaValue = totalExpenses - totalRefunds;
-          const pagamentos = paymentsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-          const parcelasFuturas = futureExpensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
-          
-          const isFutureFatura = new Date(faturaMeta.year, faturaMeta.month) > new Date(currentFaturaYear, currentFaturaMonth);
-          const { status } = getFaturaStatus(faturaValue, pagamentos, dueDate, closingDate, faturaMeta.isCurrent, isFutureFatura);
-          const isFaturaFechada = !faturaMeta.isCurrent && status.includes(text.payBillForm.billClosed) && faturaValue > 0 && (faturaValue - pagamentos) > 0.01;
+        const limiteDisponivel = card.limit - faturaValue - parcelasFuturas;
 
-          const limiteDisponivel = card.limit - faturaValue - parcelasFuturas;
-
-          return {
-            id: `${card.id}-${faturaMeta.year}-${faturaMeta.month}`, card, faturaValue, faturaStatus: status,
-            isFaturaFechada, limiteDisponivel, closingDate, dueDate, pagamentos, parcelasFuturas,
-            faturaLabel: faturaMeta.isCurrent ? text.payBillForm.currentBill : status,
-          };
-        });
+        return {
+          id: `${card.id}-${currentFaturaYear}-${currentFaturaMonth}`, card, faturaValue, 
+          isFaturaFechada, limiteDisponivel, closingDate, 
+          parcelasFuturas, faturaLabel: text.payBillForm.currentBill
+        };
       });
 
-      const resolvedFaturas = await Promise.all(allFaturasPromises.flat());
-      const filteredFaturas = resolvedFaturas.filter((f) => {
-        if (f.faturaLabel === text.payBillForm.currentBill) return true; // Always show current bill
-        if (f.isFaturaFechada) return true; // Show closed and unpaid bills
-        return false;
-      });
-
-      // Ensure uniqueness, sometimes the same bill can be processed twice
-      const uniqueFaturas = Array.from(new Map(filteredFaturas.map(f => [f.id, f])).values());
-      return uniqueFaturas;
+      return Promise.all(allFaturasPromises);
   }, [user, activeProfile]);
 
   useEffect(() => {
