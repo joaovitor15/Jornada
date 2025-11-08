@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
+import PayPlanForm from './pay-plan-form';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,10 +59,12 @@ function PlanCard({
   plan,
   onEdit,
   onDelete,
+  onPay,
 }: {
   plan: Plan;
   onEdit: (plan: Plan) => void;
   onDelete: (plan: Plan) => void;
+  onPay: (plan: Plan) => void;
 }) {
   const calculateTotalAmount = (plan: Plan) => {
     const subItemsTotal =
@@ -133,9 +136,7 @@ function PlanCard({
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full"
-          onClick={() => {
-            /* Lógica de pagamento aqui */
-          }}
+          onClick={() => onPay(plan)}
         >
           <DollarSign className="h-4 w-4 text-green-600" />
         </Button>
@@ -194,7 +195,9 @@ export default function PlansList() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isPayFormOpen, setIsPayFormOpen] = useState(false);
   const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
+  const [planToPay, setPlanToPay] = useState<Plan | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const { toast } = useToast();
@@ -240,6 +243,11 @@ export default function PlansList() {
   const handleEditClick = (plan: Plan) => {
     setPlanToEdit(plan);
     setIsFormOpen(true);
+  };
+  
+  const handlePayClick = (plan: Plan) => {
+    setPlanToPay(plan);
+    setIsPayFormOpen(true);
   };
 
   const handleDeleteRequest = (plan: Plan) => {
@@ -287,6 +295,7 @@ export default function PlansList() {
               plan={plan}
               onEdit={handleEditClick}
               onDelete={handleDeleteRequest}
+              onPay={handlePayClick}
             />
           ))}
         </div>
@@ -301,6 +310,15 @@ export default function PlansList() {
         onOpenChange={setIsFormOpen}
         planToEdit={planToEdit}
       />
+      
+      {planToPay && (
+        <PayPlanForm
+          isOpen={isPayFormOpen}
+          onOpenChange={setIsPayFormOpen}
+          plan={planToPay}
+        />
+      )}
+
 
       <AlertDialog
         open={isDeleteDialogOpen}
