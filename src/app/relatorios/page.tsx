@@ -113,7 +113,9 @@ export default function ReportsPage() {
   }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
   const { grossProfit, grossMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { grossProfit: 0, grossMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) {
+      return { grossProfit: 0, grossMargin: 0 };
+    }
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -145,10 +147,10 @@ export default function ReportsPage() {
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
 
-    const calculatedGrossProfit = currentNetRevenue - supplierCosts;
-    const calculatedGrossMargin = currentNetRevenue > 0 ? (calculatedGrossProfit / currentNetRevenue) * 100 : 0;
+    const calculatedGrossProfit = netRevenue - supplierCosts;
+    const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
     return { grossProfit: calculatedGrossProfit, grossMargin: calculatedGrossMargin };
-}, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading]);
+}, [allIncomes, allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
 
   const { netProfit, netMargin } = useMemo(() => {
     if (activeProfile !== 'Business') return { netProfit: 0, netMargin: 0 };
