@@ -37,6 +37,7 @@ import {
   ArchiveX,
   ArrowUp,
   ArrowDown,
+  Search,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -72,6 +73,7 @@ export default function ManageTagsPageClient() {
   const [isUnarchiving, setIsUnarchiving] = useState<RawTag | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('inUse');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredTags = useMemo((): HierarchicalTag[] => {
     const allTags = hierarchicalTags;
@@ -113,7 +115,7 @@ export default function ManageTagsPageClient() {
     }
 
     if (filter === 'archived') {
-       return allTags
+       let archived = allTags
         .map(tag => {
             const archivedChildren = tag.children.filter(child => child.isArchived);
             if (tag.isArchived || archivedChildren.length > 0) {
@@ -122,9 +124,20 @@ export default function ManageTagsPageClient() {
             return null;
         })
         .filter((tag): tag is HierarchicalTag => tag !== null);
+        
+      if (searchTerm) {
+          return archived.map(tag => {
+              const matchingChildren = tag.children.filter(child => child.name.toLowerCase().includes(searchTerm.toLowerCase()));
+              if (tag.name.toLowerCase().includes(searchTerm.toLowerCase()) || matchingChildren.length > 0) {
+                  return { ...tag, children: matchingChildren };
+              }
+              return null;
+          }).filter((tag): tag is HierarchicalTag => tag !== null);
+      }
+      return archived;
     }
     return [];
-  }, [hierarchicalTags, filter, usedTagNames]);
+  }, [hierarchicalTags, filter, usedTagNames, searchTerm]);
 
   const selectedTag = useMemo(() => {
     return filteredTags.find((tag) => tag.id === selectedTagId) || null;
@@ -365,6 +378,18 @@ export default function ManageTagsPageClient() {
           ))}
         </div>
       </div>
+      
+       {filter === 'archived' && (
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar em tags arquivadas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-140px)]">
         {/* Coluna de Tags Principais */}
