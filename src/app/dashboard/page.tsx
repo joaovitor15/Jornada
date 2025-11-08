@@ -95,51 +95,67 @@ export default function DashboardPage() {
       const date = (t.date as unknown as Timestamp).toDate();
       return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
     };
-
-    const monthlyIncomes = incomes
-      .filter(filterByMonthAndYear)
-      .filter(income => income.subcategory !== text.businessCategories.pfpbSubcategory)
-      .reduce((acc, curr) => acc + curr.amount, 0);
-
-    const monthlyVendas = incomes
-      .filter(filterByMonthAndYear)
-      .filter(income => income.subcategory === text.businessCategories.pfpbSubcategory)
-      .reduce((acc, curr) => acc + curr.amount, 0);
     
-    // --- Nova lógica para cálculo de Alimentação usando Tags ---
-    const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação' && tag.isPrincipal);
-    const alimentacaoTagNames = new Set<string>();
-    if (alimentacaoTag) {
-        alimentacaoTagNames.add(alimentacaoTag.name);
-        alimentacaoTag.children.forEach(child => alimentacaoTagNames.add(child.name));
+    const monthlyExpenses = expenses
+      .filter(filterByMonthAndYear)
+      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    let monthlyIncomes = 0;
+    let monthlyVendas = 0;
+    let monthlyAlimentacao = 0;
+    
+    // Profile-specific calculations
+    if (activeProfile === 'Business') {
+        const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
+        const pfpbTag = hierarchicalTags.find(tag => tag.name === 'Farmácia Popular do Brasil');
+
+        const receitasTagNames = new Set<string>();
+        if (receitasTag) {
+            receitasTag.children.forEach(child => receitasTagNames.add(child.name));
+        }
+
+        const pfpbTagNames = new Set<string>();
+        if (pfpbTag) {
+            pfpbTag.children.forEach(child => pfpbTagNames.add(child.name));
+        }
+        
+        monthlyIncomes = incomes
+            .filter(filterByMonthAndYear)
+            .filter(income => income.tags && income.tags.some(tag => receitasTagNames.has(tag)))
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
+        monthlyVendas = incomes
+            .filter(filterByMonthAndYear)
+            .filter(income => income.tags && income.tags.some(tag => pfpbTagNames.has(tag)))
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
+    } else if (activeProfile === 'Home') {
+        monthlyIncomes = incomes
+            .filter(filterByMonthAndYear)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+            
+        const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação' && tag.isPrincipal);
+        const alimentacaoTagNames = new Set<string>();
+        if (alimentacaoTag) {
+            alimentacaoTagNames.add(alimentacaoTag.name);
+            alimentacaoTag.children.forEach(child => alimentacaoTagNames.add(child.name));
+        }
+        
+        monthlyAlimentacao = expenses
+            .filter(filterByMonthAndYear)
+            .filter(expense => expense.tags && expense.tags.some(tag => alimentacaoTagNames.has(tag)))
+            .reduce((acc, curr) => acc + curr.amount, 0);
+    } else { // Personal
+         monthlyIncomes = incomes
+            .filter(filterByMonthAndYear)
+            .reduce((acc, curr) => acc + curr.amount, 0);
     }
 
-    const monthlyAlimentacao = expenses
-      .filter(filterByMonthAndYear)
-      .filter(expense => 
-          expense.tags && expense.tags.some(tag => alimentacaoTagNames.has(tag))
-      )
-      .reduce((acc, curr) => acc + curr.amount, 0);
-    // --- Fim da nova lógica ---
-
-    const monthlyNonCardExpenses = expenses
-      .filter(filterByMonthAndYear)
-      .filter(e => !e.paymentMethod.startsWith('Cartão:'))
-      .reduce((acc, curr) => acc + curr.amount, 0);
-    
-    // Only 'payment' type bill payments are considered expenses for the dashboard
-    const monthlyBillPayments = billPayments
-      .filter(filterByMonthAndYear)
-      .filter(p => p.type === 'payment')
-      .reduce((acc, curr) => acc + curr.amount, 0);
-
-    const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
-
     setTotalIncomes(monthlyIncomes);
-    setTotalExpenses(totalMonthlyExpenses);
+    setTotalExpenses(monthlyExpenses);
     setTotalVendas(monthlyVendas);
     setTotalAlimentacao(monthlyAlimentacao);
-    setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
+    setTotalBalance(monthlyIncomes - monthlyExpenses);
   }, [incomes, expenses, billPayments, transactionsLoading, tagsLoading, hierarchicalTags, selectedYear, selectedMonth, activeProfile]);
 
 
