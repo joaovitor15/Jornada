@@ -53,6 +53,7 @@ export default function FaturasAtuais() {
 
   const processFaturas = useCallback(async (cardsToProcess: CardType[]) => {
       if (!user || !activeProfile || cardsToProcess.length === 0) {
+        setFaturas([]);
         return [];
       }
 
@@ -67,7 +68,7 @@ export default function FaturasAtuais() {
         const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
         const futureExpensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>', Timestamp.fromDate(endDate))));
         
-        const [expensesSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, futureExpensesSnap, refundsQuery]);
+        const [expensesSnap, futureExpensesSnap, refundsSnap] = await Promise.all([expensesQuery, futureExpensesQuery, refundsQuery]);
 
         const totalExpenses = expensesSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
         const totalRefunds = refundsSnap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
@@ -86,7 +87,8 @@ export default function FaturasAtuais() {
         };
       });
 
-      return Promise.all(allFaturasPromises);
+      const faturasData = await Promise.all(allFaturasPromises);
+      setFaturas(faturasData);
   }, [user, activeProfile]);
 
   useEffect(() => {
@@ -104,8 +106,7 @@ export default function FaturasAtuais() {
     );
     const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
       const cardsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CardType));
-      processFaturas(cardsData).then(faturasData => {
-        setFaturas(faturasData);
+      processFaturas(cardsData).then(() => {
         setLoading(false);
       });
     }, (error) => {
@@ -124,7 +125,7 @@ export default function FaturasAtuais() {
   }
 
   if (faturas.length === 0) {
-    return null;
+    return null; // Don't render anything if there are no cards/faturas
   }
 
   return (
@@ -184,7 +185,16 @@ export default function FaturasAtuais() {
                 </div>
 
                 <div className="space-y-2">
-                  <Progress value={faturaPercent + parcelasFuturasPercent} className="h-2"/>
+                   <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+                        <div
+                        className="absolute h-full bg-yellow-400 transition-all"
+                        style={{ width: `${faturaPercent + parcelasFuturasPercent}%` }}
+                        />
+                        <div
+                        className={`absolute h-full ${indicatorColor} transition-all`}
+                        style={{ width: `${faturaPercent}%` }}
+                        />
+                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <div className='flex items-center gap-2'>
                         <div className={`h-2 w-2 rounded-full ${indicatorColor}`}></div>
