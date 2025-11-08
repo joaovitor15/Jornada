@@ -32,7 +32,6 @@ import SumExpensesForm from '@/components/dashboard/sum-expenses-form';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
 import { useTransactions } from '@/hooks/use-transactions';
-import { useTags } from '@/hooks/use-tags';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -49,14 +48,11 @@ export default function DashboardPage() {
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
 
   const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
-  const { hierarchicalTags, loading: tagsLoading } = useTags();
 
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
-  const [totalVendas, setTotalVendas] = useState(0);
-  const [totalAlimentacao, setTotalAlimentacao] = useState(0);
-
+  
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(
@@ -70,7 +66,7 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (transactionsLoading || tagsLoading) return;
+    if (transactionsLoading) return;
 
     const allTransactions = [...incomes, ...expenses, ...billPayments];
     if (allTransactions.length > 0) {
@@ -100,63 +96,14 @@ export default function DashboardPage() {
       .filter(filterByMonthAndYear)
       .reduce((acc, curr) => acc + curr.amount, 0);
 
-    let monthlyIncomes = 0;
-    let monthlyVendas = 0;
-    let monthlyAlimentacao = 0;
-    
-    // Profile-specific calculations
-    if (activeProfile === 'Business') {
-        const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
-        const pfpbTag = hierarchicalTags.find(tag => tag.name === 'Farmácia Popular do Brasil');
-
-        const receitasTagNames = new Set<string>();
-        if (receitasTag) {
-            receitasTag.children.forEach(child => receitasTagNames.add(child.name));
-        }
-
-        const pfpbTagNames = new Set<string>();
-        if (pfpbTag) {
-            pfpbTag.children.forEach(child => pfpbTagNames.add(child.name));
-        }
-        
-        monthlyIncomes = incomes
-            .filter(filterByMonthAndYear)
-            .filter(income => income.tags && income.tags.some(tag => receitasTagNames.has(tag)))
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-        monthlyVendas = incomes
-            .filter(filterByMonthAndYear)
-            .filter(income => income.tags && income.tags.some(tag => pfpbTagNames.has(tag)))
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-    } else if (activeProfile === 'Home') {
-        monthlyIncomes = incomes
-            .filter(filterByMonthAndYear)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-            
-        const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação' && tag.isPrincipal);
-        const alimentacaoTagNames = new Set<string>();
-        if (alimentacaoTag) {
-            alimentacaoTagNames.add(alimentacaoTag.name);
-            alimentacaoTag.children.forEach(child => alimentacaoTagNames.add(child.name));
-        }
-        
-        monthlyAlimentacao = expenses
-            .filter(filterByMonthAndYear)
-            .filter(expense => expense.tags && expense.tags.some(tag => alimentacaoTagNames.has(tag)))
-            .reduce((acc, curr) => acc + curr.amount, 0);
-    } else { // Personal
-         monthlyIncomes = incomes
-            .filter(filterByMonthAndYear)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-    }
+    const monthlyIncomes = incomes
+        .filter(filterByMonthAndYear)
+        .reduce((acc, curr) => acc + curr.amount, 0);
 
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(monthlyExpenses);
-    setTotalVendas(monthlyVendas);
-    setTotalAlimentacao(monthlyAlimentacao);
     setTotalBalance(monthlyIncomes - monthlyExpenses);
-  }, [incomes, expenses, billPayments, transactionsLoading, tagsLoading, hierarchicalTags, selectedYear, selectedMonth, activeProfile]);
+  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
 
 
   if (authLoading || !user) {
@@ -167,7 +114,7 @@ export default function DashboardPage() {
     );
   }
   
-  const loading = authLoading || transactionsLoading || tagsLoading;
+  const loading = authLoading || transactionsLoading;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -309,70 +256,6 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-             {activeProfile === 'Business' && (
-              <Card className="mt-6">
-                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {text.dashboard.pfpbProgram}
-                     <span className="text-xs font-normal text-muted-foreground">
-                        ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
-                        {selectedYear})
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                   {loading ? (
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  ) : (
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                            <Receipt className="h-6 w-6 text-blue-500" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">
-                                {text.dashboard.totalCredits}
-                            </p>
-                            <p className="text-lg font-semibold">
-                                {formatCurrency(totalVendas)}
-                            </p>
-                        </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-             {activeProfile === 'Home' && (
-              <Card className="mt-6">
-                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {text.dashboard.food}
-                     <span className="text-xs font-normal text-muted-foreground">
-                        ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
-                        {selectedYear})
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-4 py-10">
-                   {loading ? (
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  ) : (
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
-                            <Beef className="h-6 w-6 text-yellow-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">
-                                {text.dashboard.totalFood}
-                            </p>
-                            <p className="text-lg font-semibold">
-                                {formatCurrency(totalAlimentacao)}
-                            </p>
-                        </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
