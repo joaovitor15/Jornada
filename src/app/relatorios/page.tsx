@@ -184,7 +184,8 @@ export default function ReportsPage() {
   }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
   const { cmv, costMargin } = useMemo(() => {
-    if (activeProfile !== 'Business') return { cmv: 0, costMargin: 0 };
+    if (activeProfile !== 'Business' || tagsLoading) return { cmv: 0, costMargin: 0 };
+
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -192,25 +193,25 @@ export default function ReportsPage() {
     const startDate = cmvViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
 
-    const currentNetRevenue = allIncomes
-      .filter(i => {
-        if (!i.date) return false;
-        const d = i.date.toDate();
-        return d >= startDate && d <= endDate && i.subcategory !== text.businessCategories.pfpbSubcategory;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
+    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
+    const fornecedorTagNames = new Set<string>();
+    if (fornecedoresTag) {
+        fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
+    }
 
     const calculatedCmv = allExpenses
       .filter(e => {
         if (!e.date) return false;
         const d = e.date.toDate();
-        return d >= startDate && d <= endDate && e.mainCategory === 'Fornecedores';
+        if (!(d >= startDate && d <= endDate)) return false;
+        
+        return e.tags?.some(tag => fornecedorTagNames.has(tag)) ?? false;
       })
       .reduce((acc, expense) => acc + expense.amount, 0);
       
-    const calculatedCostMargin = currentNetRevenue > 0 ? (calculatedCmv / currentNetRevenue) * 100 : 0;
+    const calculatedCostMargin = netRevenue > 0 ? (calculatedCmv / netRevenue) * 100 : 0;
     return { cmv: calculatedCmv, costMargin: calculatedCostMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile]);
+}, [allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
   
   const { personnelCost, personnelCostMargin } = useMemo(() => {
     if (activeProfile !== 'Business') return { personnelCost: 0, personnelCostMargin: 0 };
