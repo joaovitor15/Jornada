@@ -286,7 +286,7 @@ export const text = {
     netProfit: 'Lucro Líquido',
     netProfitTooltip: "Mede o quanto a empresa realmente ganhou após pagar todas as obrigações.\nCálculo: Receita Líquida - Todas as Despesas.",
     netRevenue: 'Receita Líquida',
-    netRevenueTooltip: 'Representa o total de vendas realizadas, excluindo as vendas do programa Farmácia Popular.',
+    netRevenueTooltip: 'Representa o total de vendas realizadas',
     monthly: 'Mensal',
     annual: 'Anual',
     grossMargin: 'Margem Bruta',

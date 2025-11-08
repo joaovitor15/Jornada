@@ -30,6 +30,7 @@ import { useTransactions } from '@/hooks/use-transactions';
 import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendingTabs';
 import IncomeAnalysisTabs from '@/components/relatorios/IncomeAnalysisTabs';
 import HomeAndPersonalCards from '@/components/relatorios/HomeAndPersonalCards';
+import { useTags } from '@/hooks/use-tags';
 
 
 const generateYearOptions = () => {
@@ -51,6 +52,7 @@ const months = Object.entries(text.dashboard.months).map(
 export default function ReportsPage() {
   const { activeProfile } = useProfile();
   const { incomes: allIncomes, expenses: allExpenses, billPayments: allBillPayments, loading: dataLoading } = useTransactions(activeProfile);
+  const { hierarchicalTags, loading: tagsLoading } = useTags();
 
   const yearOptions = generateYearOptions();
   const [selectedYear, setSelectedYear] = useState<number>(
@@ -84,7 +86,7 @@ export default function ReportsPage() {
 
   // --- Business Profile Calculations ---
   const netRevenue = useMemo(() => {
-    if (activeProfile !== 'Business') return 0;
+    if (activeProfile !== 'Business' || tagsLoading) return 0;
     const startOfMonth = new Date(selectedYear, selectedMonth, 1);
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const startOfYear = new Date(selectedYear, 0, 1);
@@ -92,14 +94,23 @@ export default function ReportsPage() {
     const startDate = netRevenueViewMode === 'mensal' ? startOfMonth : startOfYear;
     const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
 
+    const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
+    const receitaTagNames = new Set<string>();
+    if (receitasTag) {
+        receitasTag.children.forEach(child => receitaTagNames.add(child.name));
+    }
+
     return allIncomes
       .filter(income => {
         if (!income.date) return false;
         const incomeDate = income.date.toDate();
-        return incomeDate >= startDate && incomeDate <= endDate && income.subcategory !== text.businessCategories.pfpbSubcategory;
+        const isInDateRange = incomeDate >= startDate && incomeDate <= endDate;
+        if (!isInDateRange) return false;
+        
+        return income.tags?.some(tag => receitaTagNames.has(tag)) ?? false;
       })
       .reduce((acc, income) => acc + income.amount, 0);
-  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile]);
+  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, hierarchicalTags, tagsLoading]);
 
   const { grossProfit, grossMargin } = useMemo(() => {
     if (activeProfile !== 'Business') return { grossProfit: 0, grossMargin: 0 };
@@ -407,7 +418,7 @@ export default function ReportsPage() {
    );
  }
 
-  const isLoading = dataLoading;
+  const isLoading = dataLoading || tagsLoading;
 
   return (
     <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
