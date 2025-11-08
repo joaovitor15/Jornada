@@ -97,6 +97,7 @@ export default function ReportsPage() {
     const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
     const receitaTagNames = new Set<string>();
     if (receitasTag) {
+        receitaTagNames.add(receitasTag.name);
         receitasTag.children.forEach(child => receitaTagNames.add(child.name));
     }
 
@@ -125,6 +126,7 @@ export default function ReportsPage() {
     const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
     const fornecedorTagNames = new Set<string>();
     if (fornecedoresTag) {
+      fornecedorTagNames.add(fornecedoresTag.name);
       fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
     }
 
@@ -156,6 +158,7 @@ export default function ReportsPage() {
     const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
     const receitaTagNames = new Set<string>();
     if (receitasTag) {
+        receitaTagNames.add(receitasTag.name);
         receitasTag.children.forEach(child => receitaTagNames.add(child.name));
     }
 
@@ -195,6 +198,7 @@ export default function ReportsPage() {
     const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
     const fornecedorTagNames = new Set<string>();
     if (fornecedoresTag) {
+        fornecedorTagNames.add(fornecedoresTag.name);
         fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
     }
 
@@ -225,6 +229,7 @@ export default function ReportsPage() {
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Funcionários');
     const tagNames = new Set<string>();
     if (tagPrincipal) {
+      tagNames.add(tagPrincipal.name);
       tagPrincipal.children.forEach(child => tagNames.add(child.name));
     }
 
@@ -254,6 +259,7 @@ export default function ReportsPage() {
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Impostos');
     const tagNames = new Set<string>();
     if (tagPrincipal) {
+      tagNames.add(tagPrincipal.name);
       tagPrincipal.children.forEach(child => tagNames.add(child.name));
     }
       
@@ -283,6 +289,7 @@ export default function ReportsPage() {
     const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistemas e Tecnologias');
     const tagNames = new Set<string>();
     if (tagPrincipal) {
+      tagNames.add(tagPrincipal.name);
       tagPrincipal.children.forEach(child => tagNames.add(child.name));
     }
 
@@ -312,6 +319,7 @@ export default function ReportsPage() {
     const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
     const fornecedorTagNames = new Set<string>();
     if (fornecedoresTag) {
+        fornecedorTagNames.add(fornecedoresTag.name);
         fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
     }
       
