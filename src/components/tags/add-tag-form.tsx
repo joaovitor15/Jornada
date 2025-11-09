@@ -122,13 +122,13 @@ export default function AddTagForm({
         name: values.tagName.trim(),
         isPrincipal: values.type === 'principal',
         parent: values.parentId || null,
-        order: 0,
+        order: 0, // Order is managed separately
       };
       
       batch.set(newTagRef, newTagData);
 
       // Auto-create 'Dinheiro/Pix' if 'Formas de Pagamento' is being created
-       if (values.tagName === 'Formas de Pagamento' && values.type === 'principal') {
+       if (values.tagName.trim() === 'Formas de Pagamento' && values.type === 'principal') {
           const pixTagRef = doc(collection(db, 'tags'));
           const pixTagData: RawTag = {
             id: pixTagRef.id,

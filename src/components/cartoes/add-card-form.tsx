@@ -65,6 +65,7 @@ type CardFormProps = {
 
 // Função para garantir que uma tag principal exista e retornar seu ID
 async function getOrCreatePrincipalTag(
+  batch: any,
   userId: string,
   profile: Profile,
   tagName: 'Cartões' | 'Formas de Pagamento'
@@ -93,7 +94,7 @@ async function getOrCreatePrincipalTag(
       parent: null,
       order: tagName === 'Cartões' ? 99 : 98, // Prioritize 'Formas de Pagamento' before 'Cartões'
     };
-    await setDoc(newTagRef, newTagData);
+    batch.set(newTagRef, newTagData);
     
      if (tagName === 'Formas de Pagamento') {
       const pixTagRef = doc(collection(db, 'tags'));
@@ -106,7 +107,7 @@ async function getOrCreatePrincipalTag(
         parent: newTagRef.id,
         order: 0,
       };
-      await setDoc(pixTagRef, pixTagData);
+      batch.set(pixTagRef, pixTagData);
     }
     
     return newTagRef.id;
@@ -166,8 +167,9 @@ export default function CardForm({
     }
 
     try {
+      const batch = writeBatch(db);
+
       if (isEditMode && cardToEdit?.id) {
-        const batch = writeBatch(db);
         const cardRef = doc(db, 'cards', cardToEdit.id);
         batch.update(cardRef, { ...values, isArchived: false });
 
@@ -194,9 +196,9 @@ export default function CardForm({
         });
 
       } else {
-        // Guarantee essential principal tags exist
-        await getOrCreatePrincipalTag(user.uid, activeProfile, 'Formas de Pagamento');
-        const principalCartoesTagId = await getOrCreatePrincipalTag(user.uid, activeProfile, 'Cartões');
+        // Guarantee essential principal tags exist using the batch
+        await getOrCreatePrincipalTag(batch, user.uid, activeProfile, 'Formas de Pagamento');
+        const principalCartoesTagId = await getOrCreatePrincipalTag(batch, user.uid, activeProfile, 'Cartões');
         
         const childTagRef = doc(collection(db, 'tags'));
         const childTagData: RawTag = {
@@ -206,17 +208,21 @@ export default function CardForm({
           name: values.name.trim(),
           isPrincipal: false,
           parent: principalCartoesTagId,
-          order: 0,
+          order: 0, // Order can be managed later
         };
-        await setDoc(childTagRef, childTagData);
+        batch.set(childTagRef, childTagData);
 
-        await addDoc(collection(db, 'cards'), {
+        const newCardRef = doc(collection(db, 'cards'));
+        const newCardData = {
           ...values,
           userId: user.uid,
           profile: activeProfile,
           createdAt: serverTimestamp(),
           isArchived: false,
-        });
+        };
+        batch.set(newCardRef, newCardData);
+        
+        await batch.commit();
 
         toast({
           title: text.common.success,
