@@ -115,7 +115,7 @@ export const text = {
     title: 'Adicionar Nova Despesa',
     description:
       'Preencha os detalhes abaixo para adicionar uma nova despesa à sua jornada.',
-    selectPaymentMethod: 'Selecione uma forma de pagamento',
+    selectPaymentMethod: 'Selecione um meio de pagamento',
     expenseDate: 'Data da Despesa',
     pickDate: 'Escolha uma data',
     addExpense: 'Adicionar Despesa',
@@ -127,7 +127,7 @@ export const text = {
       descriptionMinChars: 'A descrição deve ter pelo menos 2 caracteres.',
       amountPositive: 'O valor deve ser maior que zero.',
       amountRequired: 'O valor é obrigatório.',
-      pleaseSelectPaymentMethod: 'Por favor, selecione uma forma de pagamento.',
+      pleaseSelectPaymentMethod: 'Por favor, selecione um meio de pagamento.',
     },
   },
   addIncomeForm: {
@@ -205,7 +205,7 @@ export const text = {
     description: 'Descrição',
     amount: 'Valor',
     date: 'Data',
-    paymentMethod: 'Forma de Pagamento',
+    paymentMethod: 'Meio de Pagamento',
     actions: 'Ações',
     password: 'Senha',
     email: 'Email',

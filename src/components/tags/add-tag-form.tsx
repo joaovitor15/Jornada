@@ -127,8 +127,8 @@ export default function AddTagForm({
       
       batch.set(newTagRef, newTagData);
 
-      // Auto-create 'Dinheiro/Pix' if 'Formas de Pagamento' is being created
-       if (values.tagName.trim() === 'Formas de Pagamento' && values.type === 'principal') {
+      // Auto-create 'Dinheiro/Pix' if 'Meio de Pagamento' is being created
+       if (values.tagName.trim() === 'Meio de Pagamento' && values.type === 'principal') {
           const pixTagRef = doc(collection(db, 'tags'));
           const pixTagData: RawTag = {
             id: pixTagRef.id,
