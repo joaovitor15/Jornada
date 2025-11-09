@@ -28,7 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { reserveCategories, emergencyReserveLocations } from '@/lib/categories';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -115,26 +114,30 @@ export default function ReservaDeEmergenciaPage() {
 
   const subcategoryToMainCategoryMap = useMemo(() => {
     const map: { [key: string]: string } = {};
-    for (const mainCategory in reserveCategories) {
-      for (const subcategory of reserveCategories[mainCategory]) {
-        map[subcategory] = mainCategory;
-      }
-    }
+    // for (const mainCategory in reserveCategories) {
+    //   for (const subcategory of reserveCategories[mainCategory]) {
+    //     map[subcategory] = mainCategory;
+    //   }
+    // }
     return map;
   }, []);
 
   const handleDiceRoll = () => {
-    const allSubcategories = Object.values(reserveCategories).flat();
-    const randomIndex = Math.floor(Math.random() * allSubcategories.length);
-    const randomSub = allSubcategories[randomIndex];
-    const randomMain = subcategoryToMainCategoryMap[randomSub];
-    setDiceResult({ main: randomMain, sub: randomSub });
-    resetDiceForm({
-      amount: undefined,
-      date: new Date(),
-      location: '',
+    // const allSubcategories = Object.values(reserveCategories).flat();
+    // const randomIndex = Math.floor(Math.random() * allSubcategories.length);
+    // const randomSub = allSubcategories[randomIndex];
+    // const randomMain = subcategoryToMainCategoryMap[randomSub];
+    // setDiceResult({ main: randomMain, sub: randomSub });
+    // resetDiceForm({
+    //   amount: undefined,
+    //   date: new Date(),
+    //   location: '',
+    // });
+    // setShowDiceResult(true);
+    toast({
+      title: 'Em breve!',
+      description: 'A funcionalidade de sorteio será reimplementada com o novo sistema de tags.',
     });
-    setShowDiceResult(true);
   };
 
   const onDiceSubmit = async (values: z.infer<typeof diceFormSchema>) => {
@@ -193,116 +196,118 @@ export default function ReservaDeEmergenciaPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {text.sidebar.emergencyReserve}
-        </h1>
-        <div className="flex items-center gap-2">
-          {isClient && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              onClick={handleDiceRoll}
-            >
-              <Dices className="h-5 w-5" />
-              <span className="sr-only">Sortear Subcategoria</span>
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">
+            {text.sidebar.emergencyReserve}
+          </h1>
+          <div className="flex items-center gap-2">
+            {isClient && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                onClick={handleDiceRoll}
+              >
+                <Dices className="h-5 w-5" />
+                <span className="sr-only">Sortear Subcategoria</span>
+              </Button>
+            )}
+            <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
+              <Shield className="mr-2 h-4 w-4" />
+              Nova Movimentação
             </Button>
-          )}
-          <Button onClick={() => setIsReserveFormOpen(true)} size="sm">
-            <Shield className="mr-2 h-4 w-4" />
-            Nova Movimentação
-          </Button>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Protegido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                    <PiggyBank className="h-6 w-6 text-blue-500" />
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {formatCurrency(totalProtegido)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Reserva</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                    <Shield className="h-6 w-6 text-green-500" />
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {formatCurrency(totalReserva)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Programado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
-                    <CalendarCheck2 className="h-6 w-6 text-purple-500" />
-                  </div>
-                  <span className="text-2xl font-bold">
-                    {formatCurrency(totalProgramado)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
           </div>
-
-          {subcategoryTotals.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subcategoryTotals.map((sub) => (
-                <Card key={sub.name}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{sub.name}</CardTitle>
-                    <CardDescription>{sub.mainCategory}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                          sub.mainCategory === 'Reserva de Emergencia'
-                            ? 'bg-green-100 dark:bg-green-900/50'
-                            : 'bg-purple-100 dark:bg-purple-900/50'
-                        }`}
-                      >
-                        {getIconForCategory(sub.mainCategory)}
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatCurrency(sub.total)}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          <ReserveAnalysisTabs />
-
         </div>
-      )}
+
+        {loading ? (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Total Protegido</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
+                      <PiggyBank className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(totalProtegido)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Reserva</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
+                      <Shield className="h-6 w-6 text-green-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(totalReserva)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Programado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/50">
+                      <CalendarCheck2 className="h-6 w-6 text-purple-500" />
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatCurrency(totalProgramado)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {subcategoryTotals.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {subcategoryTotals.map((sub) => (
+                  <Card key={sub.name}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">{sub.name}</CardTitle>
+                      <CardDescription>{sub.mainCategory}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ${
+                            sub.mainCategory === 'Reserva de Emergencia'
+                              ? 'bg-green-100 dark:bg-green-900/50'
+                              : 'bg-purple-100 dark:bg-purple-900/50'
+                          }`}
+                        >
+                          {getIconForCategory(sub.mainCategory)}
+                        </div>
+                        <span className="text-2xl font-bold">
+                          {formatCurrency(sub.total)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <ReserveAnalysisTabs />
+
+          </div>
+        )}
+      </div>
 
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
@@ -361,11 +366,11 @@ export default function ReservaDeEmergenciaPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {emergencyReserveLocations.map((location) => (
+                          {/* {emergencyReserveLocations.map((location) => (
                             <SelectItem key={location} value={location}>
                               {location}
                             </SelectItem>
-                          ))}
+                          ))} */}
                         </SelectContent>
                       </Select>
                       <FormMessage />

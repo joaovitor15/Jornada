@@ -47,10 +47,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import {
-  emergencyReserveLocations,
-  reserveCategories,
-} from '@/lib/categories';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
@@ -177,9 +173,9 @@ export default function AddReserveEntryForm({
   };
 
   const subcategories = useMemo(() => {
-    if (selectedMainCategory && reserveCategories[selectedMainCategory]) {
-      return reserveCategories[selectedMainCategory];
-    }
+    // if (selectedMainCategory && reserveCategories[selectedMainCategory]) {
+    //   return reserveCategories[selectedMainCategory];
+    // }
     return [];
   }, [selectedMainCategory]);
 
@@ -268,11 +264,11 @@ export default function AddReserveEntryForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.keys(reserveCategories).map((category) => (
+                        {/* {Object.keys(reserveCategories).map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
                           </SelectItem>
-                        ))}
+                        ))} */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -326,11 +322,11 @@ export default function AddReserveEntryForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {emergencyReserveLocations.map((location) => (
+                      {/* {emergencyReserveLocations.map((location) => (
                         <SelectItem key={location} value={location}>
                           {location}
                         </SelectItem>
-                      ))}
+                      ))} */}
                     </SelectContent>
                   </Select>
                   <FormMessage />

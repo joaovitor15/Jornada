@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +13,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Percent, Loader2 } from 'lucide-react';
-import { businessIncomeCategories, businessExpenseCategories } from '@/lib/categories/business';
+// import { businessIncomeCategories, businessExpenseCategories } from '@/lib/categories/business';
 
 interface BusinessSummaryProps {
   year: number;
@@ -92,20 +93,22 @@ export default function BusinessSummary({ year }: BusinessSummaryProps) {
         let totalRevenue = 0;
         incomesSnap.forEach(doc => {
           const income = doc.data();
-          if (businessIncomeCategories['Vendas (Receitas)'].includes(income.subcategory)) {
-            totalRevenue += income.amount;
-          }
+          // FIXME: This logic depends on removed categories
+          // if (businessIncomeCategories['Vendas (Receitas)'].includes(income.subcategory)) {
+          //   totalRevenue += income.amount;
+          // }
         });
 
         let supplierCosts = 0;
         let otherExpenses = 0;
         expensesSnap.forEach(doc => {
           const expense = doc.data();
-          if (businessExpenseCategories['Fornecedores'].includes(expense.subcategory)) {
-            supplierCosts += expense.amount;
-          } else {
-            otherExpenses += expense.amount;
-          }
+          // FIXME: This logic depends on removed categories
+          // if (businessExpenseCategories['Fornecedores'].includes(expense.subcategory)) {
+          //   supplierCosts += expense.amount;
+          // } else {
+          //   otherExpenses += expense.amount;
+          // }
         });
 
         const grossProfit = totalRevenue - supplierCosts;

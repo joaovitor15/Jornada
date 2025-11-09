@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
 import { type EmergencyReserveEntry } from '@/lib/types';
-import { reserveCategories } from '@/lib/categories';
+// import { reserveCategories } from '@/lib/categories';
 
 interface SubcategoryTotal {
   name: string;
@@ -82,9 +82,9 @@ export function useEmergencyReserve() {
     });
 
     const subcategoryToMainMap = new Map<string, string>();
-    Object.entries(reserveCategories).forEach(([main, subs]) => {
-      subs.forEach((sub) => subcategoryToMainMap.set(sub, main));
-    });
+    // Object.entries(reserveCategories).forEach(([main, subs]) => {
+    //   subs.forEach((sub) => subcategoryToMainMap.set(sub, main));
+    // });
 
     const populatedSubTotals: SubcategoryTotal[] = Object.entries(subTotals)
       .map(([name, total]) => ({
