@@ -29,7 +29,9 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -37,9 +39,8 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Plan, type Profile, type Card } from '@/lib/types';
+import { type Plan } from '@/lib/types';
 import { Separator } from '../ui/separator';
-import { onSnapshot, query, where } from 'firebase/firestore';
 import TagInput from '../ui/tag-input';
 import { useTags } from '@/hooks/use-tags';
 
@@ -100,7 +101,6 @@ export default function PlanForm({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const [cards, setCards] = useState<Card[]>([]);
   const isEditMode = !!planToEdit;
   const { hierarchicalTags: allTags } = useTags();
 
@@ -124,16 +124,46 @@ export default function PlanForm({
     name: 'subItems',
   });
   
-  const availableTags = useMemo(() => {
-    return allTags
-      .flatMap(pt => pt.children)
+  const { paymentMethodOptions, cardOptions, availableTags } = useMemo(() => {
+    const paymentMethodsPrincipal = allTags.find(
+      (tag) => tag.name === 'Formas de Pagamento' && tag.isPrincipal
+    );
+    const cardsPrincipal = allTags.find(
+      (tag) => tag.name === 'Cartões' && tag.isPrincipal
+    );
+
+    const pmtOptions =
+      paymentMethodsPrincipal?.children
+        .filter((c) => !c.isArchived)
+        .map((c) => c.name) || [];
+
+    const cardOpts =
+      cardsPrincipal?.children
+        .filter((c) => !c.isArchived)
+        .map((c) => c.name) || [];
+    
+    // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Formas de Pagamento')
+    const generalTags = allTags
+      .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Formas de Pagamento')
+      .flatMap(pt => [pt, ...pt.children]) // Pega a principal e as filhas
       .filter(t => !t.isArchived)
       .map(t => t.name);
+
+    return {
+      paymentMethodOptions: pmtOptions,
+      cardOptions: cardOpts,
+      availableTags: Array.from(new Set(generalTags)),
+    };
   }, [allTags]);
+
 
   const planType = watch('type');
   const paymentMethod = watch('paymentMethod');
-  const isCardPayment = paymentMethod?.startsWith('Cartão:');
+  const isCardPayment = useMemo(() => {
+     if (!paymentMethod) return false;
+     return cardOptions.includes(paymentMethod.replace('Cartão: ', ''));
+  }, [paymentMethod, cardOptions]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -176,22 +206,6 @@ export default function PlanForm({
       }
     }
   }, [isOpen, isEditMode, planToEdit, form]);
-
-
-  useEffect(() => {
-    if (!user || !activeProfile) return;
-    const cardsQuery = query(
-      collection(db, 'cards'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-    const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
-      setCards(
-        snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Card))
-      );
-    });
-    return () => unsubscribe();
-  }, [user, activeProfile]);
 
   useEffect(() => {
     if (!isCardPayment) {
@@ -349,26 +363,43 @@ export default function PlanForm({
                 />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                <FormField
+                 <FormField
                   control={form.control}
                   name="paymentMethod"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{text.common.paymentMethod}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isSubmitting}
+                      >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue
-                              placeholder={text.addExpenseForm.selectPaymentMethod}
-                            />
+                            <SelectValue placeholder={text.addExpenseForm.selectPaymentMethod} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {paymentMethods.map((method) => (
-                            <SelectItem key={method} value={method}>
-                              {method}
-                            </SelectItem>
-                          ))}
+                          {paymentMethodOptions.length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel>Formas de Pagamento</SelectLabel>
+                              {paymentMethodOptions.map((method) => (
+                                <SelectItem key={method} value={method}>
+                                  {method}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
+                          {cardOptions.length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel>Cartões</SelectLabel>
+                              {cardOptions.map((cardName) => (
+                                <SelectItem key={cardName} value={`Cartão: ${cardName}`}>
+                                  {cardName}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
