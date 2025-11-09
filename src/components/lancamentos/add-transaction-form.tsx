@@ -163,7 +163,7 @@ export default function AddTransactionForm() {
     // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Meio de Pagamento')
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Meio de Pagamento')
-      .flatMap(pt => [pt, ...pt.children]) // Pega a principal e as filhas
+      .flatMap(pt => pt.children) // Pega apenas as filhas
       .filter(t => !t.isArchived)
       .map(t => t.name);
 
