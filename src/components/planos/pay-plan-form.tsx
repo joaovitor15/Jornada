@@ -128,6 +128,12 @@ export default function PayPlanForm({
         const installmentAmount = totalAmount / installments;
         const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
         
+        const finalTags = [...(plan.tags || [])];
+        const paymentMethodTag = plan.paymentMethod.startsWith('Cartão: ') ? plan.paymentMethod.replace('Cartão: ', '') : plan.paymentMethod;
+        if (!finalTags.includes(paymentMethodTag)) {
+            finalTags.push(paymentMethodTag);
+        }
+
         for (let i = 0; i < installments; i++) {
           const installmentDate = addMonths(values.date, i);
           const expenseData: any = {
@@ -139,7 +145,7 @@ export default function PayPlanForm({
             date: Timestamp.fromDate(installmentDate),
             installments: installments, 
             currentInstallment: i + 1,
-            tags: plan.tags || [],
+            tags: finalTags,
           };
           
           if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }

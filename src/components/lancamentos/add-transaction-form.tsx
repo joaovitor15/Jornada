@@ -163,8 +163,7 @@ export default function AddTransactionForm() {
     // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Meio de Pagamento')
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Meio de Pagamento')
-      .flatMap(pt => pt.children) // Pega apenas as filhas
-      .filter(t => !t.isArchived)
+      .flatMap(pt => pt.children.filter(child => !child.isArchived))
       .map(t => t.name);
 
     return {
@@ -262,11 +261,18 @@ export default function AddTransactionForm() {
             const collectionName = values.type === 'expense' ? 'expenses' : 'incomes';
             const docRef = doc(db, collectionName, transactionToEdit.id);
             
+            const finalTags = [...values.tags];
+            if (values.type === 'expense' && values.paymentMethod) {
+                if (!finalTags.includes(values.paymentMethod)) {
+                    finalTags.push(values.paymentMethod);
+                }
+            }
+
             const dataToUpdate: Partial<Expense | Income> = {
                 description: values.description || '',
                 amount: values.amount,
                 date: Timestamp.fromDate(values.date),
-                tags: values.tags,
+                tags: finalTags,
             };
 
             if (values.type === 'expense') {
@@ -284,6 +290,11 @@ export default function AddTransactionForm() {
                 const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
                 
                 const finalPaymentMethod = isCreditCardPayment ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
+                
+                const finalTags = [...values.tags];
+                if (values.paymentMethod && !finalTags.includes(values.paymentMethod)) {
+                    finalTags.push(values.paymentMethod);
+                }
 
                 for (let i = 0; i < installments; i++) {
                   const installmentDate = addMonths(values.date, i);
@@ -293,7 +304,7 @@ export default function AddTransactionForm() {
                     amount: installmentAmount, 
                     paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
-                    tags: values.tags,
+                    tags: finalTags,
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
