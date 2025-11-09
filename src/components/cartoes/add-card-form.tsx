@@ -68,7 +68,7 @@ async function getOrCreatePrincipalTag(
   batch: any,
   userId: string,
   profile: Profile,
-  tagName: 'Cartões' | 'Formas de Pagamento'
+  tagName: 'Cartões'
 ): Promise<string> {
   const tagsRef = collection(db, 'tags');
   const q = query(
@@ -92,24 +92,9 @@ async function getOrCreatePrincipalTag(
       name: tagName,
       isPrincipal: true,
       parent: null,
-      order: tagName === 'Cartões' ? 99 : 98, // Prioritize 'Formas de Pagamento' before 'Cartões'
+      order: 99,
     };
     batch.set(newTagRef, newTagData);
-    
-     if (tagName === 'Formas de Pagamento') {
-      const pixTagRef = doc(collection(db, 'tags'));
-      const pixTagData: RawTag = {
-        id: pixTagRef.id,
-        userId: userId,
-        profile: profile,
-        name: 'Dinheiro/Pix',
-        isPrincipal: false,
-        parent: newTagRef.id,
-        order: 0,
-      };
-      batch.set(pixTagRef, pixTagData);
-    }
-    
     return newTagRef.id;
   }
 }
@@ -196,8 +181,6 @@ export default function CardForm({
         });
 
       } else {
-        // Guarantee essential principal tags exist using the batch
-        await getOrCreatePrincipalTag(batch, user.uid, activeProfile, 'Formas de Pagamento');
         const principalCartoesTagId = await getOrCreatePrincipalTag(batch, user.uid, activeProfile, 'Cartões');
         
         const childTagRef = doc(collection(db, 'tags'));

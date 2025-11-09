@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -11,6 +12,9 @@ import {
   writeBatch,
   doc,
   updateDoc,
+  getDocs,
+  query,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -53,7 +57,7 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
-import { type Expense, type Income } from '@/lib/types';
+import { type Expense, type Income, RawTag } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
@@ -77,11 +81,54 @@ const formSchema = z.object({
   tags: z.array(z.string()).min(1, 'Selecione pelo menos uma tag.'),
 });
 
+const ensureBasePaymentTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
+    const paymentTagExists = allTags.some(tag => tag.name === 'Formas de Pagamento' && tag.isPrincipal);
+
+    if (!paymentTagExists) {
+        try {
+            const batch = writeBatch(db);
+            const tagsRef = collection(db, 'tags');
+
+            // Criar a tag principal "Formas de Pagamento"
+            const paymentTagRef = doc(tagsRef);
+            const paymentTagData: RawTag = {
+                id: paymentTagRef.id,
+                userId: userId,
+                profile: profile,
+                name: 'Formas de Pagamento',
+                isPrincipal: true,
+                parent: null,
+                order: 98,
+            };
+            batch.set(paymentTagRef, paymentTagData);
+
+            // Criar a tag filha "Dinheiro/Pix"
+            const pixTagRef = doc(tagsRef);
+            const pixTagData: RawTag = {
+                id: pixTagRef.id,
+                userId: userId,
+                profile: profile,
+                name: 'Dinheiro/Pix',
+                isPrincipal: false,
+                parent: paymentTagRef.id,
+                order: 0,
+            };
+            batch.set(pixTagRef, pixTagData);
+            
+            await batch.commit();
+            refreshTags(); // Força a atualização das tags no hook
+        } catch (error) {
+            console.error("Failed to create base payment tags:", error);
+        }
+    }
+};
+
+
 export default function AddTransactionForm() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
-  const { hierarchicalTags: allTags } = useTags();
+  const { hierarchicalTags: allTags, rawTags, refreshTags } = useTags();
   const [dateInput, setDateInput] = useState('');
   const { isFormOpen, closeForm, transactionToEdit } = useAddTransactionModal();
   
@@ -136,6 +183,9 @@ export default function AddTransactionForm() {
 
   useEffect(() => {
     if (isFormOpen) {
+       if (user && activeProfile) {
+          ensureBasePaymentTags(user.uid, activeProfile, rawTags, refreshTags);
+       }
       if (isEditMode && transactionToEdit) {
          const type = 'paymentMethod' in transactionToEdit ? 'expense' : 'income';
          
@@ -169,7 +219,7 @@ export default function AddTransactionForm() {
         setDateInput(format(initialDate, 'dd/MM/yyyy'));
       }
     }
-  }, [isFormOpen, isEditMode, transactionToEdit, reset]);
+  }, [isFormOpen, isEditMode, transactionToEdit, reset, user, activeProfile, rawTags, refreshTags]);
 
   // Handle dynamic form changes
   useEffect(() => {
