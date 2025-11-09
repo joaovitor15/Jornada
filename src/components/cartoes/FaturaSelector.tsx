@@ -31,6 +31,8 @@ import {
   startOfMonth,
   isBefore,
   isAfter,
+  isEqual,
+  endOfMonth,
 } from 'date-fns';
 import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 import { text } from '@/lib/strings';
@@ -57,6 +59,13 @@ interface FaturaSelectorProps {
   currentFatura: { month: number, year: number };
 }
 
+function formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(value);
+}
+
 export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSelect, currentFatura }: FaturaSelectorProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -71,8 +80,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
       const expensesQuery = getDocs(query(collection(db, 'expenses'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('paymentMethod', '==', `Cartão: ${card.name}`), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
       const refundsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'refund'), where('date', '>=', Timestamp.fromDate(startDate)), where('date', '<=', Timestamp.fromDate(endDate))));
       
-      // Pagamentos referentes a esta fatura ocorrem APÓS seu fechamento e ANTES do fechamento da próxima
-      const nextFaturaPeriod = getFaturaPeriod(addMonths(endDate, 1).getFullYear(), addMonths(endDate, 1).getMonth(), card.closingDay, card.dueDay);
+      const nextFaturaPeriod = getFaturaPeriod(getYear(addMonths(endDate, 1)), getMonth(addMonths(endDate, 1)), card.closingDay, card.dueDay);
       const paymentsQuery = getDocs(query(collection(db, 'billPayments'), where('userId', '==', user.uid), where('profile', '==', activeProfile), where('cardId', '==', card.id), where('type', '==', 'payment'), where('date', '>=', Timestamp.fromDate(endDate)), where('date', '<', Timestamp.fromDate(nextFaturaPeriod.startDate))));
       
       const [expensesSnap, refundsSnap, paymentsSnap] = await Promise.all([expensesQuery, refundsQuery, paymentsQuery]);
@@ -107,62 +115,62 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             getDocs(firstExpenseQuery),
             getDocs(lastExpenseQuery),
         ]);
-
-        const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
-
-        let startDate = startOfMonth(new Date(currentFaturaYear, currentFaturaMonth));
+        
+        let oldestDate = new Date();
+        let newestDate = new Date();
+        
         if (!firstExpenseSnap.empty) {
-            startDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
+            oldestDate = (firstExpenseSnap.docs[0].data().date as Timestamp).toDate();
+        }
+        
+        if (!lastExpenseSnap.empty) {
+            newestDate = (lastExpenseSnap.docs[0].data().date as Timestamp).toDate();
         }
 
-        let endDate = addMonths(new Date(currentFaturaYear, currentFaturaMonth), 1);
-        if (!lastExpenseSnap.empty) {
-            const lastDate = (lastExpenseSnap.docs[0].data().date as Timestamp).toDate();
-            if (isAfter(lastDate, endDate)) {
-                endDate = lastDate;
-            }
-        }
-        
         const monthsToFetch: { month: number, year: number }[] = [];
-        let loopDate = startOfMonth(startDate);
-        
-        while (isBefore(loopDate, addMonths(endDate, 1))) {
-            monthsToFetch.push({ month: getMonth(loopDate), year: getYear(loopDate) });
-            loopDate = addMonths(loopDate, 1);
+        let currentDate = startOfMonth(oldestDate);
+        const finalDate = endOfMonth(addMonths(newestDate, 1)); // Include one month in future
+
+        while (isBefore(currentDate, finalDate) || isEqual(currentDate, finalDate)) {
+             monthsToFetch.push({ month: getMonth(currentDate), year: getYear(currentDate) });
+             currentDate = addMonths(currentDate, 1);
         }
         
         const uniqueMonths = monthsToFetch.filter(
           (f, i, self) => i === self.findIndex(t => t.month === f.month && t.year === f.year)
         );
         
-        let previousCredit = 0;
-
         const faturasDataPromises = uniqueMonths.map(async ({ month, year }) => {
             const { dueDate, closingDate } = getFaturaPeriod(year, month, card.closingDay, card.dueDay);
             const { faturaValue, totalPayments } = await getMonthBalance(month, year);
             
             const prevFaturaDate = subMonths(new Date(year, month), 1);
             const { faturaValue: prevFaturaValue, totalPayments: prevTotalPayments } = await getMonthBalance(prevFaturaDate.getMonth(), prevFaturaDate.getFullYear());
-            previousCredit = Math.max(0, prevTotalPayments - prevFaturaValue);
+            const previousCredit = Math.max(0, prevTotalPayments - prevFaturaValue);
 
-            const finalValue = faturaValue - totalPayments - previousCredit;
+            const finalValue = faturaValue - (totalPayments + previousCredit);
             
             const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
             const isCurrentFatura = month === currentFaturaMonth && year === currentFaturaYear;
-            const isFutureFatura = new Date(year, month) > new Date(currentFaturaYear, currentFaturaMonth);
+            
+            const faturaDateObj = new Date(year, month);
+            const currentFaturaDateObj = new Date(currentFaturaYear, currentFaturaMonth);
+            const isFutureFatura = isAfter(faturaDateObj, currentFaturaDateObj);
             
             const { status } = getFaturaStatus(faturaValue, totalPayments + previousCredit, dueDate, closingDate, isCurrentFatura, isFutureFatura);
 
-            return { month, year, status, value: finalValue };
+            return { month, year, status, value: finalValue, originalValue: faturaValue };
         });
 
-        let resolvedFaturas = (await Promise.all(faturasDataPromises)) as Fatura[];
+        let resolvedFaturas = await Promise.all(faturasDataPromises);
+        
+        const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
         const currentMonthStart = startOfMonth(new Date(currentFaturaYear, currentFaturaMonth));
         
         resolvedFaturas = resolvedFaturas.filter(f => {
             const faturaDate = startOfMonth(new Date(f.year, f.month));
-            // Mostra se o valor for diferente de zero, ou se for a fatura atual/futura
-            return f.value !== 0 || !isBefore(faturaDate, currentMonthStart);
+            // Show if it had any movement, or if it's the current/future bill
+            return f.originalValue > 0 || !isBefore(faturaDate, currentMonthStart);
         });
 
         resolvedFaturas.sort((a, b) => {
@@ -170,7 +178,7 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
             return b.month - a.month;
         });
 
-        setFaturas(resolvedFaturas);
+        setFaturas(resolvedFaturas as Fatura[]);
         
       } catch (error) {
         console.error("Error fetching faturas: ", error);
@@ -242,5 +250,3 @@ export default function FaturaSelector({ isOpen, onOpenChange, card, onFaturaSel
     </Dialog>
   );
 }
-
-    

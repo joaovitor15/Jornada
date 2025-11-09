@@ -10,6 +10,14 @@ import {
 } from 'date-fns';
 import { text } from './strings';
 
+
+function formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(value);
+}
+
 /**
  * Calcula o período de uma fatura com base no ano, mês e dia de fechamento do cartão.
  * A fatura "de Julho" geralmente inclui compras feitas do dia de fechamento de Junho
@@ -115,8 +123,7 @@ export function getFaturaStatus(
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const valorRestante = totalFatura - totalPago;
-  const BRL = (value: number) =>
-    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const BRL = (value: number) => formatCurrency(value);
 
   // 1. Fatura Paga (total ou parcial com crédito)
   if (totalFatura > 0 && totalPago >= totalFatura) {
