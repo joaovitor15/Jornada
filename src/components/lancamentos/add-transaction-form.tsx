@@ -375,6 +375,25 @@ export default function AddTransactionForm() {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={control} name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <FormControl>
+                      <TagInput
+                          availableTags={availableTags}
+                          placeholder="Selecione as tags..."
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          disabled={isSubmitting || !transactionType}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <div className="grid grid-cols-2 gap-4 items-end">
                     <FormField
@@ -454,25 +473,6 @@ export default function AddTransactionForm() {
                   )}
                 />
               )}
-
-              <FormField
-                control={control} name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tags</FormLabel>
-                    <FormControl>
-                      <TagInput
-                          availableTags={availableTags}
-                          placeholder="Selecione as tags..."
-                          value={field.value || []}
-                          onChange={field.onChange}
-                          disabled={isSubmitting || !transactionType}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={control} name="date"
