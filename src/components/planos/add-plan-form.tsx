@@ -201,12 +201,7 @@ export default function PlanForm({
 
   const { isSubmitting } = form.formState;
 
-  const basePaymentMethods = ['Débito', 'Pix'];
-  const paymentMethods = useMemo(() => {
-    const cardMethods = cards.map((card) => `Cartão: ${card.name}`);
-    return [...basePaymentMethods, ...cardMethods];
-  }, [cards]);
-
+  
   const watchedSubItems = watch('subItems');
   const watchedBaseAmount = watch('amount');
   const totalAmount = useMemo(() => {
