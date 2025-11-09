@@ -81,13 +81,13 @@ export default function ManageTagsPageClient() {
     if (filter === 'inUse') {
         baseList = hierarchicalTags
             .map((tag) => {
-                // Ignore archived principal tags
                 if (tag.isArchived) return null;
 
-                const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
                 const isPrincipalInUse = usedTagNames.has(tag.name);
+                const isChildInUse = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
                 
-                if (isPrincipalInUse || activeChildren.length > 0) {
+                if (isPrincipalInUse || isChildInUse) {
+                    const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
                     return { ...tag, children: activeChildren };
                 }
                 
@@ -101,15 +101,11 @@ export default function ManageTagsPageClient() {
                 if (tag.isArchived) return null;
                 const unusedChildren = tag.children.filter(child => !child.isArchived && !usedTagNames.has(child.name));
                 const isPrincipalUsed = usedTagNames.has(tag.name);
+                 const hasUsedChildren = tag.children.some(child => usedTagNames.has(child.name));
 
-                // Show principal tag if it's not used AND has unused children
-                if (!isPrincipalUsed && unusedChildren.length > 0) {
+
+                if (!isPrincipalUsed && !hasUsedChildren) {
                      return { ...tag, children: unusedChildren };
-                }
-                
-                // Also show principal tags that have no children and are not used
-                if (!isPrincipalUsed && tag.children.length === 0) {
-                    return { ...tag, children: [] };
                 }
                 
                 return null;
