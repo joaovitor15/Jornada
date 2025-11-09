@@ -197,7 +197,7 @@ export default function AddBillTransactionForm({
         date: Timestamp.fromDate(values.date),
         type: finalType,
         description: description,
-        tags: [selectedCard.name],
+        tags: [], // Tags are handled separately for payments
       });
 
       toast({

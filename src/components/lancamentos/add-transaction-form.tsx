@@ -78,7 +78,7 @@ const formSchema = z.object({
   paymentMethod: z.string().optional(),
   date: z.date({ required_error: 'A data é obrigatória.' }),
   installments: z.coerce.number().int().min(1).optional().default(1),
-  tags: z.array(z.string()).min(1, 'Selecione pelo menos uma tag.'),
+  tags: z.array(z.string()).optional(),
 });
 
 const ensureBasePaymentTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
@@ -260,19 +260,12 @@ export default function AddTransactionForm() {
             // EDIT LOGIC
             const collectionName = values.type === 'expense' ? 'expenses' : 'incomes';
             const docRef = doc(db, collectionName, transactionToEdit.id);
-            
-            const finalTags = [...values.tags];
-            if (values.type === 'expense' && values.paymentMethod) {
-                if (!finalTags.includes(values.paymentMethod)) {
-                    finalTags.push(values.paymentMethod);
-                }
-            }
 
             const dataToUpdate: Partial<Expense | Income> = {
                 description: values.description || '',
                 amount: values.amount,
                 date: Timestamp.fromDate(values.date),
-                tags: finalTags,
+                tags: values.tags || [],
             };
 
             if (values.type === 'expense') {
@@ -291,11 +284,6 @@ export default function AddTransactionForm() {
                 
                 const finalPaymentMethod = isCreditCardPayment ? `Cartão: ${values.paymentMethod}` : values.paymentMethod;
                 
-                const finalTags = [...values.tags];
-                if (values.paymentMethod && !finalTags.includes(values.paymentMethod)) {
-                    finalTags.push(values.paymentMethod);
-                }
-
                 for (let i = 0; i < installments; i++) {
                   const installmentDate = addMonths(values.date, i);
                   const expenseData: any = {
@@ -304,7 +292,7 @@ export default function AddTransactionForm() {
                     amount: installmentAmount, 
                     paymentMethod: finalPaymentMethod, date: Timestamp.fromDate(installmentDate),
                     installments: installments, currentInstallment: i + 1,
-                    tags: finalTags,
+                    tags: values.tags || [],
                   };
                   
                   if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -318,7 +306,7 @@ export default function AddTransactionForm() {
                   userId: user.uid, profile: activeProfile, description: values.description || '',
                   amount: values.amount, 
                   date: Timestamp.fromDate(values.date),
-                  tags: values.tags,
+                  tags: values.tags || [],
                 };
                 await addDoc(collection(db, 'incomes'), incomeData);
                 toast({ title: text.common.success, description: text.addIncomeForm.addSuccess });

@@ -44,6 +44,7 @@ export function useTags() {
         const collectionsToSearch = ['expenses', 'incomes', 'plans'];
         const allUsedTags = new Set<string>();
 
+        // Search in 'tags' array
         for (const col of collectionsToSearch) {
           const usageQuery = query(
             collection(db, col),
@@ -58,6 +59,44 @@ export function useTags() {
             }
           });
         }
+        
+        // Search in 'paymentMethod' field for expenses
+        const expensePaymentMethodQuery = query(
+          collection(db, 'expenses'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile)
+        );
+        const expenseSnapshot = await getDocs(expensePaymentMethodQuery);
+        expenseSnapshot.forEach(doc => {
+            const expense = doc.data();
+            if (expense.paymentMethod) {
+                const paymentTag = expense.paymentMethod.startsWith('Cartão: ') 
+                    ? expense.paymentMethod.replace('Cartão: ', '') 
+                    : expense.paymentMethod;
+                allUsedTags.add(paymentTag);
+            }
+        });
+
+        // Search in 'cardId' for billPayments to get card name
+        const billPaymentQuery = query(
+          collection(db, 'billPayments'),
+           where('userId', '==', user.uid),
+           where('profile', '==', activeProfile)
+        );
+        const billPaymentSnapshot = await getDocs(billPaymentQuery);
+        const cardIdsInUse = new Set<string>();
+        billPaymentSnapshot.forEach(doc => cardIdsInUse.add(doc.data().cardId));
+
+        if (cardIdsInUse.size > 0) {
+            const cardsQuery = query(collection(db, 'cards'), where('userId', '==', user.uid), where('profile', '==', activeProfile));
+            const cardsSnapshot = await getDocs(cardsQuery);
+            cardsSnapshot.forEach(doc => {
+                if (cardIdsInUse.has(doc.id)) {
+                    allUsedTags.add(doc.data().name);
+                }
+            });
+        }
+
         setUsedTagNames(allUsedTags);
         setLoading(false);
       },
