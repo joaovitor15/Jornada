@@ -88,6 +88,7 @@ function PlanCard({
 
 
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
+  const isCard = plan.paymentMethod.startsWith('Cartão:');
 
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full">
@@ -183,7 +184,14 @@ function PlanCard({
         <p className="text-sm text-muted-foreground">
            {getVencimentoText(plan)}
         </p>
-         <p className="text-sm text-muted-foreground">Pagamento: {plan.paymentMethod}</p>
+         <div className="flex items-center justify-between w-full">
+            <p className="text-sm text-muted-foreground">Pagamento: {plan.paymentMethod}</p>
+             {isCard && (
+                <Badge variant="secondary">
+                    {plan.installments && plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
+                </Badge>
+             )}
+        </div>
       </div>
     </div>
   );

@@ -121,7 +121,7 @@ export default function PayPlanForm({
     }
     
     const isCreditCard = plan.paymentMethod.startsWith('Cartão:');
-    const installments = isCreditCard && plan.type === 'Anual' ? 12 : 1;
+    const installments = isCreditCard ? (plan.installments || 1) : 1;
 
     try {
         const batch = writeBatch(db);
@@ -256,4 +256,3 @@ export default function PayPlanForm({
     </Dialog>
   );
 }
-

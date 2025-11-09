@@ -55,6 +55,7 @@ const planSchema = z
     dueMonth: z.coerce.number().int().min(0).max(11).optional(),
     dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
     paymentMethod: z.string().min(1, 'Selecione uma forma de pagamento.'),
+    installments: z.coerce.number().int().min(1).optional(),
     subItems: z.array(z.object({
       name: z.string().min(1, 'O nome do item é obrigatório.'),
       price: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
@@ -111,6 +112,7 @@ export default function PlanForm({
       type: 'Mensal',
       paymentDay: undefined,
       paymentMethod: '',
+      installments: 1,
       subItems: [],
       tags: [],
     },
@@ -130,7 +132,9 @@ export default function PlanForm({
   }, [allTags]);
 
   const planType = watch('type');
-  
+  const paymentMethod = watch('paymentMethod');
+  const isCardPayment = paymentMethod?.startsWith('Cartão:');
+
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && planToEdit) {
@@ -151,6 +155,7 @@ export default function PlanForm({
           dueMonth: dueMonth,
           dueYear: dueYear,
           paymentMethod: planToEdit.paymentMethod,
+          installments: planToEdit.installments || 1,
           subItems: planToEdit.subItems || [],
           tags: planToEdit.tags || [],
         });
@@ -164,6 +169,7 @@ export default function PlanForm({
           dueMonth: undefined,
           dueYear: undefined,
           paymentMethod: '',
+          installments: 1,
           subItems: [],
           tags: [],
         });
@@ -186,6 +192,12 @@ export default function PlanForm({
     });
     return () => unsubscribe();
   }, [user, activeProfile]);
+
+  useEffect(() => {
+    if (!isCardPayment) {
+      setValue('installments', 1);
+    }
+  }, [isCardPayment, setValue]);
 
   const { isSubmitting } = form.formState;
 
@@ -230,6 +242,7 @@ export default function PlanForm({
         amount: rest.amount,
         type: rest.type,
         paymentMethod: rest.paymentMethod,
+        installments: rest.installments,
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
         tags: values.tags || [],
     };
@@ -340,32 +353,54 @@ export default function PlanForm({
                   )}
                 />
 
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{text.common.paymentMethod}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={text.addExpenseForm.selectPaymentMethod}
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {paymentMethods.map((method) => (
-                          <SelectItem key={method} value={method}>
-                            {method}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <FormField
+                  control={form.control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{text.common.paymentMethod}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={text.addExpenseForm.selectPaymentMethod}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {isCardPayment && (
+                    <FormField
+                      control={form.control}
+                      name="installments"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parcelas</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.valueAsNumber || 1)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 )}
-              />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                  <FormField
@@ -592,5 +627,3 @@ export default function PlanForm({
     </Dialog>
   );
 }
-
-    

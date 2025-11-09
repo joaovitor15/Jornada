@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
@@ -55,6 +56,7 @@ export type Plan = {
   paymentMethod: string;
   paymentDay?: number;
   dueDate?: Timestamp;
+  installments?: number;
   subItems?: SubItem[];
   tags?: string[];
 };
