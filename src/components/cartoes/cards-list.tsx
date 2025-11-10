@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   PlusCircle,
-  CreditCard,
   Archive,
   ArchiveX,
   Pencil,
@@ -41,6 +40,8 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+type FilterType = 'inUse' | 'registered' | 'archived';
+
 export default function CardsList({
   selectedCardId,
   onCardSelect,
@@ -55,11 +56,23 @@ export default function CardsList({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
+  const [filter, setFilter] = useState<FilterType>('inUse');
   const { toast } = useToast();
 
   const filteredCards = useMemo(() => {
-    return cards.filter((card) => !card.isArchived);
-  }, [cards]);
+    if (filter === 'inUse') {
+        return cards.filter(card => !card.isArchived && usedCardNames.has(card.name));
+    }
+    if (filter === 'registered') {
+        return cards.filter(card => !card.isArchived && !usedCardNames.has(card.name));
+    }
+    if (filter === 'archived') {
+        return cards.filter(card => card.isArchived);
+    }
+    // Fallback to a default view (e.g., all non-archived)
+    return cards.filter(card => !card.isArchived);
+  }, [cards, filter, usedCardNames]);
+
 
   useEffect(() => {
     if (!loading) {
@@ -107,16 +120,7 @@ export default function CardsList({
     try {
       const cardRef = doc(db, 'cards', cardToHandle.id);
       if (action === 'delete') {
-        if (usedCardNames.has(cardToHandle.name)) {
-          toast({
-            variant: 'destructive',
-            title: 'Ação não permitida',
-            description: `O cartão "${cardToHandle.name}" está em uso e não pode ser excluído.`,
-          });
-          return;
-        }
         await deleteDoc(cardRef);
-        // TODO: Also delete the associated tag.
         toast({ title: 'Sucesso', description: 'Cartão excluído.' });
       } else {
         await updateDoc(cardRef, { isArchived: action === 'archive' });
@@ -139,6 +143,12 @@ export default function CardsList({
       setCardToHandle(null);
     }
   };
+
+  const filterOptions: { label: string; value: FilterType }[] = [
+    { label: 'Em Uso', value: 'inUse' },
+    { label: 'Cadastrados', value: 'registered' },
+    { label: 'Arquivados', value: 'archived' },
+  ];
   
 
   return (
@@ -150,6 +160,20 @@ export default function CardsList({
           Novo Cartão
         </Button>
       </div>
+      
+      <div className="flex items-center gap-2 mb-4">
+        {filterOptions.map((option) => (
+            <Button
+            key={option.value}
+            variant={filter === option.value ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setFilter(option.value)}
+            >
+            {option.label}
+            </Button>
+        ))}
+     </div>
+
 
       <ScrollArea className="flex-grow pr-4">
         <div className="space-y-4 pr-2">
@@ -183,16 +207,20 @@ export default function CardsList({
                            <ArchiveX className="mr-2 h-4 w-4" /> Desarquivar
                         </DropdownMenuItem>
                       ) : (
-                         <DropdownMenuItem onSelect={() => handleAction(card, 'archive')}>
-                           <Archive className="mr-2 h-4 w-4" /> Arquivar
-                        </DropdownMenuItem>
+                        <>
+                          <DropdownMenuItem onSelect={() => handleAction(card, 'archive')}>
+                            <Archive className="mr-2 h-4 w-4" /> Arquivar
+                          </DropdownMenuItem>
+                           {!usedCardNames.has(card.name) && (
+                            <DropdownMenuItem
+                                onSelect={() => handleAction(card, 'delete')}
+                                className="text-destructive"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                           )}
+                        </>
                       )}
-                       <DropdownMenuItem
-                        onSelect={() => handleAction(card, 'delete')}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -201,7 +229,7 @@ export default function CardsList({
             ))
           ) : (
             <div className="text-center py-10 border-2 border-dashed rounded-lg">
-              <p>Nenhum cartão encontrado.</p>
+              <p>Nenhum cartão encontrado para este filtro.</p>
             </div>
           )}
         </div>
