@@ -59,6 +59,23 @@ export function useTags() {
             }
           });
         }
+        
+        // Search in 'emergencyReserveEntries' collection
+        const reserveQuery = query(
+          collection(db, 'emergencyReserveEntries'),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile)
+        );
+        const reserveSnapshot = await getDocs(reserveQuery);
+        reserveSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.tags && Array.isArray(data.tags)) {
+            data.tags.forEach(tag => allUsedTags.add(tag));
+          }
+          if (data.bank) {
+            allUsedTags.add(data.bank);
+          }
+        });
 
         // Search in 'plans' type field
         const plansQuery = query(
