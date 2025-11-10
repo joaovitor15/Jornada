@@ -12,9 +12,10 @@ import PlanAnalysis from '@/components/planos/PlanAnalysis';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Plan } from '@/lib/types';
+import { Plan, Expense } from '@/lib/types';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
 
@@ -22,6 +23,7 @@ export default function PlanosAtuaisPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [paidPlanIds, setPaidPlanIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const [filter, setFilter] = useState<FilterType>('Todos');
@@ -37,15 +39,15 @@ export default function PlanosAtuaisPage() {
     }
 
     setLoading(true);
-    const q = query(
+    const plansQuery = query(
       collection(db, 'plans'),
       where('userId', '==', user.uid),
       where('profile', '==', activeProfile),
       orderBy('order', 'asc')
     );
 
-    const unsubscribe = onSnapshot(
-      q,
+    const unsubscribePlans = onSnapshot(
+      plansQuery,
       (querySnapshot) => {
         const userPlans = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -59,8 +61,40 @@ export default function PlanosAtuaisPage() {
         setLoading(false);
       }
     );
+    
+    // Listener for expenses of the current month to check for paid plans
+    const today = new Date();
+    const startOfCurrentMonth = startOfMonth(today);
+    const endOfCurrentMonth = endOfMonth(today);
 
-    return () => unsubscribe();
+    const expensesQuery = query(
+        collection(db, 'expenses'),
+        where('userId', '==', user.uid),
+        where('profile', '==', activeProfile),
+        where('date', '>=', Timestamp.fromDate(startOfCurrentMonth)),
+        where('date', '<=', Timestamp.fromDate(endOfCurrentMonth))
+    );
+
+    const unsubscribeExpenses = onSnapshot(expensesQuery, (snapshot) => {
+        const paidIds = new Set<string>();
+        snapshot.forEach(doc => {
+            const expense = doc.data() as Expense;
+            if (expense.tags) {
+                expense.tags.forEach(tag => {
+                    if (tag.startsWith('planId:')) {
+                        paidIds.add(tag.split(':')[1]);
+                    }
+                });
+            }
+        });
+        setPaidPlanIds(paidIds);
+    });
+
+
+    return () => {
+      unsubscribePlans();
+      unsubscribeExpenses();
+    }
   }, [user, activeProfile]);
 
   const filterOptions: { label: string; value: FilterType }[] = [
@@ -122,6 +156,7 @@ export default function PlanosAtuaisPage() {
               plans={plans}
               filter={filter}
               searchTerm={searchTerm}
+              paidPlanIds={paidPlanIds}
               onEdit={(plan) => {
                 setPlanToEdit(plan);
                 setIsFormOpen(true);

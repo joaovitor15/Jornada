@@ -28,6 +28,7 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
+  CheckCircle,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -67,6 +68,7 @@ function PlanCard({
   onReorder,
   isFirst,
   isLast,
+  isPaid,
 }: {
   plan: Plan;
   onEdit: (plan: Plan) => void;
@@ -75,6 +77,7 @@ function PlanCard({
   onReorder: (plan: Plan, direction: 'left' | 'right') => void;
   isFirst: boolean;
   isLast: boolean;
+  isPaid: boolean;
 }) {
   const calculateTotalAmount = (plan: Plan) => {
     if (plan.valueType === 'Variável') return null;
@@ -106,6 +109,12 @@ function PlanCard({
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full group">
       <div className="absolute top-1 right-1 flex items-center gap-1">
+        {isPaid && (
+           <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Pago
+          </Badge>
+        )}
         {hasSubItems && (
           <Popover>
             <PopoverTrigger asChild>
@@ -239,9 +248,10 @@ interface PlansListProps {
   filter: FilterType;
   searchTerm: string;
   onEdit: (plan: Plan) => void;
+  paidPlanIds: Set<string>;
 }
 
-export default function PlansList({ plans, filter, searchTerm, onEdit }: PlansListProps) {
+export default function PlansList({ plans, filter, searchTerm, onEdit, paidPlanIds }: PlansListProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isPayFormOpen, setIsPayFormOpen] = useState(false);
@@ -335,6 +345,7 @@ export default function PlansList({ plans, filter, searchTerm, onEdit }: PlansLi
               onReorder={handleReorder}
               isFirst={index === 0}
               isLast={index === filteredPlans.length - 1}
+              isPaid={plan.type === 'Mensal' && paidPlanIds.has(plan.id)}
             />
           ))}
         </div>

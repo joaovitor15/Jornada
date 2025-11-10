@@ -77,7 +77,7 @@ export default function PayPlanForm({
   const { toast } = useToast();
   const [dateInput, setDateInput] = useState('');
 
-  const isAnnual = plan.type !== 'Mensal';
+  const isAnnual = plan.type === 'Anual';
   const isVariable = plan.valueType === 'Variável';
   
   const dynamicSchema = useMemo(() => {
@@ -196,6 +196,11 @@ export default function PayPlanForm({
         const installmentAmount = paymentAmount / installments;
         const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
         
+        const tags = [...(plan.tags || [])];
+        if (plan.type === 'Mensal') {
+            tags.push(`planId:${plan.id}`);
+        }
+        
         // 1. Create expense(s)
         for (let i = 0; i < installments; i++) {
           const installmentDate = addMonths(values.date, i);
@@ -208,7 +213,7 @@ export default function PayPlanForm({
             date: Timestamp.fromDate(installmentDate),
             installments: installments, 
             currentInstallment: i + 1,
-            tags: plan.tags || [],
+            tags: tags,
           };
           
           if (originalExpenseId) { expenseData.originalExpenseId = originalExpenseId; }
@@ -375,7 +380,7 @@ export default function PayPlanForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Mês</FormLabel>
-                           <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                           <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value !== undefined ? String(field.value) : undefined}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Mês" />
@@ -399,7 +404,7 @@ export default function PayPlanForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Ano</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                          <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value !== undefined ? String(field.value) : undefined}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Ano" />
