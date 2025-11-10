@@ -11,6 +11,8 @@ import {
   onSnapshot,
   doc,
   deleteDoc,
+  writeBatch,
+  orderBy,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -24,6 +26,8 @@ import {
   Loader2,
   AlertCircle,
   DollarSign,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -60,11 +64,17 @@ function PlanCard({
   onEdit,
   onDelete,
   onPay,
+  onReorder,
+  isFirst,
+  isLast,
 }: {
   plan: Plan;
   onEdit: (plan: Plan) => void;
   onDelete: (plan: Plan) => void;
   onPay: (plan: Plan) => void;
+  onReorder: (plan: Plan, direction: 'left' | 'right') => void;
+  isFirst: boolean;
+  isLast: boolean;
 }) {
   const calculateTotalAmount = (plan: Plan) => {
     if (plan.valueType === 'Variável') return null;
@@ -72,29 +82,30 @@ function PlanCard({
       plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
     return plan.amount + subItemsTotal;
   };
-  
+
   const getVencimentoText = (plan: Plan) => {
     if (plan.type === 'Anual' && plan.dueDate && plan.dueDate.toDate) {
       const date = plan.dueDate.toDate();
-      return `Vence em: ${format(date, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
+      return `Vence em: ${format(date, "d 'de' MMMM 'de' yyyy", {
+        locale: ptBR,
+      })}`;
     }
-    
+
     if (plan.type === 'Mensal' && plan.paymentDay) {
-       const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
-       return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
+      const currentMonthName = format(new Date(), 'MMMM', { locale: ptBR });
+      return `Vencimento: ${plan.paymentDay} de ${currentMonthName}`;
     }
 
-    return "Vencimento não definido";
+    return 'Vencimento não definido';
   };
-
 
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
   const isCard = plan.paymentMethod.startsWith('Cartão:');
   const totalAmount = calculateTotalAmount(plan);
 
   return (
-    <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full">
-       <div className="absolute top-1 right-1 flex items-center gap-1">
+    <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full group">
+      <div className="absolute top-1 right-1 flex items-center gap-1">
         {hasSubItems && (
           <Popover>
             <PopoverTrigger asChild>
@@ -165,33 +176,56 @@ function PlanCard({
         </DropdownMenu>
       </div>
 
+       <div className="absolute top-1/2 -translate-y-1/2 left-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => onReorder(plan, 'left')} disabled={isFirst}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="absolute top-1/2 -translate-y-1/2 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => onReorder(plan, 'right')} disabled={isLast}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
       <div className="flex-grow">
         <h3 className="text-lg font-semibold pr-8">{plan.name}</h3>
-         <p className="text-xl font-bold text-primary">
-          {totalAmount !== null ? totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Valor Variável'}
+        <p className="text-xl font-bold text-primary">
+          {totalAmount !== null
+            ? totalAmount.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : 'Valor Variável'}
         </p>
-         <div className="flex flex-wrap gap-1 mt-2">
-            {plan.tags?.filter(tag => tag !== 'Mensal' && tag !== 'Anual').map(tag => (
-                <Badge key={tag} variant="secondary">{tag}</Badge>
+        <div className="flex flex-wrap gap-1 mt-2">
+          {plan.tags
+            ?.filter((tag) => tag !== 'Mensal' && tag !== 'Anual')
+            .map((tag) => (
+              <Badge key={tag} variant="secondary">
+                {tag}
+              </Badge>
             ))}
-         </div>
-
+        </div>
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
         <Badge variant="outline">{plan.type}</Badge>
         <div className="flex items-center gap-2">
-           <Badge variant="secondary">
-              {isCard ? plan.paymentMethod.replace('Cartão: ', '') : plan.paymentMethod}
-            </Badge>
-            {isCard && plan.installments && (
-              <span className="text-xs font-semibold text-muted-foreground">
-                {plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
-              </span>
-            )}
+          <Badge variant="secondary">
+            {isCard
+              ? plan.paymentMethod.replace('Cartão: ', '')
+              : plan.paymentMethod}
+          </Badge>
+          {isCard && (
+            <span className="text-xs font-semibold text-muted-foreground">
+              {plan.installments && plan.installments > 1
+                ? `${plan.installments}x`
+                : 'À Vista'}
+            </span>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">
-           {getVencimentoText(plan)}
+          {getVencimentoText(plan)}
         </p>
       </div>
     </div>
@@ -222,7 +256,8 @@ export default function PlansList() {
     const q = query(
       collection(db, 'plans'),
       where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
+      where('profile', '==', activeProfile),
+      orderBy('order', 'asc')
     );
 
     const unsubscribe = onSnapshot(
@@ -253,7 +288,7 @@ export default function PlansList() {
     setPlanToEdit(plan);
     setIsFormOpen(true);
   };
-  
+
   const handlePayClick = (plan: Plan) => {
     setPlanToPay(plan);
     setIsPayFormOpen(true);
@@ -282,6 +317,33 @@ export default function PlansList() {
     setIsDeleteDialogOpen(false);
     setPlanToDelete(null);
   };
+  
+  const handleReorder = async (plan: Plan, direction: 'left' | 'right') => {
+    const currentIndex = plans.findIndex(p => p.id === plan.id);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= plans.length) return;
+
+    const newPlans = [...plans];
+    const [movedPlan] = newPlans.splice(currentIndex, 1);
+    newPlans.splice(newIndex, 0, movedPlan);
+
+    const batch = writeBatch(db);
+    newPlans.forEach((p, index) => {
+      const planRef = doc(db, 'plans', p.id);
+      batch.update(planRef, { order: index });
+    });
+
+    try {
+      await batch.commit();
+      // A UI será atualizada pelo listener do onSnapshot
+    } catch (error) {
+      console.error("Error reordering plans:", error);
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível reordenar os planos.' });
+    }
+  };
+
 
   return (
     <>
@@ -298,13 +360,16 @@ export default function PlansList() {
         </div>
       ) : plans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {plans.map((plan) => (
+          {plans.map((plan, index) => (
             <PlanCard
               key={plan.id}
               plan={plan}
               onEdit={handleEditClick}
               onDelete={handleDeleteRequest}
               onPay={handlePayClick}
+              onReorder={handleReorder}
+              isFirst={index === 0}
+              isLast={index === plans.length - 1}
             />
           ))}
         </div>
@@ -319,7 +384,7 @@ export default function PlansList() {
         onOpenChange={setIsFormOpen}
         planToEdit={planToEdit}
       />
-      
+
       {planToPay && (
         <PayPlanForm
           isOpen={isPayFormOpen}
@@ -327,7 +392,6 @@ export default function PlansList() {
           plan={planToPay}
         />
       )}
-
 
       <AlertDialog
         open={isDeleteDialogOpen}

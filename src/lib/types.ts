@@ -60,6 +60,7 @@ export type Plan = {
   installments?: number;
   subItems?: SubItem[];
   tags?: string[];
+  order?: number;
 };
 
 

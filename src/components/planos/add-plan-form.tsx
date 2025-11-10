@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, Timestamp, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -318,6 +318,13 @@ export default function PlanForm({
     
     const { title, dueDay, dueMonth, dueYear, paymentDay, ...rest } = values;
 
+    let order = planToEdit?.order;
+    if (!isEditMode) {
+      const plansQuery = query(collection(db, 'plans'), where('userId', '==', user.uid), where('profile', '==', activeProfile));
+      const querySnapshot = await getDocs(plansQuery);
+      order = querySnapshot.size;
+    }
+
     const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
         name: title,
         valueType: rest.valueType,
@@ -327,6 +334,7 @@ export default function PlanForm({
         installments: rest.installments,
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
         tags: values.tags || [],
+        order,
     };
     
     if (rest.type === 'Anual' && dueDay !== undefined && dueMonth !== undefined && dueYear !== undefined) {
