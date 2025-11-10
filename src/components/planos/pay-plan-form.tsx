@@ -57,9 +57,7 @@ const payPlanSchema = z.object({
   dueDay: z.coerce.number().int().min(1).max(31).optional(),
   dueMonth: z.coerce.number().int().min(0).max(11).optional(),
   dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
-}).refine(data => {
-    // This validation logic will be conditional in the component
-    return true;
+  paymentAmount: z.coerce.number().optional(),
 });
 
 
@@ -80,15 +78,29 @@ export default function PayPlanForm({
   const [dateInput, setDateInput] = useState('');
 
   const isAnnual = plan.type !== 'Mensal';
+  const isVariable = plan.valueType === 'Variável';
+  
+  const dynamicSchema = useMemo(() => {
+    return payPlanSchema.refine(data => {
+      if (isVariable) {
+        return data.paymentAmount !== undefined && data.paymentAmount > 0;
+      }
+      return true;
+    }, {
+      message: "O valor é obrigatório para planos variáveis.",
+      path: ['paymentAmount'],
+    });
+  }, [isVariable]);
 
-  const form = useForm<z.infer<typeof payPlanSchema>>({
-    resolver: zodResolver(payPlanSchema),
+
+  const form = useForm<z.infer<typeof dynamicSchema>>({
+    resolver: zodResolver(dynamicSchema),
   });
 
   const { control, handleSubmit, watch, reset, setValue } = form;
   const { isSubmitting } = form.formState;
   
-  const totalAmount = (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0);
+  const fixedTotalAmount = (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0);
 
   const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
     value: index,
@@ -117,11 +129,12 @@ export default function PayPlanForm({
 
       reset({
         date: initialDate,
+        paymentAmount: isVariable ? undefined : fixedTotalAmount,
         ...nextDueDateFields,
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset, isAnnual, plan]);
+  }, [isOpen, reset, isAnnual, isVariable, plan, fixedTotalAmount]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -145,7 +158,7 @@ export default function PayPlanForm({
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof payPlanSchema>) => {
+  const onSubmit = async (values: z.infer<typeof dynamicSchema>) => {
     if (!user || !activeProfile) {
       toast({
         variant: 'destructive',
@@ -163,6 +176,16 @@ export default function PayPlanForm({
         });
         return;
     }
+    
+    const paymentAmount = isVariable ? values.paymentAmount : fixedTotalAmount;
+    if (!paymentAmount || paymentAmount <= 0) {
+       toast({
+            variant: 'destructive',
+            title: "Valor Inválido",
+            description: "O valor do pagamento deve ser maior que zero.",
+        });
+        return;
+    }
 
 
     const isCreditCard = plan.paymentMethod.startsWith('Cartão:');
@@ -170,7 +193,7 @@ export default function PayPlanForm({
 
     try {
         const batch = writeBatch(db);
-        const installmentAmount = totalAmount / installments;
+        const installmentAmount = paymentAmount / installments;
         const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
         
         // 1. Create expense(s)
@@ -228,26 +251,48 @@ export default function PayPlanForm({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-            <div className="p-4 border rounded-lg bg-muted/50">
-                <p className="text-sm font-semibold text-muted-foreground">Plano</p>
-                <p className="text-lg font-bold">{plan.name}</p>
-                <div className="flex justify-between items-end mt-2">
-                    <div>
-                         <p className="text-sm font-semibold text-muted-foreground">Valor</p>
-                         <p className="text-2xl font-bold text-primary">{totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-4 py-2">
+                <div className="p-4 border rounded-lg bg-muted/50 space-y-2">
+                    <p className="text-lg font-bold">{plan.name}</p>
+                    <div className="flex justify-between items-end">
+                       {isVariable ? (
+                          <FormField
+                            control={control}
+                            name="paymentAmount"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel>Valor do Pagamento</FormLabel>
+                                <FormControl>
+                                  <CurrencyInput
+                                    placeholder={text.placeholders.amount}
+                                    disabled={isSubmitting}
+                                    value={field.value}
+                                    onValueChange={(values) =>
+                                      field.onChange(values?.floatValue)
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <div>
+                            <p className="text-sm font-semibold text-muted-foreground">Valor</p>
+                            <p className="text-2xl font-bold text-primary">{fixedTotalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                          </div>
+                        )}
+                        <Badge variant="secondary">{plan.paymentMethod}</Badge>
                     </div>
-                    <Badge variant="secondary">{plan.paymentMethod}</Badge>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                    {plan.tags?.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-1">
-                {plan.tags?.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
-            </div>
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
              <FormField
                 control={control}
                 name="date"
