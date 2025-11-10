@@ -211,7 +211,9 @@ export default function ReceiveIncomeForm({
                         ) : (
                           <div>
                             <p className="text-sm font-semibold text-muted-foreground">Valor</p>
-                            <p className="text-2xl font-bold text-green-500">{plan.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                            <p className="text-2xl font-bold text-green-500">
+                              {(plan.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}
+                            </p>
                           </div>
                         )}
                     </div>
