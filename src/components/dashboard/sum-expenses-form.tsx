@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -148,7 +149,7 @@ export default function SumExpensesForm({
 
     if (activeProfile === 'Home') {
       expenseData = {
-        description: 'Soma Alimentação',
+        description: 'Mercado e Alimentos',
         mainCategory: 'Alimentação',
         subcategory: 'Comida',
         paymentMethod: 'Dinheiro/Pix',
