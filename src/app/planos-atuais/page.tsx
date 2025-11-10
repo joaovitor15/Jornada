@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, PlusCircle } from 'lucide-react';
 import PlanForm from '@/components/planos/add-plan-form';
+import PlanAnalysis from '@/components/planos/PlanAnalysis';
+import { Separator } from '@/components/ui/separator';
 
 type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
 
@@ -66,7 +68,7 @@ export default function PlanosAtuaisPage() {
             />
           </div>
         </div>
-        <div className="flex-grow overflow-auto">
+        <div className="flex-grow overflow-auto pb-4">
           <PlansList 
             filter={filter} 
             searchTerm={searchTerm} 
@@ -76,6 +78,13 @@ export default function PlanosAtuaisPage() {
             }} 
           />
         </div>
+
+        <Separator className="my-6" />
+
+        <div className="flex-shrink-0">
+          <PlanAnalysis />
+        </div>
+        
       </div>
       <PlanForm
         isOpen={isFormOpen}
