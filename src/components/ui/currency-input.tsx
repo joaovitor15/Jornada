@@ -8,18 +8,21 @@ import {
 } from 'react-number-format';
 
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface CurrencyInputProps {
   value?: number;
   onValueChange?: (values: NumberFormatValues) => void;
+  className?: string;
   [key: string]: any; // Allow other props
 }
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ value, onValueChange, ...props }, ref) => {
+  ({ value, onValueChange, className, ...props }, ref) => {
     return (
       <NumericFormat
         customInput={Input}
+        className={cn(className)}
         getInputRef={ref}
         inputMode="decimal"
         thousandSeparator="."

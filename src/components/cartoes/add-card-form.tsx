@@ -159,18 +159,20 @@ export default function CardForm({
         batch.update(cardRef, { ...values, isArchived: false });
 
         // Also update the corresponding tag
-        const tagsQuery = query(
-          collection(db, 'tags'),
-          where('userId', '==', user.uid),
-          where('profile', '==', activeProfile),
-          where('name', '==', cardToEdit.name),
-          where('parent', '!=', null)
-        );
-        const tagsSnapshot = await getDocs(tagsQuery);
-        if (!tagsSnapshot.empty) {
-          const tagDoc = tagsSnapshot.docs[0];
-          const tagRef = doc(db, 'tags', tagDoc.id);
-          batch.update(tagRef, { name: values.name.trim() });
+        if (cardToEdit.name !== values.name.trim()) {
+            const tagsQuery = query(
+              collection(db, 'tags'),
+              where('userId', '==', user.uid),
+              where('profile', '==', activeProfile),
+              where('name', '==', cardToEdit.name),
+              where('parent', '!=', null)
+            );
+            const tagsSnapshot = await getDocs(tagsQuery);
+            if (!tagsSnapshot.empty) {
+              const tagDoc = tagsSnapshot.docs[0];
+              const tagRef = doc(db, 'tags', tagDoc.id);
+              batch.update(tagRef, { name: values.name.trim() });
+            }
         }
         
         await batch.commit();
@@ -252,6 +254,7 @@ export default function CardForm({
                     <Input
                       placeholder={text.addCardForm.cardNamePlaceholder}
                       {...field}
+                      autoComplete="off"
                     />
                   </FormControl>
                   <FormMessage />
