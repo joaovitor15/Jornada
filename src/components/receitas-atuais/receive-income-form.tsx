@@ -46,6 +46,7 @@ import { text } from '@/lib/strings';
 import { type IncomePlan } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import { Badge } from '../ui/badge';
+import { useMemo } from 'react';
 
 const receiveIncomeSchema = z.object({
   date: z.date({ required_error: 'A data do recebimento é obrigatória.' }),

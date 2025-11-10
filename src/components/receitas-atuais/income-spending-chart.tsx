@@ -60,7 +60,7 @@ export default function IncomeSpendingChart({ plans, isAnnualized = false }: { p
         const value = plan.amount || 0;
         return {
           name: plan.name,
-          value: isAnnualized && plan.type === 'Mensal' ? value * 12 : value,
+          value: value,
         };
       })
       .filter(item => item.value > 0);
