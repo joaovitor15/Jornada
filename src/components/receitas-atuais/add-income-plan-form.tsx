@@ -212,11 +212,10 @@ export default function AddIncomePlanForm({
         type: rest.type,
         tags: values.tags || [],
         order,
+        receiptDay: rest.receiptDay || null,
     };
     
-    if (rest.type === 'Mensal') {
-        dataToSend.receiptDay = rest.receiptDay;
-    } else {
+    if (rest.type !== 'Mensal') {
         dataToSend.receiptDay = null;
     }
 

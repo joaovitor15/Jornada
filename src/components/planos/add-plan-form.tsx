@@ -52,7 +52,7 @@ const planSchema = z
     amount: z.coerce.number().optional(),
     type: z.string().min(1, 'A frequência é obrigatória.'),
     paymentDay: z.coerce.number().int().min(1).max(31).optional(),
-    dueDay: z.coerce.number().int().min(1, "O dia é obrigatório.").max(31, "Dia inválido.").optional(),
+    dueDay: z.coerce.number().int().min(1).max(31).optional(),
     dueMonth: z.coerce.number().int().min(0).max(11).optional(),
     dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
     paymentMethod: z.string().min(1, 'Selecione um meio de pagamento.'),
@@ -317,19 +317,18 @@ export default function PlanForm({
         subItems: values.subItems && values.subItems.length > 0 ? values.subItems : [],
         tags: values.tags || [],
         order,
+        dueDate: null,
+        paymentDay: paymentDay || null,
     };
     
     if (rest.type === 'Anual' && dueDay !== undefined && dueMonth !== undefined && dueYear !== undefined) {
         dataToSend.dueDate = Timestamp.fromDate(new Date(dueYear, dueMonth, dueDay));
-    } else {
-        dataToSend.dueDate = null;
     }
     
-    if (rest.type === 'Mensal') {
-        dataToSend.paymentDay = paymentDay;
-    } else {
+    if (rest.type !== 'Mensal') {
         dataToSend.paymentDay = null;
     }
+
 
     try {
       if (isEditMode && planToEdit?.id) {
@@ -609,7 +608,7 @@ export default function PlanForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Mês</FormLabel>
-                           <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                           <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value !== undefined ? String(field.value) : undefined}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Mês" />
@@ -633,7 +632,7 @@ export default function PlanForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Ano</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                          <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value !== undefined ? String(field.value) : undefined}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Ano" />
