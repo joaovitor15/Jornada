@@ -144,7 +144,7 @@ function IncomePlanCard({
   );
 }
 
-type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
+type FilterType = 'Todos' | 'Diário' | 'Mensal' | 'Anual';
 
 interface IncomePlansListProps {
   plans: IncomePlan[];

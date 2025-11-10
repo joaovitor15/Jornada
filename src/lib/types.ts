@@ -1,4 +1,3 @@
-
 import type { Timestamp } from 'firebase/firestore';
 
 export type Profile = 'Personal' | 'Home' | 'Business';
@@ -55,7 +54,7 @@ export type Plan = {
   valueType: 'Fixo' | 'Variável';
   type: 'Mensal' | 'Anual' | 'Vitalício';
   paymentMethod: string;
-  paymentDay?: number;
+  paymentDay?: number | null;
   dueDate?: Timestamp;
   installments?: number;
   subItems?: SubItem[];
@@ -70,8 +69,8 @@ export type IncomePlan = {
   name: string;
   amount: number;
   valueType: 'Fixo' | 'Variável';
-  type: 'Mensal' | 'Anual';
-  receiptDay?: number;
+  type: 'Diário' | 'Mensal' | 'Anual';
+  receiptDay?: number | null;
   tags?: string[];
   order?: number;
 };

@@ -28,7 +28,7 @@ interface SpendingData {
 }
 
 const CATEGORY_COLORS = [
-  '#22c55e', '#8b5cf6', '#2563eb', '#f97316', '#ef4444',
+  '#22c55e', '#8b5cf6', '#f97316', '#2563eb', '#ef4444',
   '#10b981', '#f59e0b', '#d946ef', '#6d28d9', '#0ea5e9',
   '#f43f5e', '#ec4899', '#14b8a6', '#84cc16', '#6366f1',
 ];

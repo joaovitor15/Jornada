@@ -131,7 +131,12 @@ export default function AddIncomePlanForm({
     const freqOptions =
       periodPrincipal?.children
         .filter((c) => !c.isArchived && c.name !== 'Vitalício')
-        .map((c) => c.name) || ['Mensal', 'Anual'];
+        .map((c) => c.name) || ['Diário', 'Mensal', 'Anual'];
+    
+    // Manually add 'Diário' if not present
+    if (!freqOptions.includes('Diário')) {
+        freqOptions.unshift('Diário');
+    }
     
     const generalTags = allTags
       .filter(pt => pt.name !== 'Período')
@@ -161,7 +166,7 @@ export default function AddIncomePlanForm({
           valueType: planToEdit.valueType || 'Fixo',
           amount: planToEdit.amount,
           type: planToEdit.type,
-          receiptDay: planToEdit.receiptDay,
+          receiptDay: planToEdit.receiptDay || undefined,
           tags: planToEdit.tags || [],
         });
       } else {
@@ -209,7 +214,7 @@ export default function AddIncomePlanForm({
         name: title,
         valueType: rest.valueType,
         amount: rest.valueType === 'Fixo' ? rest.amount || 0 : 0,
-        type: rest.type,
+        type: rest.type as 'Diário' | 'Mensal' | 'Anual',
         tags: values.tags || [],
         order,
         receiptDay: rest.receiptDay || null,
