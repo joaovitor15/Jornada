@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,6 +11,7 @@ import {
   Shield,
   ClipboardCheck,
   Tags,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -32,6 +34,11 @@ export default function SidebarNav() {
       href: '/relatorios',
       label: text.sidebar.reports,
       icon: BarChart,
+    },
+     {
+      href: '/receitas-atuais',
+      label: 'Receitas Atuais',
+      icon: ClipboardList,
     },
     {
       href: '/planos-atuais',
@@ -56,7 +63,7 @@ export default function SidebarNav() {
     {
       href: '/lancamentos',
       label: text.sidebar.releases,
-      icon: ClipboardList,
+      icon: ArrowDownLeft,
     },
   ];
 

@@ -53,12 +53,25 @@ export type Plan = {
   name: string;
   amount: number; // For 'Fixo' type, optional for 'Variável'
   valueType: 'Fixo' | 'Variável';
-  type: 'Mensal' | 'Anual';
+  type: 'Mensal' | 'Anual' | 'Vitalício';
   paymentMethod: string;
   paymentDay?: number;
   dueDate?: Timestamp;
   installments?: number;
   subItems?: SubItem[];
+  tags?: string[];
+  order?: number;
+};
+
+export type IncomePlan = {
+  id: string;
+  userId: string;
+  profile: Profile;
+  name: string;
+  amount: number;
+  valueType: 'Fixo' | 'Variável';
+  type: 'Mensal' | 'Anual' | 'Vitalício';
+  receiptDay?: number;
   tags?: string[];
   order?: number;
 };
@@ -92,6 +105,8 @@ export type EmergencyReserveEntry = {
   date: Timestamp;
   description?: string;
   location: string;
+  mainCategory: string;
+  subcategory: string;
 };
 
 export interface RawTag {
