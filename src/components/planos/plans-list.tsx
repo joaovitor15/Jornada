@@ -109,12 +109,6 @@ function PlanCard({
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full group">
       <div className="absolute top-1 right-1 flex items-center gap-1">
-        {isPaid && (
-           <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Pago
-          </Badge>
-        )}
         {hasSubItems && (
           <Popover>
             <PopoverTrigger asChild>
@@ -208,7 +202,7 @@ function PlanCard({
         </p>
         <div className="flex flex-wrap gap-1 mt-2">
           {plan.tags
-            ?.filter((tag) => tag !== 'Mensal' && tag !== 'Anual' && tag !== 'Vitalício')
+            ?.filter((tag) => !tag.startsWith('planId:'))
             .map((tag) => (
               <Badge key={tag} variant="secondary">
                 {tag}
@@ -218,7 +212,15 @@ function PlanCard({
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
-        <Badge variant="outline">{plan.type}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">{plan.type}</Badge>
+          {isPaid && (
+           <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Pago
+          </Badge>
+        )}
+        </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
             {isCard
