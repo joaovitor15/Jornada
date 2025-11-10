@@ -55,6 +55,7 @@ import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import PayBillForm from './pay-bill-form';
 import { Badge } from '../ui/badge';
+import { deleteBillPayment } from '@/lib/actions/transactions.actions';
 
 export default function BillPaymentsList() {
   const { user } = useAuth();
@@ -136,11 +137,12 @@ export default function BillPaymentsList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'billPayments', id));
+      await deleteBillPayment(id);
       toast({
         title: text.common.success,
         description: text.billPaymentsList.deleteSuccess,
       });
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -201,10 +203,13 @@ export default function BillPaymentsList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          {text.payBillForm.cardLabel}
+                          TAGS
+                        </TableHead>
+                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Descrição
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          TAGS
+                          {text.payBillForm.cardLabel}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.payBillForm.paymentDateLabel}
@@ -226,9 +231,6 @@ export default function BillPaymentsList() {
                             index % 2 === 0 ? 'bg-muted/25' : ''
                           )}
                         >
-                          <TableCell className="py-2 px-2 align-middle font-medium">
-                            {payment.description || cards.get(payment.cardId) || 'Cartão não encontrado'}
-                          </TableCell>
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
                               {payment.tags?.map((tag) => (
@@ -237,6 +239,12 @@ export default function BillPaymentsList() {
                                 </Badge>
                               ))}
                             </div>
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle font-medium">
+                            {payment.description || cards.get(payment.cardId) || 'Cartão não encontrado'}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle font-medium">
+                            {cards.get(payment.cardId) || '-'}
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {format(payment.date.toDate(), 'dd/MM/yyyy')}

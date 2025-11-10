@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { useTransactions } from '@/hooks/use-transactions';
 import { Badge } from '../ui/badge';
+import { deleteExpense } from '@/lib/actions/transactions.actions';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -71,11 +72,12 @@ export default function ExpensesList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'expenses', id));
+      await deleteExpense(id);
       toast({
         title: text.common.success,
         description: text.expensesList.deleteSuccess,
       });
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -141,13 +143,13 @@ export default function ExpensesList() {
                     <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Tags
+                        </TableHead>
+                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.paymentMethod}
-                        </TableHead>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          Tags
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.date}
@@ -173,14 +175,6 @@ export default function ExpensesList() {
                             index % 2 === 0 ? 'bg-muted/25' : ''
                           )}
                         >
-                          <TableCell className="font-medium py-2 px-2 align-middle">
-                            {expense.description || '-'}
-                          </TableCell>
-                          <TableCell className="py-2 px-2 align-middle">
-                            <Badge variant={cardName ? 'default' : 'outline'}>
-                                {cardName || expense.paymentMethod}
-                            </Badge>
-                          </TableCell>
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
                               {expense.tags?.map((tag) => (
@@ -189,6 +183,14 @@ export default function ExpensesList() {
                                 </Badge>
                               ))}
                             </div>
+                          </TableCell>
+                          <TableCell className="font-medium py-2 px-2 align-middle">
+                            {expense.description || '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-2 align-middle">
+                            <Badge variant={cardName ? 'default' : 'outline'}>
+                                {cardName || expense.paymentMethod}
+                            </Badge>
                           </TableCell>
                           <TableCell className="py-2 px-2 align-middle text-sm text-muted-foreground">
                             {expense.date ? format(expense.date.toDate(), 'dd/MM/yyyy') : '-'}
