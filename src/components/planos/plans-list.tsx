@@ -57,7 +57,7 @@ import {
 } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Timestamp } from 'firebase/firestore';
 
@@ -106,6 +106,23 @@ function PlanCard({
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
   const isCard = plan.paymentMethod.startsWith('Cartão:');
   const totalAmount = calculateTotalAmount(plan);
+  
+  const getAnnualPlanStatus = () => {
+    if (plan.type !== 'Anual' || !plan.dueDate) return null;
+    const dueDate = plan.dueDate.toDate();
+    const today = new Date();
+    const daysUntilDue = differenceInDays(dueDate, today);
+
+    if (daysUntilDue <= 30 && daysUntilDue >= 0) {
+      return (
+        <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600 pointer-events-none">
+          Vencimento Próximo
+        </Badge>
+      );
+    }
+    return <Badge variant="secondary">Vigente</Badge>;
+  };
+
 
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full group">
@@ -215,8 +232,8 @@ function PlanCard({
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{plan.type}</Badge>
-          {plan.type === 'Mensal' && (
-            isPaid ? (
+           {plan.type === 'Mensal' &&
+            (isPaid ? (
               <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
                 <CheckCircle className="mr-1 h-3 w-3" />
                 Pago
@@ -226,8 +243,8 @@ function PlanCard({
                 <XCircle className="mr-1 h-3 w-3" />
                 Não Pago
               </Badge>
-            )
-          )}
+            ))}
+            {plan.type === 'Anual' && getAnnualPlanStatus()}
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
