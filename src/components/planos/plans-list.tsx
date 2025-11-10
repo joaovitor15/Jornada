@@ -172,8 +172,7 @@ function PlanCard({
           })}
         </p>
          <div className="flex flex-wrap gap-1 mt-2">
-             <Badge variant="outline">{plan.type}</Badge>
-            {plan.tags?.map(tag => (
+            {plan.tags?.filter(tag => tag !== 'Mensal' && tag !== 'Anual').map(tag => (
                 <Badge key={tag} variant="secondary">{tag}</Badge>
             ))}
          </div>
@@ -181,13 +180,19 @@ function PlanCard({
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-1">
+         <Badge variant="outline">{plan.type}</Badge>
          <div className="flex items-center justify-between w-full">
-             <span className="text-sm text-muted-foreground">{plan.paymentMethod.replace('Cartão: ', '')}</span>
-             {isCard && (
-                <Badge variant="outline">
-                    {plan.installments && plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
-                </Badge>
-             )}
+            {isCard ? (
+                <span className="text-sm text-muted-foreground">{plan.paymentMethod.replace('Cartão: ', '')}</span>
+            ) : (
+                <Badge variant="secondary">{plan.paymentMethod}</Badge>
+            )}
+             
+            {isCard && (
+              <span className="text-xs font-semibold text-muted-foreground">
+                {plan.installments && plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
+              </span>
+            )}
         </div>
         <p className="text-sm text-muted-foreground">
            {getVencimentoText(plan)}
