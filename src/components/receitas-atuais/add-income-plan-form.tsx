@@ -133,11 +133,6 @@ export default function AddIncomePlanForm({
         .filter((c) => !c.isArchived && c.name !== 'Vitalício')
         .map((c) => c.name) || ['Diário', 'Mensal', 'Anual'];
     
-    // Manually add 'Diário' if not present
-    if (!freqOptions.includes('Diário')) {
-        freqOptions.unshift('Diário');
-    }
-    
     const generalTags = allTags
       .filter(pt => pt.name !== 'Período')
       .flatMap(pt => pt.children)
