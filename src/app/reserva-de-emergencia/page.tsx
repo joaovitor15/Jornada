@@ -49,9 +49,29 @@ export default function ReservaDeEmergenciaPage() {
   }, []);
   
   const handleDiceRoll = () => {
+    const emergenciaTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
+    const programadaTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
+    
+    const emergencyChildren = emergenciaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    const programmedChildren = programadaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+
+    const allSubTags = [...emergencyChildren, ...programmedChildren];
+
+    if (allSubTags.length === 0) {
+      toast({
+        title: 'Nenhuma meta encontrada!',
+        description: 'Cadastre tags em "Reserva de Emergência" ou "Reserva Programada" para usar o sorteio.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * allSubTags.length);
+    const sorteada = allSubTags[randomIndex];
+
     toast({
-      title: 'Em breve!',
-      description: 'A funcionalidade de sorteio será reimplementada com o novo sistema de tags.',
+      title: '🎲 Meta Sorteada!',
+      description: `Que tal fazer um aporte para "${sorteada}" agora?`,
     });
   };
 
@@ -103,7 +123,6 @@ export default function ReservaDeEmergenciaPage() {
                 size="icon"
                 className="rounded-full"
                 onClick={handleDiceRoll}
-                disabled
               >
                 <Dices className="h-5 w-5" />
                 <span className="sr-only">Sortear Subcategoria</span>
