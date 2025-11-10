@@ -32,6 +32,7 @@ import {
   Legend,
 } from 'recharts';
 import { getMonth, getYear } from 'date-fns';
+import { useTags } from '@/hooks/use-tags';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -66,15 +67,21 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-function ReserveSpendingChart({ entries, groupBy }: { entries: EmergencyReserveEntry[], groupBy: 'mainCategory' | 'subcategory' | 'location' }) {
+function ReserveSpendingChart({ entries, groupBy }: { entries: EmergencyReserveEntry[], groupBy: 'tags' | 'bank' }) {
   const [chartData, setChartData] = useState<SpendingData[]>([]);
 
   useEffect(() => {
     const totals: { [key: string]: number } = {};
     entries.forEach((entry) => {
-      const key = entry[groupBy];
-      if (key) {
-        totals[key] = (totals[key] || 0) + entry.amount;
+      if (groupBy === 'tags') {
+        entry.tags?.forEach(tag => {
+          totals[tag] = (totals[tag] || 0) + entry.amount;
+        });
+      } else {
+         const key = entry[groupBy];
+         if (key) {
+           totals[key] = (totals[key] || 0) + entry.amount;
+         }
       }
     });
 
@@ -160,9 +167,8 @@ export default function ReserveAnalysisTabs() {
   }, [user, activeProfile]);
 
   const TABS = [
-    { value: "categories", label: "Categorias", content: <ReserveSpendingChart entries={entries} groupBy="mainCategory" /> },
-    { value: "subcategories", label: "Subcategorias", content: <ReserveSpendingChart entries={entries} groupBy="subcategory" /> },
-    { value: "locations", label: "Locais", content: <ReserveSpendingChart entries={entries} groupBy="location" /> },
+    { value: "tags", label: "Tags da Reserva", content: <ReserveSpendingChart entries={entries} groupBy="tags" /> },
+    { value: "banks", label: "Bancos", content: <ReserveSpendingChart entries={entries} groupBy="bank" /> },
   ];
 
   return (
@@ -176,7 +182,7 @@ export default function ReserveAnalysisTabs() {
         </div>
       </CardHeader>
       <CardContent>
-          <Tabs defaultValue="categories">
+          <Tabs defaultValue="tags">
             <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
               {TABS.map(tab => (
                  <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>

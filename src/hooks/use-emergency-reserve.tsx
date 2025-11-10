@@ -7,17 +7,17 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
 import { type EmergencyReserveEntry } from '@/lib/types';
-// import { reserveCategories } from '@/lib/categories';
+import { useTags } from './use-tags';
 
-interface SubcategoryTotal {
+interface TagTotal {
   name: string;
-  mainCategory: string;
   total: number;
 }
 
 export function useEmergencyReserve() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
+  const { hierarchicalTags } = useTags();
   const [entries, setEntries] = useState<EmergencyReserveEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,72 +57,59 @@ export function useEmergencyReserve() {
 
   const {
     totalProtegido,
-    totalReserva,
-    totalProgramado,
-    subcategoryTotals,
+    totalReservaEmergencia,
+    totalReservaProgramada,
+    tagTotals,
   } = useMemo(() => {
     let totalGeral = 0;
-    let totalCatReserva = 0;
-    let totalCatProgramado = 0;
-    const subTotals: { [key: string]: number } = {};
+    const tagSubTotals: { [key: string]: number } = {};
+
+    const emergenciaTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
+    const programadaTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
+
+    const emergenciaChildNames = emergenciaTag?.children.map(c => c.name) || [];
+    const programadaChildNames = programadaTag?.children.map(c => c.name) || [];
 
     entries.forEach((entry) => {
       totalGeral += entry.amount;
-
-      if (entry.mainCategory === 'Reserva de Emergencia') {
-        totalCatReserva += entry.amount;
-      } else if (entry.mainCategory === 'Reserva Programada') {
-        totalCatProgramado += entry.amount;
-      }
-
-      if (entry.subcategory) {
-        subTotals[entry.subcategory] =
-          (subTotals[entry.subcategory] || 0) + entry.amount;
+      if (entry.tags && entry.tags.length > 0) {
+        entry.tags.forEach(tag => {
+            tagSubTotals[tag] = (tagSubTotals[tag] || 0) + entry.amount;
+        });
       }
     });
 
-    const subcategoryToMainMap = new Map<string, string>();
-    // Object.entries(reserveCategories).forEach(([main, subs]) => {
-    //   subs.forEach((sub) => subcategoryToMainMap.set(sub, main));
-    // });
+    const totalEmergencia = Object.entries(tagSubTotals)
+        .filter(([tagName]) => emergenciaChildNames.includes(tagName))
+        .reduce((acc, [, total]) => acc + total, 0);
 
-    const populatedSubTotals: SubcategoryTotal[] = Object.entries(subTotals)
+    const totalProgramada = Object.entries(tagSubTotals)
+        .filter(([tagName]) => programadaChildNames.includes(tagName))
+        .reduce((acc, [, total]) => acc + total, 0);
+
+
+    const populatedSubTotals: TagTotal[] = Object.entries(tagSubTotals)
       .map(([name, total]) => ({
         name,
-        mainCategory: subcategoryToMainMap.get(name) || 'Desconhecida',
         total,
       }))
       .filter((sub) => sub.total > 0)
-      .sort((a, b) => {
-        if (
-          a.mainCategory === 'Reserva de Emergencia' &&
-          b.mainCategory !== 'Reserva de Emergencia'
-        ) {
-          return -1;
-        }
-        if (
-          a.mainCategory !== 'Reserva de Emergencia' &&
-          b.mainCategory === 'Reserva de Emergencia'
-        ) {
-          return 1;
-        }
-        return b.total - a.total;
-      });
+      .sort((a, b) => b.total - a.total);
 
     return {
       totalProtegido: totalGeral,
-      totalReserva: totalCatReserva,
-      totalProgramado: totalCatProgramado,
-      subcategoryTotals: populatedSubTotals,
+      totalReservaEmergencia: totalEmergencia,
+      totalReservaProgramada: totalProgramada,
+      tagTotals: populatedSubTotals,
     };
-  }, [entries]);
+  }, [entries, hierarchicalTags]);
 
   return {
     loading,
     entries,
     totalProtegido,
-    totalReserva,
-    totalProgramado,
-    subcategoryTotals,
+    totalReservaEmergencia,
+    totalReservaProgramada,
+    tagTotals,
   };
 }

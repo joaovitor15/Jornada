@@ -53,7 +53,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
-import AddReserveEntryForm from '../reserva-de-emergencia/add-reserve-entry-form';
+import { Badge } from '../ui/badge';
 
 export default function EmergencyReserveList() {
   const { user } = useAuth();
@@ -182,13 +182,10 @@ export default function EmergencyReserveList() {
                           {text.common.description}
                         </TableHead>
                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          Categoria
+                          Tags
                         </TableHead>
-                        <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          Subcategoria
-                        </TableHead>
-                        <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
-                          Local
+                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                          Banco
                         </TableHead>
                         <TableHead className="h-10 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.date}
@@ -213,14 +210,13 @@ export default function EmergencyReserveList() {
                           <TableCell className="font-medium py-2 px-4 align-middle">
                             {entry.description || 'Movimentação'}
                           </TableCell>
-                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
-                            {entry.mainCategory}
+                           <TableCell className="py-2 px-4 align-middle">
+                            <div className="flex flex-wrap gap-1">
+                                {entry.tags?.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+                            </div>
                           </TableCell>
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
-                            {entry.subcategory}
-                          </TableCell>
-                          <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
-                            {entry.location}
+                            {entry.bank}
                           </TableCell>
                           <TableCell className="py-2 px-4 align-middle text-sm text-muted-foreground">
                             {format(entry.date.toDate(), 'dd/MM/yyyy')}

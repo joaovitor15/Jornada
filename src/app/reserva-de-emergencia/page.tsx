@@ -16,165 +16,43 @@ import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import {
-  collection,
-  addDoc,
-  Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { CurrencyInput } from '@/components/ui/currency-input';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import ReserveAnalysisTabs from '@/components/reserva-de-emergencia/reserve-analysis-tabs';
 import { useEmergencyReserve } from '@/hooks/use-emergency-reserve';
-
-const diceFormSchema = z.object({
-  amount: z.coerce
-    .number({
-      required_error: text.addExpenseForm.validation.amountRequired,
-    })
-    .positive({ message: text.addExpenseForm.validation.amountPositive }),
-  date: z.date({ required_error: 'A data é obrigatória.' }),
-  location: z.string().min(1, 'Por favor, selecione um local.'),
-});
+import { useTags } from '@/hooks/use-tags';
 
 export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
-  const [showDiceResult, setShowDiceResult] = useState(false);
-  const [diceResult, setDiceResult] = useState({ main: '', sub: '' });
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const { hierarchicalTags } = useTags();
 
   const {
     loading,
     totalProtegido,
-    totalReserva,
-    totalProgramado,
-    subcategoryTotals,
+    totalReservaEmergencia,
+    totalReservaProgramada,
+    tagTotals,
   } = useEmergencyReserve();
 
-  const form = useForm<z.infer<typeof diceFormSchema>>({
-    resolver: zodResolver(diceFormSchema),
-  });
-
-  const {
-    handleSubmit,
-    control,
-    reset: resetDiceForm,
-    formState: { isSubmitting },
-  } = form;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const subcategoryToMainCategoryMap = useMemo(() => {
-    const map: { [key: string]: string } = {};
-    // for (const mainCategory in reserveCategories) {
-    //   for (const subcategory of reserveCategories[mainCategory]) {
-    //     map[subcategory] = mainCategory;
-    //   }
-    // }
-    return map;
-  }, []);
-
+  
   const handleDiceRoll = () => {
-    // const allSubcategories = Object.values(reserveCategories).flat();
-    // const randomIndex = Math.floor(Math.random() * allSubcategories.length);
-    // const randomSub = allSubcategories[randomIndex];
-    // const randomMain = subcategoryToMainCategoryMap[randomSub];
-    // setDiceResult({ main: randomMain, sub: randomSub });
-    // resetDiceForm({
-    //   amount: undefined,
-    //   date: new Date(),
-    //   location: '',
-    // });
-    // setShowDiceResult(true);
     toast({
       title: 'Em breve!',
       description: 'A funcionalidade de sorteio será reimplementada com o novo sistema de tags.',
     });
-  };
-
-  const onDiceSubmit = async (values: z.infer<typeof diceFormSchema>) => {
-    if (!user || !activeProfile) {
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: text.addExpenseForm.notLoggedIn,
-      });
-      return;
-    }
-
-    try {
-      await addDoc(collection(db, 'emergencyReserveEntries'), {
-        userId: user.uid,
-        profile: activeProfile,
-        description: `Contribuição para ${diceResult.sub}`,
-        amount: values.amount,
-        date: Timestamp.fromDate(values.date),
-        location: values.location,
-        mainCategory: diceResult.main,
-        subcategory: diceResult.sub,
-      });
-
-      toast({
-        title: text.common.success,
-        description: text.emergencyReserve.addSuccess,
-      });
-      setShowDiceResult(false);
-    } catch (error) {
-      console.error('Error writing document from dice roll:', error);
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: text.emergencyReserve.addError,
-      });
-    }
   };
 
   const formatCurrency = (value: number) =>
@@ -183,16 +61,33 @@ export default function ReservaDeEmergenciaPage() {
       currency: 'BRL',
     }).format(value);
 
-  const getIconForCategory = (mainCategory: string) => {
-    switch (mainCategory) {
-      case 'Reserva de Emergencia':
-        return <Shield className="h-6 w-6 text-green-500" />;
-      case 'Reserva Programada':
-        return <CalendarCheck2 className="h-6 w-6 text-purple-500" />;
-      default:
-        return <Banknote className="h-6 w-6 text-gray-500" />;
+  const getIconForTag = (tag: string) => {
+    const parentTag = hierarchicalTags.find(pt => pt.children.some(child => child.name === tag));
+    if (parentTag?.name === 'Reserva de Emergência') {
+      return <Shield className="h-6 w-6 text-green-500" />;
     }
+    if (parentTag?.name === 'Reserva Programada') {
+      return <CalendarCheck2 className="h-6 w-6 text-purple-500" />;
+    }
+    return <Banknote className="h-6 w-6 text-gray-500" />;
   };
+  
+  const getTagParentName = (tag: string) => {
+     const parentTag = hierarchicalTags.find(pt => pt.children.some(child => child.name === tag));
+     return parentTag?.name || 'Categoria Desconhecida';
+  }
+  
+   const getTagColor = (tag: string) => {
+     const parentTag = hierarchicalTags.find(pt => pt.children.some(child => child.name === tag));
+     if (parentTag?.name === 'Reserva de Emergência') {
+      return 'bg-green-100 dark:bg-green-900/50';
+    }
+    if (parentTag?.name === 'Reserva Programada') {
+      return 'bg-purple-100 dark:bg-purple-900/50';
+    }
+    return 'bg-gray-100 dark:bg-gray-900/50';
+  }
+
 
   return (
     <>
@@ -208,6 +103,7 @@ export default function ReservaDeEmergenciaPage() {
                 size="icon"
                 className="rounded-full"
                 onClick={handleDiceRoll}
+                disabled
               >
                 <Dices className="h-5 w-5" />
                 <span className="sr-only">Sortear Subcategoria</span>
@@ -244,7 +140,7 @@ export default function ReservaDeEmergenciaPage() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Reserva</CardTitle>
+                  <CardTitle className="text-lg">Reserva de Emergência</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4">
@@ -252,14 +148,14 @@ export default function ReservaDeEmergenciaPage() {
                       <Shield className="h-6 w-6 text-green-500" />
                     </div>
                     <span className="text-2xl font-bold">
-                      {formatCurrency(totalReserva)}
+                      {formatCurrency(totalReservaEmergencia)}
                     </span>
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Programado</CardTitle>
+                  <CardTitle className="text-lg">Reserva Programada</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4">
@@ -267,31 +163,27 @@ export default function ReservaDeEmergenciaPage() {
                       <CalendarCheck2 className="h-6 w-6 text-purple-500" />
                     </div>
                     <span className="text-2xl font-bold">
-                      {formatCurrency(totalProgramado)}
+                      {formatCurrency(totalReservaProgramada)}
                     </span>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {subcategoryTotals.length > 0 && (
+            {tagTotals.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subcategoryTotals.map((sub) => (
+                {tagTotals.map((sub) => (
                   <Card key={sub.name}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{sub.name}</CardTitle>
-                      <CardDescription>{sub.mainCategory}</CardDescription>
+                      <CardDescription>{getTagParentName(sub.name)}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-4">
                         <div
-                          className={`flex h-12 w-12 items-center justify-center rounded-full ${
-                            sub.mainCategory === 'Reserva de Emergencia'
-                              ? 'bg-green-100 dark:bg-green-900/50'
-                              : 'bg-purple-100 dark:bg-purple-900/50'
-                          }`}
+                          className={`flex h-12 w-12 items-center justify-center rounded-full ${getTagColor(sub.name)}`}
                         >
-                          {getIconForCategory(sub.mainCategory)}
+                          {getIconForTag(sub.name)}
                         </div>
                         <span className="text-2xl font-bold">
                           {formatCurrency(sub.total)}
@@ -313,128 +205,6 @@ export default function ReservaDeEmergenciaPage() {
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
       />
-
-      <AlertDialog open={showDiceResult} onOpenChange={setShowDiceResult}>
-        <AlertDialogContent>
-          <Form {...form}>
-            <form onSubmit={handleSubmit(onDiceSubmit)}>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <Dices className="h-6 w-6" />
-                  Resultado do Sorteio
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-center text-lg font-bold text-primary py-4">
-                  {diceResult.sub}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <div className="space-y-4 py-4">
-                <FormField
-                  control={control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.emergencyReserve.amountLabel}</FormLabel>
-                      <FormControl>
-                        <CurrencyInput
-                          placeholder={text.addExpenseForm.amountPlaceholder}
-                          disabled={isSubmitting}
-                          value={field.value}
-                          onValueChange={(values) => {
-                            field.onChange(values?.floatValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Local</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o local" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {/* {emergencyReserveLocations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))} */}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>{text.emergencyReserve.dateLabel}</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className="w-full pl-3 text-left font-normal"
-                            >
-                              {field.value ? (
-                                format(field.value, 'PPP', { locale: ptBR })
-                              ) : (
-                                <span>Escolha uma data</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date('1900-01-01')
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel
-                  type="button"
-                  onClick={() => setShowDiceResult(false)}
-                >
-                  Cancelar
-                </AlertDialogCancel>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Adicionar
-                </Button>
-              </AlertDialogFooter>
-            </form>
-          </Form>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

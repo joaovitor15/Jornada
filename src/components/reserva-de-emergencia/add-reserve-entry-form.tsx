@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, writeBatch, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -48,6 +47,10 @@ import {
   SelectValue,
 } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import TagInput from '../ui/tag-input';
+import { useTags } from '@/hooks/use-tags';
+import { RawTag } from '@/lib/types';
+
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -58,11 +61,44 @@ const formSchema = z.object({
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
-  location: z.string().min(1, { message: 'Selecione um local.' }),
-  mainCategory: z.string().min(1, { message: 'Selecione uma categoria.' }),
-  subcategory: z.string().min(1, { message: 'Selecione uma subcategoria.' }),
+  bank: z.string().min(1, { message: 'Selecione um banco.' }),
+  tags: z.array(z.string()).min(1, { message: 'Selecione pelo menos uma tag.' }),
   type: z.enum(['add', 'withdraw']).default('add'),
 });
+
+const ensureBaseReserveTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
+    const hasBankTag = allTags.some(tag => tag.name === 'Banco' && tag.isPrincipal);
+    const hasEmergencyTag = allTags.some(tag => tag.name === 'Reserva de Emergência' && tag.isPrincipal);
+
+    if (!hasBankTag || !hasEmergencyTag) {
+        try {
+            const batch = writeBatch(db);
+            const tagsRef = collection(db, 'tags');
+
+            if (!hasBankTag) {
+                const bankTagRef = doc(tagsRef);
+                const bankTagData: RawTag = {
+                    id: bankTagRef.id, userId, profile, name: 'Banco',
+                    isPrincipal: true, parent: null, order: 101,
+                };
+                batch.set(bankTagRef, bankTagData);
+            }
+            if (!hasEmergencyTag) {
+                const emergencyTagRef = doc(tagsRef);
+                const emergencyTagData: RawTag = {
+                    id: emergencyTagRef.id, userId, profile, name: 'Reserva de Emergência',
+                    isPrincipal: true, parent: null, order: 102,
+                };
+                batch.set(emergencyTagRef, emergencyTagData);
+            }
+            
+            await batch.commit();
+            refreshTags();
+        } catch (error) {
+            console.error("Failed to create base reserve tags:", error);
+        }
+    }
+};
 
 type AddReserveEntryFormProps = {
   isOpen: boolean;
@@ -76,6 +112,7 @@ export default function AddReserveEntryForm({
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
+  const { hierarchicalTags, rawTags, refreshTags } = useTags();
   const [dateInput, setDateInput] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -87,31 +124,43 @@ export default function AddReserveEntryForm({
 
   const { isSubmitting, watch, setValue, control, reset } = form;
   const transactionType = watch('type');
-  const selectedMainCategory = watch('mainCategory');
+  
+  const { reserveTagOptions, bankTagOptions } = useMemo(() => {
+    const emergencyTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
+    const programmedTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
+    const bankTag = hierarchicalTags.find(t => t.name === 'Banco');
+
+    const emergencyChildren = emergencyTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    const programmedChildren = programmedTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    
+    return {
+      reserveTagOptions: [...emergencyChildren, ...programmedChildren],
+      bankTagOptions: bankTag?.children.filter(c => !c.isArchived).map(c => c.name) || []
+    };
+  }, [hierarchicalTags]);
 
   useEffect(() => {
     if (isOpen) {
+       if (user && activeProfile) {
+          ensureBaseReserveTags(user.uid, activeProfile, rawTags, refreshTags);
+       }
       const initialDate = new Date();
       reset({
         description: '',
         amount: undefined,
         date: initialDate,
-        location: '',
-        mainCategory: '',
-        subcategory: '',
+        bank: '',
+        tags: [],
         type: 'add',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name === 'date' && value.date) {
         setDateInput(format(value.date, 'dd/MM/yyyy'));
-      }
-      if (name === 'mainCategory') {
-        setValue('subcategory', '');
       }
     });
     return () => subscription.unsubscribe();
@@ -145,9 +194,8 @@ export default function AddReserveEntryForm({
           (values.type === 'add' ? 'Contribuição' : 'Retirada'),
         amount: finalAmount,
         date: Timestamp.fromDate(values.date),
-        location: values.location,
-        mainCategory: values.mainCategory,
-        subcategory: values.subcategory,
+        bank: values.bank,
+        tags: values.tags,
       });
 
       toast({
@@ -171,13 +219,6 @@ export default function AddReserveEntryForm({
       setValue('date', date, { shouldValidate: true });
     }
   };
-
-  const subcategories = useMemo(() => {
-    // if (selectedMainCategory && reserveCategories[selectedMainCategory]) {
-    //   return reserveCategories[selectedMainCategory];
-    // }
-    return [];
-  }, [selectedMainCategory]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -246,87 +287,47 @@ export default function AddReserveEntryForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="mainCategory"
+            <FormField
+                control={form.control} name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {/* {Object.keys(reserveCategories).map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))} */}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Tags da Reserva</FormLabel>
+                    <FormControl>
+                      <TagInput
+                          availableTags={reserveTagOptions}
+                          placeholder="Selecione as tags..."
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          disabled={isSubmitting || reserveTagOptions.length === 0}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="subcategory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subcategoria</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isSubmitting || subcategories.length === 0}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subcategories.map((subcategory) => (
-                          <SelectItem key={subcategory} value={subcategory}>
-                            {subcategory}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
             
             <FormField
               control={form.control}
-              name="location"
+              name="bank"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Local</FormLabel>
+                  <FormLabel>Banco</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || bankTagOptions.length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o local da reserva" />
+                        <SelectValue placeholder="Selecione o banco" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* {emergencyReserveLocations.map((location) => (
-                        <SelectItem key={location} value={location}>
-                          {location}
+                      {bankTagOptions.map((bank) => (
+                        <SelectItem key={bank} value={bank}>
+                          {bank}
                         </SelectItem>
-                      ))} */}
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

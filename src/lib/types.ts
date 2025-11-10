@@ -104,9 +104,8 @@ export type EmergencyReserveEntry = {
   amount: number;
   date: Timestamp;
   description?: string;
-  location: string;
-  mainCategory: string;
-  subcategory: string;
+  bank: string;
+  tags: string[];
 };
 
 export interface RawTag {
