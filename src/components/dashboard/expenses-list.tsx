@@ -176,7 +176,7 @@ export default function ExpensesList() {
                         >
                            <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
-                              {expense.tags?.map((tag) => (
+                              {expense.tags?.filter(tag => !tag.startsWith('planId:')).map((tag) => (
                                 <Badge key={tag} variant="secondary">
                                   {tag}
                                 </Badge>

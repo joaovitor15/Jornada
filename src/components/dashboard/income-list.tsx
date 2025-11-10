@@ -169,7 +169,7 @@ export default function IncomeList() {
                         >
                           <TableCell className="py-2 px-2 align-middle">
                             <div className="flex flex-wrap gap-1">
-                              {income.tags?.map((tag) => (
+                              {income.tags?.filter(tag => !tag.startsWith('planId:')).map((tag) => (
                                 <Badge key={tag} variant="secondary">
                                   {tag}
                                 </Badge>
