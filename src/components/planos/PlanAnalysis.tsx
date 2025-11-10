@@ -38,7 +38,7 @@ export default function PlanAnalysis({ plans, loading }: PlanAnalysisProps) {
   }, [plans, selectedYear]);
 
   const tabs = [
-    { value: "mensal", label: "Mensal", plans: monthlyPlans, description: "Custo anualizado dos planos mensais." },
+    { value: "mensal", label: "Mensal", plans: monthlyPlans, description: "Custo mensal dos planos." },
     { value: "anual", label: "Anual", plans: annualPlans, description: "Soma dos planos com ciclo anual." },
     { value: "vitalicio", label: "Vitalício", plans: lifetimePlans, description: "Soma de planos com pagamento único." },
   ];
@@ -86,7 +86,6 @@ export default function PlanAnalysis({ plans, loading }: PlanAnalysisProps) {
                                 <div className="p-4">
                                      <PlanSpendingChart 
                                         plans={tab.plans} 
-                                        isAnnualized={tab.value === 'mensal'}
                                     />
                                 </div>
                             </div>

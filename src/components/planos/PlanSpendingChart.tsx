@@ -46,7 +46,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export default function PlanSpendingChart({ plans, isAnnualized = false }: { plans: Plan[], isAnnualized?: boolean }) {
+export default function PlanSpendingChart({ plans }: { plans: Plan[] }) {
   const [fixedPlansData, setFixedPlansData] = useState<SpendingData[]>([]);
   const [variablePlans, setVariablePlans] = useState<Plan[]>([]);
   const [total, setTotal] = useState(0);
@@ -60,7 +60,7 @@ export default function PlanSpendingChart({ plans, isAnnualized = false }: { pla
         const value = (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0);
         return {
           name: plan.name,
-          value: isAnnualized && plan.type === 'Mensal' ? value * 12 : value,
+          value: value,
         };
       })
       .filter(item => item.value > 0);
@@ -77,7 +77,7 @@ export default function PlanSpendingChart({ plans, isAnnualized = false }: { pla
 
     setFixedPlansData(chartItems);
     setVariablePlans(variableValuePlans);
-  }, [plans, isAnnualized]);
+  }, [plans]);
 
   if (plans.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Nenhum plano para exibir.</div>;
