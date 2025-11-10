@@ -481,7 +481,7 @@ export default function PlanForm({
                     name="type"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Frequência</FormLabel>
+                        <FormLabel>Tag Período</FormLabel>
                         <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -489,7 +489,7 @@ export default function PlanForm({
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue
-                                placeholder="Selecione a frequência"
+                                placeholder="Selecione o período"
                                 />
                             </SelectTrigger>
                             </FormControl>
