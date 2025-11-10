@@ -160,17 +160,52 @@ export default function ManageTagsPageClient() {
   };
 
   const handleRenameSubmit = async () => {
-    if (!isRenaming || !newTagName.trim() || !user) return;
+    if (!isRenaming || !newTagName.trim() || !user || !activeProfile) return;
 
     const newName = newTagName.trim();
     if (newName === isRenaming.name) {
       setIsRenaming(null);
       return;
     }
+    
+    // Check if the tag being renamed is a card tag
+    const cardsParentTag = hierarchicalTags.find(t => t.name === "Cartões");
+    const isCardTag = isRenaming.parent === cardsParentTag?.id;
+
+    if (isCardTag && usedTagNames.has(isRenaming.name)) {
+        toast({
+            variant: "destructive",
+            title: "Ação não permitida",
+            description: "Tags de cartões em uso devem ser renomeadas pela tela de 'Cartões' para garantir a consistência.",
+        });
+        setIsRenaming(null);
+        return;
+    }
 
     try {
+      const batch = writeBatch(db);
       const tagRef = doc(db, 'tags', isRenaming.id);
-      await updateDoc(tagRef, { name: newName });
+      batch.update(tagRef, { name: newName });
+      
+      // If it is a card tag, also rename the card
+      if(isCardTag) {
+          const cardsQuery = query(
+            collection(db, 'cards'), 
+            where('userId', '==', user.uid),
+            where('profile', '==', activeProfile),
+            where('name', '==', isRenaming.name),
+            limit(1)
+          );
+          const cardsSnapshot = await getDocs(cardsQuery);
+          if (!cardsSnapshot.empty) {
+              const cardDoc = cardsSnapshot.docs[0];
+              const cardRef = doc(db, 'cards', cardDoc.id);
+              batch.update(cardRef, { name: newName });
+          }
+      }
+
+      await batch.commit();
+
       toast({
         title: text.common.success,
         description: `Tag "${isRenaming.name}" renomeada para "${newName}".`,
