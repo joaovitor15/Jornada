@@ -67,13 +67,22 @@ const formSchema = z.object({
 });
 
 const ensureBaseReserveTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
-    const hasBankTag = allTags.some(tag => tag.name === 'Banco' && tag.isPrincipal);
     const hasEmergencyTag = allTags.some(tag => tag.name === 'Reserva de Emergência' && tag.isPrincipal);
+    const hasBankTag = allTags.some(tag => tag.name === 'Banco' && tag.isPrincipal);
 
     if (!hasBankTag || !hasEmergencyTag) {
         try {
             const batch = writeBatch(db);
             const tagsRef = collection(db, 'tags');
+
+             if (!hasEmergencyTag) {
+                const emergencyTagRef = doc(tagsRef);
+                const emergencyTagData: RawTag = {
+                    id: emergencyTagRef.id, userId, profile, name: 'Reserva de Emergência',
+                    isPrincipal: true, parent: null, order: 102,
+                };
+                batch.set(emergencyTagRef, emergencyTagData);
+            }
 
             if (!hasBankTag) {
                 const bankTagRef = doc(tagsRef);
@@ -82,14 +91,6 @@ const ensureBaseReserveTags = async (userId: string, profile: string, allTags: R
                     isPrincipal: true, parent: null, order: 101,
                 };
                 batch.set(bankTagRef, bankTagData);
-            }
-            if (!hasEmergencyTag) {
-                const emergencyTagRef = doc(tagsRef);
-                const emergencyTagData: RawTag = {
-                    id: emergencyTagRef.id, userId, profile, name: 'Reserva de Emergência',
-                    isPrincipal: true, parent: null, order: 102,
-                };
-                batch.set(emergencyTagRef, emergencyTagData);
             }
             
             await batch.commit();
@@ -126,12 +127,12 @@ export default function AddReserveEntryForm({
   const transactionType = watch('type');
   
   const { reserveTagOptions, bankTagOptions } = useMemo(() => {
-    const emergencyTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
-    const programmedTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
+    const emergenciaTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
+    const programadaTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
     const bankTag = hierarchicalTags.find(t => t.name === 'Banco');
 
-    const emergencyChildren = emergencyTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
-    const programmedChildren = programmedTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    const emergencyChildren = emergenciaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    const programmedChildren = programadaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
     
     return {
       reserveTagOptions: [...emergencyChildren, ...programmedChildren],
