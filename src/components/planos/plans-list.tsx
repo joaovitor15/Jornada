@@ -29,6 +29,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import PlanForm from './add-plan-form';
@@ -214,12 +215,19 @@ function PlanCard({
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{plan.type}</Badge>
-          {isPaid && (
-           <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Pago
-          </Badge>
-        )}
+          {plan.type === 'Mensal' && (
+            isPaid ? (
+              <Badge variant="default" className="bg-green-600 hover:bg-green-700 pointer-events-none">
+                <CheckCircle className="mr-1 h-3 w-3" />
+                Pago
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600 pointer-events-none">
+                <XCircle className="mr-1 h-3 w-3" />
+                Não Pago
+              </Badge>
+            )
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
