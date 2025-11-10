@@ -237,16 +237,15 @@ type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
 interface PlansListProps {
   filter: FilterType;
   searchTerm: string;
+  onEdit: (plan: Plan) => void;
 }
 
-export default function PlansList({ filter, searchTerm }: PlansListProps) {
+export default function PlansList({ filter, searchTerm, onEdit }: PlansListProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPayFormOpen, setIsPayFormOpen] = useState(false);
-  const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
   const [planToPay, setPlanToPay] = useState<Plan | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
@@ -301,16 +300,6 @@ export default function PlansList({ filter, searchTerm }: PlansListProps) {
     
     return tempPlans;
   }, [plans, filter, searchTerm]);
-
-  const handleAddClick = () => {
-    setPlanToEdit(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEditClick = (plan: Plan) => {
-    setPlanToEdit(plan);
-    setIsFormOpen(true);
-  };
 
   const handlePayClick = (plan: Plan) => {
     setPlanToPay(plan);
@@ -370,13 +359,6 @@ export default function PlansList({ filter, searchTerm }: PlansListProps) {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button onClick={handleAddClick}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {text.plans.newPlan}
-        </Button>
-      </div>
-
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -387,7 +369,7 @@ export default function PlansList({ filter, searchTerm }: PlansListProps) {
             <PlanCard
               key={plan.id}
               plan={plan}
-              onEdit={handleEditClick}
+              onEdit={onEdit}
               onDelete={handleDeleteRequest}
               onPay={handlePayClick}
               onReorder={handleReorder}
@@ -401,12 +383,6 @@ export default function PlansList({ filter, searchTerm }: PlansListProps) {
           <p className="text-muted-foreground">{text.plans.noPlans}</p>
         </div>
       )}
-
-      <PlanForm
-        isOpen={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        planToEdit={planToEdit}
-      />
 
       {planToPay && (
         <PayPlanForm
