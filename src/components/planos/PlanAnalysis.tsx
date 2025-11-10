@@ -10,6 +10,7 @@ import { type Plan } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -68,7 +69,6 @@ export default function PlanAnalysis() {
     const years = [...new Set(annual.map(p => p.dueDate?.toDate().getFullYear()).filter(y => y !== undefined))].sort((a,b) => b! - a!);
     const availableYears = years.map(String);
 
-
     const filteredAnnual = selectedYear === 'Todos'
         ? annual
         : annual.filter(p => p.dueDate?.toDate().getFullYear().toString() === selectedYear);
@@ -85,7 +85,6 @@ export default function PlanAnalysis() {
         return acc + (baseAmount + subItemsAmount);
     }, 0);
 
-
     return {
       monthlyTotal: monthlyCost * 12,
       annualTotal: annualCost,
@@ -94,57 +93,56 @@ export default function PlanAnalysis() {
     };
   }, [plans, selectedYear]);
 
+  const tabs = [
+    { value: "mensal", label: "Mensal (Anualizado)", total: monthlyTotal, description: "Valor projetado para 12 meses." },
+    { value: "anual", label: "Anual", total: annualTotal, description: "Soma dos planos com ciclo anual." },
+    { value: "vitalicio", label: "Vitalício", total: lifetimeTotal, description: "Soma de planos com pagamento único." },
+  ];
+
   if (loading) {
-    return <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="flex justify-center mt-6"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
   return (
-    <div className="w-full">
-      <h2 className="text-xl font-bold mb-4">Análise de Planos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Custo Anual (Planos Mensais)</CardTitle>
-            <CardDescription>Valor projetado para 12 meses.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{formatCurrency(monthlyTotal)}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-                 <CardTitle>Custo Planos Anuais</CardTitle>
-                 <Select value={selectedYear} onValueChange={setSelectedYear} disabled={availableYears.length === 0}>
-                    <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Ano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Todos">Todos</SelectItem>
-                        {availableYears.map(year => (
-                            <SelectItem key={year} value={year}>{year}</SelectItem>
-                        ))}
-                    </SelectContent>
-                 </Select>
-            </div>
-            <CardDescription>Soma dos planos com ciclo anual.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{formatCurrency(annualTotal)}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Custo Planos Vitalícios</CardTitle>
-             <CardDescription>Soma de planos com pagamento único.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{formatCurrency(lifetimeTotal)}</p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card>
+        <CardHeader>
+            <CardTitle>Análise de Planos</CardTitle>
+            <CardDescription>Visualize o custo total dos seus planos por período.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Tabs defaultValue="mensal" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    {tabs.map(tab => (
+                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    ))}
+                </TabsList>
+                {tabs.map(tab => (
+                    <TabsContent key={tab.value} value={tab.value}>
+                        <div className="mt-4 p-4 border rounded-lg">
+                            {tab.value === 'anual' && (
+                                <div className="flex justify-end mb-4">
+                                     <Select value={selectedYear} onValueChange={setSelectedYear} disabled={availableYears.length === 0}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Filtrar por ano" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Todos">Todos os Anos</SelectItem>
+                                            {availableYears.map(year => (
+                                                <SelectItem key={year} value={year}>{year}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                     </Select>
+                                </div>
+                            )}
+                            <div className="text-center">
+                                <p className="text-sm text-muted-foreground">{tab.description}</p>
+                                <p className="text-4xl font-bold mt-2">{formatCurrency(tab.total)}</p>
+                            </div>
+                        </div>
+                    </TabsContent>
+                ))}
+            </Tabs>
+        </CardContent>
+    </Card>
   );
 }
