@@ -55,7 +55,6 @@ import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import PayBillForm from './pay-bill-form';
 import { Badge } from '../ui/badge';
-import { deleteBillPayment } from '@/lib/actions/transactions.actions';
 
 export default function BillPaymentsList() {
   const { user } = useAuth();
@@ -137,7 +136,7 @@ export default function BillPaymentsList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteBillPayment(id);
+      await deleteDoc(doc(db, 'billPayments', id));
       toast({
         title: text.common.success,
         description: text.billPaymentsList.deleteSuccess,
