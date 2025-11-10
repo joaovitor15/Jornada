@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp, writeBatch } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ import { text } from '@/lib/strings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { CurrencyInput } from '../ui/currency-input';
-import { type Plan } from '@/lib/types';
+import { type Plan, RawTag } from '@/lib/types';
 import { Separator } from '../ui/separator';
 import TagInput from '../ui/tag-input';
 import { useTags } from '@/hooks/use-tags';
@@ -50,7 +50,7 @@ const planSchema = z
     amount: z.coerce
       .number()
       .positive('O custo base deve ser um número positivo.'),
-    type: z.enum(['Mensal', 'Anual']),
+    type: z.string().min(1, 'A frequência é obrigatória.'),
     paymentDay: z.coerce.number().int().min(1).max(31).optional(),
     dueDay: z.coerce.number().int().min(1, "O dia é obrigatório.").max(31, "Dia inválido.").optional(),
     dueMonth: z.coerce.number().int().min(0).max(11).optional(),
@@ -93,6 +93,42 @@ type PlanFormProps = {
   planToEdit?: Plan | null;
 };
 
+const ensurePeriodTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
+    const periodTagExists = allTags.some(tag => tag.name === 'Período' && tag.isPrincipal);
+
+    if (!periodTagExists) {
+        try {
+            const batch = writeBatch(db);
+            const tagsRef = collection(db, 'tags');
+
+            const periodTagRef = doc(tagsRef);
+            const periodTagData: RawTag = {
+                id: periodTagRef.id,
+                userId,
+                profile,
+                name: 'Período',
+                isPrincipal: true,
+                parent: null,
+                order: 100, // High order to appear at the end
+            };
+            batch.set(periodTagRef, periodTagData);
+
+            const monthlyTagRef = doc(tagsRef);
+            const monthlyTagData: RawTag = { id: monthlyTagRef.id, userId, profile, name: 'Mensal', isPrincipal: false, parent: periodTagRef.id, order: 0 };
+            batch.set(monthlyTagRef, monthlyTagData);
+            
+            const yearlyTagRef = doc(tagsRef);
+            const yearlyTagData: RawTag = { id: yearlyTagRef.id, userId, profile, name: 'Anual', isPrincipal: false, parent: periodTagRef.id, order: 1 };
+            batch.set(yearlyTagRef, yearlyTagData);
+            
+            await batch.commit();
+            refreshTags();
+        } catch (error) {
+            console.error("Failed to create base period tags:", error);
+        }
+    }
+};
+
 export default function PlanForm({
   isOpen,
   onOpenChange,
@@ -102,7 +138,7 @@ export default function PlanForm({
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const isEditMode = !!planToEdit;
-  const { hierarchicalTags: allTags } = useTags();
+  const { hierarchicalTags: allTags, rawTags, refreshTags } = useTags();
 
   const form = useForm<z.infer<typeof planSchema>>({
     resolver: zodResolver(planSchema),
@@ -124,12 +160,15 @@ export default function PlanForm({
     name: 'subItems',
   });
   
-  const { paymentMethodOptions, cardOptions, availableTags } = useMemo(() => {
+  const { paymentMethodOptions, cardOptions, availableTags, frequencyOptions } = useMemo(() => {
     const paymentMethodsPrincipal = allTags.find(
       (tag) => tag.name === 'Meio de Pagamento' && tag.isPrincipal
     );
     const cardsPrincipal = allTags.find(
       (tag) => tag.name === 'Cartões' && tag.isPrincipal
+    );
+     const periodPrincipal = allTags.find(
+      (tag) => tag.name === 'Período' && tag.isPrincipal
     );
 
     const pmtOptions =
@@ -142,10 +181,14 @@ export default function PlanForm({
         .filter((c) => !c.isArchived)
         .map((c) => c.name) || [];
     
-    // Lista todas as tags filhas de todas as tags principais (exceto 'Cartões' e 'Meio de Pagamento')
+    const freqOptions =
+      periodPrincipal?.children
+        .filter((c) => !c.isArchived)
+        .map((c) => c.name) || ['Mensal', 'Anual']; // Fallback
+    
     const generalTags = allTags
-      .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Meio de Pagamento')
-      .flatMap(pt => pt.children) // Pega apenas as filhas
+      .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Meio de Pagamento' && pt.name !== 'Período')
+      .flatMap(pt => pt.children)
       .filter(t => !t.isArchived)
       .map(t => t.name);
 
@@ -153,6 +196,7 @@ export default function PlanForm({
       paymentMethodOptions: pmtOptions,
       cardOptions: cardOpts,
       availableTags: Array.from(new Set(generalTags)),
+      frequencyOptions: freqOptions,
     };
   }, [allTags]);
 
@@ -166,6 +210,9 @@ export default function PlanForm({
 
 
   useEffect(() => {
+     if (isOpen && user && activeProfile) {
+        ensurePeriodTags(user.uid, activeProfile, rawTags, refreshTags);
+    }
     if (isOpen) {
       if (isEditMode && planToEdit) {
         let dueDay, dueMonth, dueYear;
@@ -205,7 +252,7 @@ export default function PlanForm({
         });
       }
     }
-  }, [isOpen, isEditMode, planToEdit, form]);
+  }, [isOpen, isEditMode, planToEdit, form, user, activeProfile, rawTags, refreshTags]);
 
   useEffect(() => {
     if (!isCardPayment) {
@@ -434,7 +481,7 @@ export default function PlanForm({
                     name="type"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{text.plans.form.type}</FormLabel>
+                        <FormLabel>Frequência</FormLabel>
                         <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -442,17 +489,16 @@ export default function PlanForm({
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue
-                                placeholder={text.plans.form.typePlaceholder}
+                                placeholder="Selecione a frequência"
                                 />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            <SelectItem value="Mensal">
-                                {text.plans.form.types.monthly}
-                            </SelectItem>
-                            <SelectItem value="Anual">
-                                {text.plans.form.types.yearly}
-                            </SelectItem>
+                              {frequencyOptions.map(freq => (
+                                <SelectItem key={freq} value={freq}>
+                                  {freq}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -479,7 +525,7 @@ export default function PlanForm({
                         </FormItem>
                       )}
                     />
-                ) : (
+                ) : planType === 'Anual' ? (
                   <div className="grid grid-cols-3 gap-2">
                     <FormField
                       control={form.control}
@@ -550,7 +596,7 @@ export default function PlanForm({
                       )}
                     />
                   </div>
-                )}
+                ) : null}
               </div>
 
               <Separator />

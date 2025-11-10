@@ -41,7 +41,7 @@ export function useTags() {
 
         setRawTags(tagsData);
 
-        const collectionsToSearch = ['expenses', 'incomes', 'plans'];
+        const collectionsToSearch = ['expenses', 'incomes'];
         const allUsedTags = new Set<string>();
 
         // Search in 'tags' array
@@ -59,6 +59,23 @@ export function useTags() {
             }
           });
         }
+
+        // Search in 'plans' type field
+        const plansQuery = query(
+            collection(db, 'plans'),
+            where('userId', '==', user.uid),
+            where('profile', '==', activeProfile)
+        );
+        const plansSnapshot = await getDocs(plansQuery);
+        plansSnapshot.forEach(doc => {
+            const plan = doc.data();
+            if (plan.type) {
+                allUsedTags.add(plan.type);
+            }
+            if (plan.tags && Array.isArray(plan.tags)) {
+              plan.tags.forEach(tag => allUsedTags.add(tag));
+            }
+        });
         
         // Search in 'paymentMethod' field for expenses
         const expensePaymentMethodQuery = query(

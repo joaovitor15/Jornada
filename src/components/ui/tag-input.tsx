@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -39,7 +40,9 @@ export default function TagInput({
   const [inputValue, setInputValue] = useState('');
 
   const handleSelect = (tag: string) => {
-    onChange([...value, tag]);
+    if (!value.includes(tag)) {
+      onChange([...value, tag]);
+    }
     setInputValue(''); // Limpa o input após a seleção
   };
 
