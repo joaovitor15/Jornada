@@ -256,7 +256,7 @@ export default function PayPlanForm({
               <div className="space-y-4 py-2">
                 <div className="p-4 border rounded-lg bg-muted/50 space-y-2">
                     <p className="text-lg font-bold">{plan.name}</p>
-                    <div className="flex justify-between items-end">
+                     <div className="space-y-2">
                        {isVariable ? (
                           <FormField
                             control={control}
@@ -284,7 +284,9 @@ export default function PayPlanForm({
                             <p className="text-2xl font-bold text-primary">{fixedTotalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
                           </div>
                         )}
-                        <Badge variant="secondary">{plan.paymentMethod}</Badge>
+                         <div className="flex justify-start">
+                             <Badge variant="secondary">{plan.paymentMethod}</Badge>
+                        </div>
                     </div>
                 </div>
 
