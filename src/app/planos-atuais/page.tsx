@@ -34,7 +34,7 @@ export default function PlanosAtuaisPage() {
 
   return (
     <>
-      <div className="p-4 md:p-6 lg:p-8 lg:pt-4 h-full flex flex-col">
+      <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h1 className="text-2xl font-bold">{text.sidebar.currentPlans}</h1>
@@ -68,7 +68,8 @@ export default function PlanosAtuaisPage() {
             />
           </div>
         </div>
-        <div className="flex-grow overflow-auto pb-4">
+        
+        <div className="pb-4">
           <PlansList 
             filter={filter} 
             searchTerm={searchTerm} 
@@ -81,7 +82,7 @@ export default function PlanosAtuaisPage() {
 
         <Separator className="my-6" />
 
-        <div className="flex-shrink-0">
+        <div>
           <PlanAnalysis />
         </div>
         
