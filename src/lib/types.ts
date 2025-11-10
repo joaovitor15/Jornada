@@ -51,7 +51,8 @@ export type Plan = {
   userId: string;
   profile: Profile;
   name: string;
-  amount: number; // Base cost
+  amount: number; // For 'Fixo' type, optional for 'Variável'
+  valueType: 'Fixo' | 'Variável';
   type: 'Mensal' | 'Anual';
   paymentMethod: string;
   paymentDay?: number;
@@ -90,8 +91,6 @@ export type EmergencyReserveEntry = {
   date: Timestamp;
   description?: string;
   location: string;
-  mainCategory: string;
-  subcategory: string;
 };
 
 export interface RawTag {

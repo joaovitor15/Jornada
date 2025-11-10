@@ -67,6 +67,7 @@ function PlanCard({
   onPay: (plan: Plan) => void;
 }) {
   const calculateTotalAmount = (plan: Plan) => {
+    if (plan.valueType === 'Variável') return null;
     const subItemsTotal =
       plan.subItems?.reduce((acc, item) => acc + item.price, 0) ?? 0;
     return plan.amount + subItemsTotal;
@@ -89,6 +90,7 @@ function PlanCard({
 
   const hasSubItems = plan.subItems && plan.subItems.length > 0;
   const isCard = plan.paymentMethod.startsWith('Cartão:');
+  const totalAmount = calculateTotalAmount(plan);
 
   return (
     <div className="border p-4 rounded-lg shadow-sm relative flex flex-col h-full">
@@ -165,11 +167,8 @@ function PlanCard({
 
       <div className="flex-grow">
         <h3 className="text-lg font-semibold pr-8">{plan.name}</h3>
-        <p className="text-xl font-bold text-primary">
-          {calculateTotalAmount(plan).toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          })}
+         <p className="text-xl font-bold text-primary">
+          {totalAmount !== null ? totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Valor Variável'}
         </p>
          <div className="flex flex-wrap gap-1 mt-2">
             {plan.tags?.filter(tag => tag !== 'Mensal' && tag !== 'Anual').map(tag => (
@@ -180,12 +179,14 @@ function PlanCard({
       </div>
 
       <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
-         <Badge variant="outline">{plan.type}</Badge>
-         <div className="flex items-center gap-2">
-            <Badge variant="secondary">{isCard ? plan.paymentMethod.replace('Cartão: ', '') : plan.paymentMethod}</Badge>
-            {isCard && (
+        <Badge variant="outline">{plan.type}</Badge>
+        <div className="flex items-center gap-2">
+           <Badge variant="secondary">
+              {isCard ? plan.paymentMethod.replace('Cartão: ', '') : plan.paymentMethod}
+            </Badge>
+            {isCard && plan.installments && (
               <span className="text-xs font-semibold text-muted-foreground">
-                {plan.installments && plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
+                {plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
               </span>
             )}
         </div>

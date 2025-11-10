@@ -43,13 +43,13 @@ import { type Plan, RawTag } from '@/lib/types';
 import { Separator } from '../ui/separator';
 import TagInput from '../ui/tag-input';
 import { useTags } from '@/hooks/use-tags';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const planSchema = z
   .object({
     title: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
-    amount: z.coerce
-      .number()
-      .positive('O custo base deve ser um número positivo.'),
+    valueType: z.enum(['Fixo', 'Variável']),
+    amount: z.coerce.number().optional(),
     type: z.string().min(1, 'A frequência é obrigatória.'),
     paymentDay: z.coerce.number().int().min(1).max(31).optional(),
     dueDay: z.coerce.number().int().min(1, "O dia é obrigatório.").max(31, "Dia inválido.").optional(),
@@ -63,6 +63,17 @@ const planSchema = z
     })).optional(),
     tags: z.array(z.string()).optional(),
   })
+  .refine(
+    (data) => {
+      if (data.valueType === 'Fixo' && (data.amount === undefined || data.amount <= 0)) {
+        return false;
+      }
+      return true;
+    }, {
+      message: 'O custo base deve ser um número positivo para planos de valor fixo.',
+      path: ['amount'],
+    }
+  )
   .refine(
     (data) => {
       if (data.type === 'Anual') {
@@ -144,6 +155,7 @@ export default function PlanForm({
     resolver: zodResolver(planSchema),
     defaultValues: {
       title: '',
+      valueType: 'Fixo',
       amount: undefined,
       type: 'Mensal',
       paymentDay: undefined,
@@ -203,6 +215,8 @@ export default function PlanForm({
 
   const planType = watch('type');
   const paymentMethod = watch('paymentMethod');
+  const valueType = watch('valueType');
+
   const isCardPayment = useMemo(() => {
      if (!paymentMethod) return false;
      return cardOptions.includes(paymentMethod.replace('Cartão: ', ''));
@@ -225,6 +239,7 @@ export default function PlanForm({
         
         form.reset({
           title: planToEdit.name,
+          valueType: planToEdit.valueType || 'Fixo',
           amount: planToEdit.amount,
           type: planToEdit.type,
           paymentDay: planToEdit.paymentDay,
@@ -239,6 +254,7 @@ export default function PlanForm({
       } else {
         form.reset({
           title: '',
+          valueType: 'Fixo',
           amount: undefined,
           type: 'Mensal',
           paymentDay: undefined,
@@ -260,16 +276,25 @@ export default function PlanForm({
     }
   }, [isCardPayment, setValue]);
 
+  useEffect(() => {
+    if (valueType === 'Variável') {
+      setValue('type', 'Mensal');
+      setValue('amount', 0);
+      setValue('subItems', []);
+    }
+  }, [valueType, setValue]);
+
   const { isSubmitting } = form.formState;
 
   
   const watchedSubItems = watch('subItems');
   const watchedBaseAmount = watch('amount');
   const totalAmount = useMemo(() => {
+    if (valueType === 'Variável') return 0;
     const subItemsTotal =
       watchedSubItems?.reduce((acc, item) => acc + (item.price || 0), 0) ?? 0;
     return (watchedBaseAmount || 0) + subItemsTotal;
-  }, [watchedSubItems, watchedBaseAmount]);
+  }, [watchedSubItems, watchedBaseAmount, valueType]);
 
   const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
     value: index,
@@ -295,7 +320,8 @@ export default function PlanForm({
 
     const dataToSend: Partial<Omit<Plan, 'id' | 'userId' | 'profile'>> & { name: string; } = {
         name: title,
-        amount: rest.amount,
+        valueType: rest.valueType,
+        amount: rest.valueType === 'Fixo' ? rest.amount || 0 : 0,
         type: rest.type,
         paymentMethod: rest.paymentMethod,
         installments: rest.installments,
@@ -353,21 +379,54 @@ export default function PlanForm({
             className="flex flex-col max-h-[80vh]"
           >
             <div className="space-y-4 overflow-y-auto pr-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{text.plans.form.name}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: Netflix, Meli+" {...field} id="planTitleInput" name="planTitleInput" autoComplete="off" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{text.plans.form.name}</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Netflix, Conta de Luz" {...field} id="planTitleInput" name="planTitleInput" autoComplete="off" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name="valueType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Tipo de Valor</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="flex space-x-4"
+                        disabled={isSubmitting}
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Fixo" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Fixo</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Variável" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Variável</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {valueType === 'Fixo' && (
+                 <FormField
                   control={form.control}
                   name="amount"
                   render={({ field }) => (
@@ -387,7 +446,7 @@ export default function PlanForm({
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
 
               <FormField
                   control={form.control}
@@ -485,6 +544,7 @@ export default function PlanForm({
                         <Select
                             onValueChange={field.onChange}
                             value={field.value}
+                            disabled={valueType === 'Variável'}
                         >
                             <FormControl>
                             <SelectTrigger>
@@ -599,69 +659,72 @@ export default function PlanForm({
                 ) : null}
               </div>
 
-              <Separator />
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <FormLabel>Planos com Combo</FormLabel>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ name: '', price: 0 })}
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-                  </Button>
+              {valueType === 'Fixo' && (
+                <>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <FormLabel>Planos com Combo</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ name: '', price: 0 })}
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+                    </Button>
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="flex items-end gap-2">
+                        <FormField
+                          control={form.control}
+                          name={`subItems.${index}.name`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="Nome do item (ex: Disney+)"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`subItems.${index}.price`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <CurrencyInput
+                                  placeholder="Preço"
+                                  className="w-32"
+                                  value={field.value}
+                                  onValueChange={(values) =>
+                                    field.onChange(values?.floatValue)
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2 mt-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-end gap-2">
-                      <FormField
-                        control={form.control}
-                        name={`subItems.${index}.name`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="Nome do item (ex: Disney+)"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`subItems.${index}.price`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <CurrencyInput
-                                placeholder="Preço"
-                                className="w-32"
-                                value={field.value}
-                                onValueChange={(values) =>
-                                  field.onChange(values?.floatValue)
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             <div className="pt-6 mt-auto">
@@ -670,10 +733,10 @@ export default function PlanForm({
                   Valor Total do Plano
                 </p>
                 <p className="text-2xl font-bold">
-                  {totalAmount.toLocaleString('pt-BR', {
+                  {valueType === 'Fixo' ? totalAmount.toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
-                  })}
+                  }) : 'Variável'}
                 </p>
               </div>
               <DialogFooter className="mt-4">
