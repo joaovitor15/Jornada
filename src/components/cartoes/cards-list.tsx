@@ -41,8 +41,6 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-type FilterType = 'inUse' | 'registered' | 'archived';
-
 export default function CardsList({
   selectedCardId,
   onCardSelect,
@@ -57,23 +55,11 @@ export default function CardsList({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('inUse');
   const { toast } = useToast();
 
   const filteredCards = useMemo(() => {
-    if (filter === 'inUse') {
-      return cards.filter(
-        (card) => !card.isArchived && usedCardNames.has(card.name)
-      );
-    }
-    if (filter === 'registered') {
-      return cards.filter((card) => !card.isArchived);
-    }
-    if (filter === 'archived') {
-      return cards.filter((card) => card.isArchived);
-    }
-    return [];
-  }, [cards, filter, usedCardNames]);
+    return cards.filter((card) => !card.isArchived);
+  }, [cards]);
 
   useEffect(() => {
     if (!loading) {
@@ -154,11 +140,6 @@ export default function CardsList({
     }
   };
   
-  const filterOptions: { label: string; value: FilterType }[] = [
-    { label: text.tags.filters.inUse, value: 'inUse' },
-    { label: text.tags.filters.registered, value: 'registered' },
-    { label: text.tags.filters.archived, value: 'archived' },
-  ];
 
   return (
     <div className="flex flex-col h-full">
@@ -169,20 +150,6 @@ export default function CardsList({
           Novo Cartão
         </Button>
       </div>
-
-
-       <div className="flex items-center gap-2 mb-4">
-          {filterOptions.map((option) => (
-            <Button
-              key={option.value}
-              variant={filter === option.value ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilter(option.value)}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
 
       <ScrollArea className="flex-grow pr-4">
         <div className="space-y-4 pr-2">
@@ -211,7 +178,7 @@ export default function CardsList({
                        <DropdownMenuItem onSelect={() => handleEditClick(card)}>
                         <Pencil className="mr-2 h-4 w-4" /> Renomear
                       </DropdownMenuItem>
-                       {filter === 'archived' ? (
+                       {card.isArchived ? (
                         <DropdownMenuItem onSelect={() => handleAction(card, 'unarchive')}>
                            <ArchiveX className="mr-2 h-4 w-4" /> Desarquivar
                         </DropdownMenuItem>
@@ -234,7 +201,7 @@ export default function CardsList({
             ))
           ) : (
             <div className="text-center py-10 border-2 border-dashed rounded-lg">
-              <p>Nenhum cartão encontrado para este filtro.</p>
+              <p>Nenhum cartão encontrado.</p>
             </div>
           )}
         </div>
