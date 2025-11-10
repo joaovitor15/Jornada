@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -199,7 +199,7 @@ function PlanCard({
         </p>
         <div className="flex flex-wrap gap-1 mt-2">
           {plan.tags
-            ?.filter((tag) => tag !== 'Mensal' && tag !== 'Anual')
+            ?.filter((tag) => tag !== 'Mensal' && tag !== 'Anual' && tag !== 'Vitalício')
             .map((tag) => (
               <Badge key={tag} variant="secondary">
                 {tag}
@@ -232,7 +232,14 @@ function PlanCard({
   );
 }
 
-export default function PlansList() {
+type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
+
+interface PlansListProps {
+  filter: FilterType;
+  searchTerm: string;
+}
+
+export default function PlansList({ filter, searchTerm }: PlansListProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -278,6 +285,22 @@ export default function PlansList() {
 
     return () => unsubscribe();
   }, [user, activeProfile]);
+  
+  const filteredPlans = useMemo(() => {
+    let tempPlans = plans;
+
+    if (filter !== 'Todos') {
+      tempPlans = tempPlans.filter(plan => plan.type === filter);
+    }
+
+    if (searchTerm) {
+      tempPlans = tempPlans.filter(plan =>
+        plan.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return tempPlans;
+  }, [plans, filter, searchTerm]);
 
   const handleAddClick = () => {
     setPlanToEdit(null);
@@ -358,9 +381,9 @@ export default function PlansList() {
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : plans.length > 0 ? (
+      ) : filteredPlans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {plans.map((plan, index) => (
+          {filteredPlans.map((plan, index) => (
             <PlanCard
               key={plan.id}
               plan={plan}
@@ -369,7 +392,7 @@ export default function PlansList() {
               onPay={handlePayClick}
               onReorder={handleReorder}
               isFirst={index === 0}
-              isLast={index === plans.length - 1}
+              isLast={index === filteredPlans.length - 1}
             />
           ))}
         </div>

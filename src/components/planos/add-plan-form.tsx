@@ -132,6 +132,10 @@ const ensurePeriodTags = async (userId: string, profile: string, allTags: RawTag
             const yearlyTagData: RawTag = { id: yearlyTagRef.id, userId, profile, name: 'Anual', isPrincipal: false, parent: periodTagRef.id, order: 1 };
             batch.set(yearlyTagRef, yearlyTagData);
             
+            const lifetimeTagRef = doc(tagsRef);
+            const lifetimeTagData: RawTag = { id: lifetimeTagRef.id, userId, profile, name: 'Vitalício', isPrincipal: false, parent: periodTagRef.id, order: 2 };
+            batch.set(lifetimeTagRef, lifetimeTagData);
+            
             await batch.commit();
             refreshTags();
         } catch (error) {
@@ -196,7 +200,7 @@ export default function PlanForm({
     const freqOptions =
       periodPrincipal?.children
         .filter((c) => !c.isArchived)
-        .map((c) => c.name) || ['Mensal', 'Anual']; // Fallback
+        .map((c) => c.name) || ['Mensal', 'Anual', 'Vitalício']; // Fallback
     
     const generalTags = allTags
       .filter(pt => pt.name !== 'Cartões' && pt.name !== 'Meio de Pagamento' && pt.name !== 'Período')
