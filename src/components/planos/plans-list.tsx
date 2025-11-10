@@ -179,15 +179,10 @@ function PlanCard({
 
       </div>
 
-      <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-1">
+      <div className="flex flex-col justify-between items-start mt-4 pt-2 border-t space-y-2">
          <Badge variant="outline">{plan.type}</Badge>
-         <div className="flex items-center justify-between w-full">
-            {isCard ? (
-                <span className="text-sm text-muted-foreground">{plan.paymentMethod.replace('Cartão: ', '')}</span>
-            ) : (
-                <Badge variant="secondary">{plan.paymentMethod}</Badge>
-            )}
-             
+         <div className="flex items-center gap-2">
+            <Badge variant="secondary">{isCard ? plan.paymentMethod.replace('Cartão: ', '') : plan.paymentMethod}</Badge>
             {isCard && (
               <span className="text-xs font-semibold text-muted-foreground">
                 {plan.installments && plan.installments > 1 ? `${plan.installments}x` : 'À Vista'}
