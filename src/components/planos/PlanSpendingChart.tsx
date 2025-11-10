@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plan } from '@/lib/types';
 import {
   ResponsiveContainer,
@@ -11,6 +11,8 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { Badge } from '../ui/badge';
+import { Separator } from '../ui/separator';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -45,23 +47,20 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function PlanSpendingChart({ plans, isAnnualized = false }: { plans: Plan[], isAnnualized?: boolean }) {
-  const [chartData, setChartData] = useState<SpendingData[]>([]);
+  const [fixedPlansData, setFixedPlansData] = useState<SpendingData[]>([]);
+  const [variablePlans, setVariablePlans] = useState<Plan[]>([]);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    const data = plans
+    const fixedValuePlans = plans.filter(p => p.valueType === 'Fixo');
+    const variableValuePlans = plans.filter(p => p.valueType === 'Variável');
+
+    const data = fixedValuePlans
       .map(plan => {
-        let value = plan.valueType === 'Fixo'
-          ? (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0)
-          : 0; // Planos variáveis não entram no gráfico de custo fixo
-          
-        if (isAnnualized && plan.type === 'Mensal') {
-            value = value * 12;
-        }
-        
+        const value = (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0);
         return {
           name: plan.name,
-          value,
+          value: isAnnualized && plan.type === 'Mensal' ? value * 12 : value,
         };
       })
       .filter(item => item.value > 0);
@@ -76,54 +75,75 @@ export default function PlanSpendingChart({ plans, isAnnualized = false }: { pla
         }))
         .sort((a,b) => b.value - a.value);
 
-    setChartData(chartItems);
+    setFixedPlansData(chartItems);
+    setVariablePlans(variableValuePlans);
   }, [plans, isAnnualized]);
 
-  if (plans.length === 0 || chartData.length === 0) {
+  if (plans.length === 0) {
     return <div className="flex justify-center items-center h-64 text-muted-foreground">Nenhum plano para exibir.</div>;
   }
 
   return (
     <div className="flex flex-col items-center">
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={110}
-            innerRadius={80}
-            paddingAngle={2}
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+      {fixedPlansData.length > 0 && (
+        <>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={fixedPlansData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={110}
+                innerRadius={80}
+                paddingAngle={2}
+              >
+                {fixedPlansData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                iconSize={10}
+                layout="vertical"
+                verticalAlign="middle"
+                align="right"
+                wrapperStyle={{ overflowY: 'auto', maxHeight: 280 }}
+                formatter={(value, entry) => {
+                  const { payload } = entry;
+                  const percent = (payload as any)?.percent || 0;
+                  return (
+                    <span className="text-muted-foreground text-xs">
+                      {value} ({formatCurrency(entry.payload?.value || 0)}) <span className="font-bold">{percent.toFixed(2)}%</span>
+                    </span>
+                  );
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="text-center mt-4">
+            <span className="text-sm text-muted-foreground">Total (Custo Fixo)</span>
+            <p className="text-2xl font-bold">{formatCurrency(total)}</p>
+          </div>
+        </>
+      )}
+
+      {variablePlans.length > 0 && (
+        <div className="w-full mt-6">
+          {fixedPlansData.length > 0 && <Separator className="my-4" />}
+          <h4 className="text-sm font-semibold text-center text-muted-foreground mb-3">Planos de Valor Variável</h4>
+          <div className="flex flex-wrap justify-center gap-2">
+            {variablePlans.map(plan => (
+              <Badge key={plan.id} variant="outline">{plan.name}</Badge>
             ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            iconSize={10}
-            layout="vertical"
-            verticalAlign="middle"
-            align="right"
-            wrapperStyle={{ overflowY: 'auto', maxHeight: 280 }}
-            formatter={(value, entry) => {
-              const { payload } = entry;
-              const percent = (payload as any)?.percent || 0;
-              return (
-                <span className="text-muted-foreground text-xs">
-                  {value} ({formatCurrency(entry.payload?.value || 0)}) <span className="font-bold">{percent.toFixed(2)}%</span>
-                </span>
-              );
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-       <div className="text-center mt-4">
-        <span className="text-sm text-muted-foreground">Total</span>
-        <p className="text-2xl font-bold">{formatCurrency(total)}</p>
-      </div>
+          </div>
+        </div>
+      )}
+
+      {fixedPlansData.length === 0 && variablePlans.length === 0 && (
+         <div className="flex justify-center items-center h-64 text-muted-foreground">Nenhum plano para exibir.</div>
+      )}
     </div>
   );
 }
