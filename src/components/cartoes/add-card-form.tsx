@@ -252,6 +252,8 @@ export default function CardForm({
                   <FormLabel>{text.addCardForm.cardName}</FormLabel>
                   <FormControl>
                     <Input
+                      id="cardNameInput"
+                      name="cardNameInput"
                       placeholder={text.addCardForm.cardNamePlaceholder}
                       {...field}
                       autoComplete="off"
