@@ -235,56 +235,20 @@ function PlanCard({
 type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
 
 interface PlansListProps {
+  plans: Plan[];
   filter: FilterType;
   searchTerm: string;
   onEdit: (plan: Plan) => void;
 }
 
-export default function PlansList({ filter, searchTerm, onEdit }: PlansListProps) {
+export default function PlansList({ plans, filter, searchTerm, onEdit }: PlansListProps) {
   const { user } = useAuth();
-  const { activeProfile } = useProfile();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   const [isPayFormOpen, setIsPayFormOpen] = useState(false);
   const [planToPay, setPlanToPay] = useState<Plan | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      setPlans([]);
-      return;
-    }
-
-    setLoading(true);
-    const q = query(
-      collection(db, 'plans'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      orderBy('order', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const userPlans = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Plan[];
-        setPlans(userPlans);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching plans: ', error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, activeProfile]);
-  
   const filteredPlans = useMemo(() => {
     let tempPlans = plans;
 
@@ -359,11 +323,7 @@ export default function PlansList({ filter, searchTerm, onEdit }: PlansListProps
 
   return (
     <>
-      {loading ? (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredPlans.length > 0 ? (
+      {filteredPlans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPlans.map((plan, index) => (
             <PlanCard

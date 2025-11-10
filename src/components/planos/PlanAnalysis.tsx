@@ -1,11 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/use-profile';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useState, useMemo } from 'react';
 import { type Plan } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -13,45 +9,13 @@ import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PlanSpendingChart from './PlanSpendingChart';
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
+interface PlanAnalysisProps {
+  plans: Plan[];
+  loading: boolean;
+}
 
-export default function PlanAnalysis() {
-  const { user } = useAuth();
-  const { activeProfile } = useProfile();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function PlanAnalysis({ plans, loading }: PlanAnalysisProps) {
   const [selectedYear, setSelectedYear] = useState('Todos');
-
-  useEffect(() => {
-    if (!user || !activeProfile) {
-      setLoading(false);
-      setPlans([]);
-      return;
-    }
-
-    setLoading(true);
-    const q = query(
-      collection(db, 'plans'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allPlans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Plan[];
-      setPlans(allPlans);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching plans for analysis: ", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user, activeProfile]);
 
   const { monthlyPlans, annualPlans, lifetimePlans, availableYears } = useMemo(() => {
     const monthly = plans.filter(p => p.type === 'Mensal');

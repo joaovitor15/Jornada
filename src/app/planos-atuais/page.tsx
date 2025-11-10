@@ -1,23 +1,67 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { text } from '@/lib/strings';
 import PlansList from '@/components/planos/plans-list';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, PlusCircle } from 'lucide-react';
+import { Search, PlusCircle, Loader2 } from 'lucide-react';
 import PlanForm from '@/components/planos/add-plan-form';
 import PlanAnalysis from '@/components/planos/PlanAnalysis';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import { useProfile } from '@/hooks/use-profile';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Plan } from '@/lib/types';
 
 type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
 
 export default function PlanosAtuaisPage() {
+  const { user } = useAuth();
+  const { activeProfile } = useProfile();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [filter, setFilter] = useState<FilterType>('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [planToEdit, setPlanToEdit] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!user || !activeProfile) {
+      setLoading(false);
+      setPlans([]);
+      return;
+    }
+
+    setLoading(true);
+    const q = query(
+      collection(db, 'plans'),
+      where('userId', '==', user.uid),
+      where('profile', '==', activeProfile),
+      orderBy('order', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const userPlans = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Plan[];
+        setPlans(userPlans);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching plans: ', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, activeProfile]);
 
   const filterOptions: { label: string; value: FilterType }[] = [
     { label: 'Todos', value: 'Todos' },
@@ -31,7 +75,6 @@ export default function PlanosAtuaisPage() {
     setIsFormOpen(true);
   };
 
-
   return (
     <>
       <div className="p-4 md:p-6 lg:p-8 lg:pt-4">
@@ -40,7 +83,7 @@ export default function PlanosAtuaisPage() {
             <h1 className="text-2xl font-bold">{text.sidebar.currentPlans}</h1>
             <p className="text-muted-foreground">{text.plans.description}</p>
           </div>
-           <Button onClick={handleAddClick}>
+          <Button onClick={handleAddClick}>
             <PlusCircle className="mr-2 h-4 w-4" />
             {text.plans.newPlan}
           </Button>
@@ -68,24 +111,30 @@ export default function PlanosAtuaisPage() {
             />
           </div>
         </div>
-        
+
         <div className="pb-4">
-          <PlansList 
-            filter={filter} 
-            searchTerm={searchTerm} 
-            onEdit={(plan) => {
-              setPlanToEdit(plan);
-              setIsFormOpen(true);
-            }} 
-          />
+          {loading ? (
+             <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <PlansList
+              plans={plans}
+              filter={filter}
+              searchTerm={searchTerm}
+              onEdit={(plan) => {
+                setPlanToEdit(plan);
+                setIsFormOpen(true);
+              }}
+            />
+          )}
         </div>
 
         <Separator className="my-6" />
 
         <div>
-          <PlanAnalysis />
+          <PlanAnalysis plans={plans} loading={loading} />
         </div>
-        
       </div>
       <PlanForm
         isOpen={isFormOpen}
