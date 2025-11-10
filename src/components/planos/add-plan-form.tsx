@@ -73,28 +73,6 @@ const planSchema = z
       message: 'O custo base deve ser um número positivo para planos de valor fixo.',
       path: ['amount'],
     }
-  )
-  .refine(
-    (data) => {
-      if (data.type === 'Anual') {
-        return data.dueDay !== undefined && data.dueMonth !== undefined && data.dueYear !== undefined;
-      }
-      return true;
-    },
-    {
-      message: 'Para planos anuais, dia, mês e ano são obrigatórios.',
-      path: ['dueDay'], 
-    }
-  )
-   .refine(
-    (data) => {
-      if (data.type === 'Mensal') return !!data.paymentDay;
-      return true;
-    },
-    {
-      message: 'O dia do vencimento é obrigatório para planos mensais.',
-      path: ['paymentDay'],
-    }
   );
 
 
@@ -343,8 +321,14 @@ export default function PlanForm({
     
     if (rest.type === 'Anual' && dueDay !== undefined && dueMonth !== undefined && dueYear !== undefined) {
         dataToSend.dueDate = Timestamp.fromDate(new Date(dueYear, dueMonth, dueDay));
-    } else if (rest.type === 'Mensal') {
+    } else {
+        dataToSend.dueDate = null;
+    }
+    
+    if (rest.type === 'Mensal') {
         dataToSend.paymentDay = paymentDay;
+    } else {
+        dataToSend.paymentDay = null;
     }
 
     try {
@@ -583,7 +567,7 @@ export default function PlanForm({
                       name="paymentDay"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Dia do Vencimento</FormLabel>
+                          <FormLabel>Dia do Vencimento (Opcional)</FormLabel>
                           <FormControl>
                             <Input
                               type="number"

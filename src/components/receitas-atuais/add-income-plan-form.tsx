@@ -61,16 +61,6 @@ const incomePlanSchema = z
       message: 'O valor deve ser um número positivo para receitas de valor fixo.',
       path: ['amount'],
     }
-  )
-   .refine(
-    (data) => {
-      if (data.type === 'Mensal') return !!data.receiptDay;
-      return true;
-    },
-    {
-      message: 'O dia de recebimento é obrigatório para receitas mensais.',
-      path: ['receiptDay'],
-    }
   );
 
 
@@ -226,6 +216,8 @@ export default function AddIncomePlanForm({
     
     if (rest.type === 'Mensal') {
         dataToSend.receiptDay = rest.receiptDay;
+    } else {
+        dataToSend.receiptDay = null;
     }
 
     try {
@@ -398,7 +390,7 @@ export default function AddIncomePlanForm({
                       name="receiptDay"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Dia do Recebimento</FormLabel>
+                          <FormLabel>Dia do Recebimento (Opcional)</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
