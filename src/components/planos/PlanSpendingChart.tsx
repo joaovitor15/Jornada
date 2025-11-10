@@ -84,13 +84,7 @@ export default function PlanSpendingChart({ plans, isAnnualized = false }: { pla
   }
 
   return (
-    <div className="relative">
-      <div 
-        className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none"
-      >
-        <span className="text-sm text-muted-foreground">Total</span>
-        <span className="text-2xl font-bold">{formatCurrency(total)}</span>
-      </div>
+    <div className="flex flex-col items-center">
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -126,6 +120,10 @@ export default function PlanSpendingChart({ plans, isAnnualized = false }: { pla
           />
         </PieChart>
       </ResponsiveContainer>
+       <div className="text-center mt-4">
+        <span className="text-sm text-muted-foreground">Total</span>
+        <p className="text-2xl font-bold">{formatCurrency(total)}</p>
+      </div>
     </div>
   );
 }
