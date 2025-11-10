@@ -15,22 +15,19 @@ interface IncomePlanAnalysisProps {
 
 export default function IncomePlanAnalysis({ plans, loading }: IncomePlanAnalysisProps) {
 
-  const { monthlyPlans, annualPlans, lifetimePlans } = useMemo(() => {
+  const { monthlyPlans, annualPlans } = useMemo(() => {
     const monthly = plans.filter(p => p.type === 'Mensal');
     const annual = plans.filter(p => p.type === 'Anual');
-    const lifetime = plans.filter(p => p.type === 'Vitalício');
 
     return {
       monthlyPlans: monthly,
       annualPlans: annual,
-      lifetimePlans: lifetime,
     };
   }, [plans]);
 
   const tabs = [
     { value: "mensal", label: "Mensal", plans: monthlyPlans, description: "Previsão anualizada das receitas mensais." },
     { value: "anual", label: "Anual", plans: annualPlans, description: "Soma das receitas com ciclo anual." },
-    { value: "vitalicio", label: "Vitalício", plans: lifetimePlans, description: "Soma de receitas com pagamento único." },
   ];
 
   if (loading) {
@@ -45,7 +42,7 @@ export default function IncomePlanAnalysis({ plans, loading }: IncomePlanAnalysi
         </CardHeader>
         <CardContent>
             <Tabs defaultValue="mensal" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                     {tabs.map(tab => (
                         <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                     ))}

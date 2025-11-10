@@ -140,8 +140,8 @@ export default function AddIncomePlanForm({
 
     const freqOptions =
       periodPrincipal?.children
-        .filter((c) => !c.isArchived)
-        .map((c) => c.name) || ['Mensal', 'Anual', 'Vitalício'];
+        .filter((c) => !c.isArchived && c.name !== 'Vitalício')
+        .map((c) => c.name) || ['Mensal', 'Anual'];
     
     const generalTags = allTags
       .filter(pt => pt.name !== 'Período')

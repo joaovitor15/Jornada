@@ -17,7 +17,7 @@ import AddIncomePlanForm from '@/components/receitas-atuais/add-income-plan-form
 import IncomePlanAnalysis from '@/components/receitas-atuais/income-plan-analysis';
 
 
-type FilterType = 'Todos' | 'Mensal' | 'Anual' | 'Vitalício';
+type FilterType = 'Todos' | 'Mensal' | 'Anual';
 
 export default function ReceitasAtuaisPage() {
   const { user } = useAuth();
@@ -68,7 +68,6 @@ export default function ReceitasAtuaisPage() {
     { label: 'Todos', value: 'Todos' },
     { label: 'Mensal', value: 'Mensal' },
     { label: 'Anual', value: 'Anual' },
-    { label: 'Vitalício', value: 'Vitalício' },
   ];
 
   const handleAddClick = () => {

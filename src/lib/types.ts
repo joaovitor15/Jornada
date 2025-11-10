@@ -70,7 +70,7 @@ export type IncomePlan = {
   name: string;
   amount: number;
   valueType: 'Fixo' | 'Variável';
-  type: 'Mensal' | 'Anual' | 'Vitalício';
+  type: 'Mensal' | 'Anual';
   receiptDay?: number;
   tags?: string[];
   order?: number;
