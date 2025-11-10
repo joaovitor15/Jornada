@@ -66,12 +66,12 @@ export default function PlanAnalysis() {
         return acc;
     }, 0);
 
-    const years = [...new Set(annual.map(p => p.dueDate?.toDate().getFullYear()).filter(y => y !== undefined))].sort((a,b) => b! - a!);
-    const availableYears = years.map(String);
+    const years = [...new Set(annual.map(p => p.dueDate?.toDate().getFullYear()).filter((y): y is number => y !== undefined))].sort((a,b) => b! - a!);
+    const availableYearsOptions = years.map(String);
 
     const filteredAnnual = selectedYear === 'Todos'
         ? annual
-        : annual.filter(p => p.dueDate?.toDate().getFullYear().toString() === selectedYear);
+        : annual.filter(p => p.dueDate && p.dueDate.toDate().getFullYear().toString() === selectedYear);
 
     const annualCost = filteredAnnual.reduce((acc, plan) => {
         const baseAmount = plan.amount || 0;
@@ -89,7 +89,7 @@ export default function PlanAnalysis() {
       monthlyTotal: monthlyCost * 12,
       annualTotal: annualCost,
       lifetimeTotal: lifetimeCost,
-      availableYears: availableYears as string[],
+      availableYears: availableYearsOptions,
     };
   }, [plans, selectedYear]);
 
