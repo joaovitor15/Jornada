@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +11,7 @@ import {
   Timestamp,
   writeBatch,
   doc,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -48,10 +49,19 @@ import { text } from '@/lib/strings';
 import { type Plan } from '@/lib/types';
 import { CurrencyInput } from '../ui/currency-input';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Separator } from '../ui/separator';
 
 const payPlanSchema = z.object({
   date: z.date({ required_error: 'A data do pagamento é obrigatória.' }),
+  dueDay: z.coerce.number().int().min(1).max(31).optional(),
+  dueMonth: z.coerce.number().int().min(0).max(11).optional(),
+  dueYear: z.coerce.number().int().min(new Date().getFullYear()).optional(),
+}).refine(data => {
+    // This validation logic will be conditional in the component
+    return true;
 });
+
 
 type PayPlanFormProps = {
   isOpen: boolean;
@@ -69,6 +79,8 @@ export default function PayPlanForm({
   const { toast } = useToast();
   const [dateInput, setDateInput] = useState('');
 
+  const isAnnual = plan.type !== 'Mensal';
+
   const form = useForm<z.infer<typeof payPlanSchema>>({
     resolver: zodResolver(payPlanSchema),
   });
@@ -78,15 +90,38 @@ export default function PayPlanForm({
   
   const totalAmount = (plan.amount || 0) + (plan.subItems?.reduce((acc, item) => acc + item.price, 0) || 0);
 
+  const monthOptions = Object.entries(text.dashboard.months).map(([key, label], index) => ({
+    value: index,
+    label: label,
+  }));
+
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 10 }, (_, i) => currentYear + i);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       const initialDate = new Date();
+      let nextDueDateFields: Partial<z.infer<typeof payPlanSchema>> = {};
+
+      if (isAnnual && plan.dueDate) {
+        const currentDueDate = plan.dueDate.toDate();
+        const nextDueDate = new Date(currentDueDate.getFullYear() + 1, currentDueDate.getMonth(), currentDueDate.getDate());
+        nextDueDateFields = {
+            dueDay: nextDueDate.getDate(),
+            dueMonth: nextDueDate.getMonth(),
+            dueYear: nextDueDate.getFullYear(),
+        }
+      }
+
       reset({
         date: initialDate,
+        ...nextDueDateFields,
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, isAnnual, plan]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -120,6 +155,16 @@ export default function PayPlanForm({
       return;
     }
     
+    if (isAnnual && (values.dueDay === undefined || values.dueMonth === undefined || values.dueYear === undefined)) {
+        toast({
+            variant: 'destructive',
+            title: "Data de Vencimento Inválida",
+            description: "Para planos anuais, por favor, defina o próximo vencimento.",
+        });
+        return;
+    }
+
+
     const isCreditCard = plan.paymentMethod.startsWith('Cartão:');
     const installments = isCreditCard ? (plan.installments || 1) : 1;
 
@@ -128,6 +173,7 @@ export default function PayPlanForm({
         const installmentAmount = totalAmount / installments;
         const originalExpenseId = installments > 1 ? doc(collection(db, 'id')).id : null; 
         
+        // 1. Create expense(s)
         for (let i = 0; i < installments; i++) {
           const installmentDate = addMonths(values.date, i);
           const expenseData: any = {
@@ -146,20 +192,28 @@ export default function PayPlanForm({
           const docRef = doc(collection(db, 'expenses'));
           batch.set(docRef, expenseData);
         }
+        
+        // 2. Update plan's next due date if it's an annual plan
+        if (isAnnual && values.dueDay !== undefined && values.dueMonth !== undefined && values.dueYear !== undefined) {
+            const planRef = doc(db, 'plans', plan.id);
+            const newDueDate = Timestamp.fromDate(new Date(values.dueYear, values.dueMonth, values.dueDay));
+            batch.update(planRef, { dueDate: newDueDate });
+        }
+
 
         await batch.commit();
 
         toast({
             title: 'Sucesso!',
-            description: `Pagamento do plano "${plan.name}" lançado como despesa.`,
+            description: `Pagamento do plano "${plan.name}" lançado e plano atualizado.`,
         });
         onOpenChange(false);
     } catch (error) {
-        console.error('Erro ao lançar despesa do plano:', error);
+        console.error('Erro ao lançar despesa e atualizar plano:', error);
         toast({
             variant: 'destructive',
             title: text.common.error,
-            description: 'Falha ao lançar a despesa do plano.',
+            description: 'Falha ao processar o pagamento e atualizar o plano.',
         });
     }
   };
@@ -241,6 +295,86 @@ export default function PayPlanForm({
                   </FormItem>
                 )}
               />
+
+            {isAnnual && (
+                <>
+                <Separator />
+                <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Próximo Vencimento</h4>
+                     <div className="grid grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="dueDay"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia</FormLabel>
+                          <FormControl>
+                             <Input
+                              type="number"
+                              min={1}
+                              max={31}
+                              placeholder='Dia'
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.valueAsNumber || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="dueMonth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mês</FormLabel>
+                           <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Mês" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {monthOptions.map((month) => (
+                                  <SelectItem key={month.value} value={String(month.value)}>
+                                    {month.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="dueYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ano</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Ano" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {yearOptions.map((year) => (
+                                  <SelectItem key={year} value={String(year)}>
+                                    {year}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                </>
+            )}
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 {text.common.cancel}
