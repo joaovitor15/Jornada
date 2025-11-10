@@ -51,7 +51,6 @@ import { cn } from '@/lib/utils';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { useTransactions } from '@/hooks/use-transactions';
 import { Badge } from '../ui/badge';
-import { deleteExpense } from '@/lib/actions/transactions.actions';
 
 export default function ExpensesList() {
   const { user } = useAuth();
@@ -72,12 +71,11 @@ export default function ExpensesList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteExpense(id);
+      await deleteDoc(doc(db, 'expenses', id));
       toast({
         title: text.common.success,
         description: text.expensesList.deleteSuccess,
       });
-      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -86,6 +84,7 @@ export default function ExpensesList() {
         description: text.expensesList.deleteError,
       });
     }
+    setIsDeleteDialogOpen(false);
     setExpenseToDelete(null);
   };
 
@@ -142,13 +141,13 @@ export default function ExpensesList() {
                   <Table>
                     <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           Tags
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.description}
                         </TableHead>
-                        <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
+                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">
                           {text.common.paymentMethod}
                         </TableHead>
                         <TableHead className="h-10 px-2 text-left align-middle font-medium text-muted-foreground text-xs uppercase">

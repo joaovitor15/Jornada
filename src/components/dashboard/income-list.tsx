@@ -51,7 +51,6 @@ import { cn } from '@/lib/utils';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { useTransactions } from '@/hooks/use-transactions';
 import { Badge } from '../ui/badge';
-import { deleteIncome } from '@/lib/actions/transactions.actions';
 
 export default function IncomeList() {
   const { user } = useAuth();
@@ -72,12 +71,11 @@ export default function IncomeList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteIncome(id);
+      await deleteDoc(doc(db, 'incomes', id));
       toast({
         title: text.common.success,
         description: text.incomesList.deleteSuccess,
       });
-      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting document: ', error);
       toast({
@@ -86,6 +84,7 @@ export default function IncomeList() {
         description: text.incomesList.deleteError,
       });
     }
+    setIsDeleteDialogOpen(false);
     setIncomeToDelete(null);
   };
   
