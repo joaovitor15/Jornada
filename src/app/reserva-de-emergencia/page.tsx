@@ -34,7 +34,6 @@ export default function ReservaDeEmergenciaPage() {
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { hierarchicalTags } = useTags();
-  const [preselectedTag, setPreselectedTag] = useState<string | null>(null);
 
   const {
     loading,
@@ -70,12 +69,13 @@ export default function ReservaDeEmergenciaPage() {
     const randomIndex = Math.floor(Math.random() * allSubTags.length);
     const sorteada = allSubTags[randomIndex];
 
-    setPreselectedTag(sorteada);
-    setIsReserveFormOpen(true);
+    toast({
+        title: "Meta Sorteada!",
+        description: `Sua meta sorteada para o aporte foi: "${sorteada}".`,
+    });
   };
   
   const handleOpenForm = () => {
-    setPreselectedTag(null);
     setIsReserveFormOpen(true);
   };
 
@@ -228,7 +228,6 @@ export default function ReservaDeEmergenciaPage() {
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
-        preselectedTag={preselectedTag}
       />
     </>
   );
