@@ -26,7 +26,7 @@ export default function PlanosAtuaisPage() {
   const [paidPlanIds, setPaidPlanIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  const [filter, setFilter] = useState<FilterType>('Todos');
+  const [filter, setFilter] = useState<FilterType>('Mensal');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [planToEdit, setPlanToEdit] = useState<any | null>(null);
@@ -99,13 +99,13 @@ export default function PlanosAtuaisPage() {
 
   const filterOptions = useMemo(() => {
     const baseOptions: { label: string; value: FilterType }[] = [
-      { label: 'Todos', value: 'Todos' },
       { label: 'Mensal', value: 'Mensal' },
       { label: 'Anual', value: 'Anual' },
     ];
     if (activeProfile === 'Personal') {
       baseOptions.push({ label: 'Vitalício', value: 'Vitalício' });
     }
+    baseOptions.push({ label: 'Todos', value: 'Todos' });
     return baseOptions;
   }, [activeProfile]);
 
