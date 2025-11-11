@@ -12,7 +12,6 @@ import {
   Wallet,
   Receipt,
   Calculator,
-  Beef,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -33,6 +32,7 @@ import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
 import { useTransactions } from '@/hooks/use-transactions';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
+import { FarmaciaPopularIcon } from '@/components/icons/FarmaciaPopularIcon';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -295,8 +295,8 @@ export default function DashboardPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   ) : (
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
-                        <Beef className="h-6 w-6 text-blue-500" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50 overflow-hidden">
+                        <FarmaciaPopularIcon className="h-12 w-12" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">
