@@ -179,7 +179,6 @@ export default function AddIncomePlanForm({
 
   useEffect(() => {
     if (valueType === 'Variável') {
-      setValue('type', 'Mensal');
       setValue('amount', 0);
     }
   }, [valueType, setValue]);
@@ -362,7 +361,6 @@ export default function AddIncomePlanForm({
                         <Select
                             onValueChange={field.onChange}
                             value={field.value}
-                            disabled={valueType === 'Variável'}
                         >
                             <FormControl>
                             <SelectTrigger>
