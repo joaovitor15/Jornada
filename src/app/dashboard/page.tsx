@@ -109,6 +109,7 @@ export default function DashboardPage() {
 
     const monthlyIncomes = incomes
         .filter(filterByMonthAndYear)
+        .filter(income => !(activeProfile === 'Business' && income.tags?.includes('Vendas Farmácia Popular')))
         .reduce((acc, curr) => acc + curr.amount, 0);
         
     if (activeProfile === 'Business') {
@@ -294,7 +295,7 @@ export default function DashboardPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   ) : (
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50">
                         <Beef className="h-6 w-6 text-blue-500" />
                       </div>
                       <div>
@@ -325,5 +326,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-  
