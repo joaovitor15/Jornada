@@ -63,9 +63,6 @@ const formSchema = z.object({
   bank: z.string().min(1, { message: 'Selecione um banco.' }),
   tags: z.array(z.string()).min(1, { message: 'Selecione pelo menos uma tag.' }),
   type: z.enum(['add', 'withdraw']).default('add'),
-  reserveType: z.enum(['emergencia', 'programada'], {
-    required_error: 'Selecione um tipo de reserva.',
-  }),
 });
 
 const ensureBaseReserveTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
@@ -117,11 +114,13 @@ const ensureBaseReserveTags = async (userId: string, profile: string, allTags: R
 type AddReserveEntryFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  preselectedTag?: string | null;
 };
 
 export default function AddReserveEntryForm({
   isOpen,
   onOpenChange,
+  preselectedTag,
 }: AddReserveEntryFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -138,29 +137,21 @@ export default function AddReserveEntryForm({
 
   const { isSubmitting, watch, setValue, control, reset } = form;
   const transactionType = watch('type');
-  const reserveType = watch('reserveType');
   
-  const { emergencyTagOptions, programmedTagOptions, bankTagOptions } = useMemo(() => {
+  const { availableTags, bankTagOptions } = useMemo(() => {
     const emergenciaTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
     const programadaTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
     const bankTag = hierarchicalTags.find(t => t.name === 'Banco');
 
+    const emergencyChildren = emergenciaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+    const programmedChildren = programadaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
+
     return {
-      emergencyTagOptions: emergenciaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [],
-      programmedTagOptions: programadaTag?.children.filter(c => !c.isArchived).map(c => c.name) || [],
+      availableTags: [...emergencyChildren, ...programmedChildren],
       bankTagOptions: bankTag?.children.filter(c => !c.isArchived).map(c => c.name) || []
     };
   }, [hierarchicalTags]);
 
-  const availableTags = useMemo(() => {
-    if (reserveType === 'emergencia') {
-      return emergencyTagOptions;
-    }
-    if (reserveType === 'programada') {
-      return programmedTagOptions;
-    }
-    return [];
-  }, [reserveType, emergencyTagOptions, programmedTagOptions]);
 
   useEffect(() => {
     if (isOpen) {
@@ -173,25 +164,21 @@ export default function AddReserveEntryForm({
         amount: undefined,
         date: initialDate,
         bank: '',
-        tags: [],
+        tags: preselectedTag ? [preselectedTag] : [],
         type: 'add',
-        reserveType: undefined
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags]);
+  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags, preselectedTag]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name === 'date' && value.date) {
         setDateInput(format(value.date, 'dd/MM/yyyy'));
       }
-      if (name === 'reserveType') {
-        setValue('tags', []); // Reset tags when reserve type changes
-      }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setValue]);
+  }, [watch]);
 
   const handleOpenChange = (open: boolean) => {
     if (!isSubmitting) {
@@ -297,37 +284,6 @@ export default function AddReserveEntryForm({
             />
             
             <FormField
-              control={control}
-              name="reserveType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Tipo de Reserva</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="emergencia" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Emergência</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="programada" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Programada</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
@@ -356,10 +312,9 @@ export default function AddReserveEntryForm({
                           placeholder="Selecione as tags..."
                           value={field.value || []}
                           onChange={field.onChange}
-                          disabled={isSubmitting || !reserveType || availableTags.length === 0}
+                          disabled={isSubmitting || availableTags.length === 0}
                       />
                     </FormControl>
-                     {!reserveType && <p className="text-sm text-muted-foreground">Selecione um tipo de reserva para ver as tags.</p>}
                     <FormMessage />
                   </FormItem>
                 )}

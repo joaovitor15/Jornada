@@ -31,6 +31,7 @@ export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
+  const [preselectedTag, setPreselectedTag] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { hierarchicalTags } = useTags();
@@ -68,6 +69,9 @@ export default function ReservaDeEmergenciaPage() {
 
     const randomIndex = Math.floor(Math.random() * allSubTags.length);
     const sorteada = allSubTags[randomIndex];
+    
+    setPreselectedTag(sorteada);
+    setIsReserveFormOpen(true);
 
     toast({
         title: "Meta Sorteada!",
@@ -76,6 +80,7 @@ export default function ReservaDeEmergenciaPage() {
   };
   
   const handleOpenForm = () => {
+    setPreselectedTag(null);
     setIsReserveFormOpen(true);
   };
 
@@ -122,7 +127,7 @@ export default function ReservaDeEmergenciaPage() {
             {text.sidebar.emergencyReserve}
           </h1>
           <div className="flex items-center gap-2">
-            {isClient && (
+            {isClient && activeProfile === 'Personal' && (
               <Button
                 variant="outline"
                 size="icon"
@@ -228,6 +233,7 @@ export default function ReservaDeEmergenciaPage() {
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
+        preselectedTag={preselectedTag}
       />
     </>
   );
