@@ -53,6 +53,7 @@ export default function DashboardPage() {
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalFarmaciaPopular, setTotalFarmaciaPopular] = useState(0);
   
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -109,6 +110,16 @@ export default function DashboardPage() {
     const monthlyIncomes = incomes
         .filter(filterByMonthAndYear)
         .reduce((acc, curr) => acc + curr.amount, 0);
+        
+    if (activeProfile === 'Business') {
+      const farmaciaPopularIncomes = incomes
+        .filter(filterByMonthAndYear)
+        .filter(income => income.tags?.includes('Vendas Farmácia Popular'))
+        .reduce((acc, curr) => acc + curr.amount, 0);
+      setTotalFarmaciaPopular(farmaciaPopularIncomes);
+    } else {
+      setTotalFarmaciaPopular(0);
+    }
 
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(totalMonthlyExpenses);
@@ -207,7 +218,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -266,6 +277,39 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+
+            {activeProfile === 'Business' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Programa Farmácia Popular
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
+                      {selectedYear})
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center gap-4 py-10">
+                   {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                        <Beef className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Total Recebido
+                        </p>
+                        <p className="text-lg font-semibold">
+                          {formatCurrency(totalFarmaciaPopular)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
         
@@ -281,3 +325,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+  
