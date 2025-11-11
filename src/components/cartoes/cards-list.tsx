@@ -187,7 +187,7 @@ export default function CardsList({
                 className={cn(
                   'border p-4 rounded-lg shadow-sm relative cursor-pointer transition-all',
                   selectedCardId === card.id
-                    ? 'ring-2 ring-primary shadow-lg'
+                    ? 'border-primary shadow-lg'
                     : 'hover:shadow-md'
                 )}
               >
