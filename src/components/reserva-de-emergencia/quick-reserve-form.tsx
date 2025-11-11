@@ -34,6 +34,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
@@ -49,6 +56,7 @@ const formSchema = z.object({
     })
     .positive({ message: text.addExpenseForm.validation.amountPositive }),
   date: z.date({ required_error: 'A data é obrigatória.' }),
+  bank: z.string().min(1, { message: 'Selecione um banco.' }),
 });
 
 type QuickReserveFormProps = {
@@ -73,11 +81,12 @@ export default function QuickReserveForm({
   });
 
   const { isSubmitting, watch, setValue, control, reset } = form;
-
-  const defaultBank = useMemo(() => {
+  
+  const bankTagOptions = useMemo(() => {
     const bankTag = hierarchicalTags.find(t => t.name === 'Banco');
-    return bankTag?.children.filter(c => !c.isArchived)[0]?.name || null;
+    return bankTag?.children.filter(c => !c.isArchived).map(c => c.name) || [];
   }, [hierarchicalTags]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +94,7 @@ export default function QuickReserveForm({
       reset({
         amount: undefined,
         date: initialDate,
+        bank: '',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
@@ -106,11 +116,11 @@ export default function QuickReserveForm({
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || !activeProfile || !defaultBank) {
+    if (!user || !activeProfile) {
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: !user ? text.addExpenseForm.notLoggedIn : "Nenhum banco padrão encontrado. Por favor, cadastre um banco na área de tags.",
+        description: text.addExpenseForm.notLoggedIn,
       });
       return;
     }
@@ -122,7 +132,7 @@ export default function QuickReserveForm({
         description: `Foco na meta: ${sortedTag}`,
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
-        bank: defaultBank,
+        bank: values.bank,
         tags: [sortedTag],
       });
 
@@ -166,6 +176,34 @@ export default function QuickReserveForm({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-4"
           >
+            <FormField
+              control={form.control}
+              name="bank"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Banco</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting || bankTagOptions.length === 0}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o banco" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {bankTagOptions.map((bank) => (
+                        <SelectItem key={bank} value={bank}>
+                          {bank}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
