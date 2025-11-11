@@ -13,6 +13,7 @@ import {
   Receipt,
   Calculator,
   HeartPulse,
+  Salad,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import SplitAddButton from '@/components/dashboard/SplitAddButton';
 import { useTransactions } from '@/hooks/use-transactions';
 import FaturasAtuais from '@/components/dashboard/FaturasAtuais';
+import { useTags } from '@/hooks/use-tags';
 
 const months = Object.entries(text.dashboard.months).map(([key, label], index) => ({
   value: index,
@@ -47,6 +49,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { setIsFormOpen } = useAddTransactionModal();
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
+  const { hierarchicalTags } = useTags();
 
   const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
 
@@ -54,6 +57,7 @@ export default function DashboardPage() {
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalFarmaciaPopular, setTotalFarmaciaPopular] = useState(0);
+  const [totalAlimentacao, setTotalAlimentacao] = useState(0);
   
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -121,11 +125,26 @@ export default function DashboardPage() {
     } else {
       setTotalFarmaciaPopular(0);
     }
+    
+    if (activeProfile === 'Home') {
+        const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação');
+        const alimentacaoSubTagNames = alimentacaoTag?.children.map(child => child.name) || [];
+        const alimentacaoExpenses = expenses
+            .filter(filterByMonthAndYear)
+            .filter(expense => 
+                expense.tags?.some(tag => alimentacaoSubTagNames.includes(tag))
+            )
+            .reduce((acc, curr) => acc + curr.amount, 0);
+        setTotalAlimentacao(alimentacaoExpenses);
+    } else {
+        setTotalAlimentacao(0);
+    }
+
 
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(totalMonthlyExpenses);
     setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
-  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile]);
+  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile, hierarchicalTags]);
 
 
   if (authLoading || !user) {
@@ -278,6 +297,39 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+
+            {activeProfile === 'Home' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Alimentação
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({months.find((m) => m.value === selectedMonth)?.label} de{' '}
+                      {selectedYear})
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center gap-4 py-10">
+                   {loading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/50">
+                        <Salad className="h-6 w-6 text-yellow-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Total Gasto
+                        </p>
+                        <p className="text-lg font-semibold">
+                          {formatCurrency(totalAlimentacao)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {activeProfile === 'Business' && (
               <Card>
