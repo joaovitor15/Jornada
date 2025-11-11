@@ -432,9 +432,9 @@ export default function ManageTagsPageClient() {
           />
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-180px)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Coluna de Tags Principais */}
-        <div className="md:col-span-1 space-y-3 overflow-y-auto">
+        <div className="md:col-span-1 space-y-3">
           {filteredTags.length > 0 ? (
             filteredTags.map((tag, index) => (
               <div
@@ -495,7 +495,7 @@ export default function ManageTagsPageClient() {
         </div>
 
         {/* Coluna de Tags Vinculadas */}
-        <div className="md:col-span-2 overflow-y-auto pr-2">
+        <div className="md:col-span-2">
           {selectedTag ? (
             <div className="space-y-4">
               {selectedTag.children.length > 0 ? (
