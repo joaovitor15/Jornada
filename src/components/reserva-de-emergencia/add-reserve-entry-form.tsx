@@ -68,9 +68,12 @@ const formSchema = z.object({
 
 const ensureBaseReserveTags = async (userId: string, profile: string, allTags: RawTag[], refreshTags: () => void) => {
     const hasEmergencyTag = allTags.some(tag => tag.name === 'Reserva de Emergência' && tag.isPrincipal);
+    const hasProgrammedTag = allTags.some(tag => tag.name === 'Reserva Programada' && tag.isPrincipal);
     const hasBankTag = allTags.some(tag => tag.name === 'Banco' && tag.isPrincipal);
 
-    if (!hasBankTag || !hasEmergencyTag) {
+    const needsUpdate = !hasEmergencyTag || !hasProgrammedTag || !hasBankTag;
+
+    if (needsUpdate) {
         try {
             const batch = writeBatch(db);
             const tagsRef = collection(db, 'tags');
@@ -82,6 +85,14 @@ const ensureBaseReserveTags = async (userId: string, profile: string, allTags: R
                     isPrincipal: true, parent: null, order: 102,
                 };
                 batch.set(emergencyTagRef, emergencyTagData);
+            }
+             if (!hasProgrammedTag) {
+                const programmedTagRef = doc(tagsRef);
+                const programmedTagData: RawTag = {
+                    id: programmedTagRef.id, userId, profile, name: 'Reserva Programada',
+                    isPrincipal: true, parent: null, order: 103,
+                };
+                batch.set(programmedTagRef, programmedTagData);
             }
 
             if (!hasBankTag) {

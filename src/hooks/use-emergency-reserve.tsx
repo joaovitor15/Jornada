@@ -61,17 +61,15 @@ export function useEmergencyReserve() {
     totalReservaProgramada,
     tagTotals,
   } = useMemo(() => {
-    let totalGeral = 0;
     const tagSubTotals: { [key: string]: number } = {};
 
     const emergenciaTag = hierarchicalTags.find(t => t.name === 'Reserva de Emergência');
     const programadaTag = hierarchicalTags.find(t => t.name === 'Reserva Programada');
 
-    const emergenciaChildNames = emergenciaTag?.children.map(c => c.name) || [];
-    const programadaChildNames = programadaTag?.children.map(c => c.name) || [];
+    const emergenciaChildNames = new Set(emergenciaTag?.children.map(c => c.name) || []);
+    const programadaChildNames = new Set(programadaTag?.children.map(c => c.name) || []);
 
     entries.forEach((entry) => {
-      totalGeral += entry.amount;
       if (entry.tags && entry.tags.length > 0) {
         entry.tags.forEach(tag => {
             tagSubTotals[tag] = (tagSubTotals[tag] || 0) + entry.amount;
@@ -79,14 +77,17 @@ export function useEmergencyReserve() {
       }
     });
 
-    const totalEmergencia = Object.entries(tagSubTotals)
-        .filter(([tagName]) => emergenciaChildNames.includes(tagName))
-        .reduce((acc, [, total]) => acc + total, 0);
-
-    const totalProgramada = Object.entries(tagSubTotals)
-        .filter(([tagName]) => programadaChildNames.includes(tagName))
-        .reduce((acc, [, total]) => acc + total, 0);
-
+    let totalEmergencia = 0;
+    let totalProgramada = 0;
+    
+    Object.entries(tagSubTotals).forEach(([tagName, total]) => {
+      if (emergenciaChildNames.has(tagName)) {
+        totalEmergencia += total;
+      }
+      if (programadaChildNames.has(tagName)) {
+        totalProgramada += total;
+      }
+    });
 
     const populatedSubTotals: TagTotal[] = Object.entries(tagSubTotals)
       .map(([name, total]) => ({
@@ -95,6 +96,8 @@ export function useEmergencyReserve() {
       }))
       .filter((sub) => sub.total > 0)
       .sort((a, b) => b.total - a.total);
+
+    const totalGeral = totalEmergencia + totalProgramada;
 
     return {
       totalProtegido: totalGeral,
