@@ -115,11 +115,13 @@ const ensureBaseReserveTags = async (userId: string, profile: string, allTags: R
 type AddReserveEntryFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  preselectedTag?: string | null;
 };
 
 export default function AddReserveEntryForm({
   isOpen,
   onOpenChange,
+  preselectedTag,
 }: AddReserveEntryFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -162,12 +164,12 @@ export default function AddReserveEntryForm({
         amount: undefined,
         date: initialDate,
         bank: '',
-        tags: [],
+        tags: preselectedTag ? [preselectedTag] : [],
         type: 'add',
       });
       setDateInput(format(initialDate, 'dd/MM/yyyy'));
     }
-  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags]);
+  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags, preselectedTag]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
