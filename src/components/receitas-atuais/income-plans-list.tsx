@@ -66,6 +66,9 @@ function IncomePlanCard({
     if (plan.type === 'Mensal' && plan.receiptDay) {
       return `Recebimento dia ${plan.receiptDay} de cada mês`;
     }
+    if (plan.type === 'Diário') {
+      return 'Recebimento diário';
+    }
     return 'Recebimento não definido';
   };
 
