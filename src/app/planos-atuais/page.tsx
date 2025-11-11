@@ -97,12 +97,18 @@ export default function PlanosAtuaisPage() {
     }
   }, [user, activeProfile]);
 
-  const filterOptions: { label: string; value: FilterType }[] = [
-    { label: 'Todos', value: 'Todos' },
-    { label: 'Mensal', value: 'Mensal' },
-    { label: 'Anual', value: 'Anual' },
-    { label: 'Vitalício', value: 'Vitalício' },
-  ];
+  const filterOptions = useMemo(() => {
+    const baseOptions: { label: string; value: FilterType }[] = [
+      { label: 'Todos', value: 'Todos' },
+      { label: 'Mensal', value: 'Mensal' },
+      { label: 'Anual', value: 'Anual' },
+    ];
+    if (activeProfile === 'Personal') {
+      baseOptions.push({ label: 'Vitalício', value: 'Vitalício' });
+    }
+    return baseOptions;
+  }, [activeProfile]);
+
 
   const handleAddClick = () => {
     setPlanToEdit(null);
