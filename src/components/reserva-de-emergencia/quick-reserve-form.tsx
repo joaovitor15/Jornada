@@ -119,7 +119,7 @@ export default function QuickReserveForm({
       await addDoc(collection(db, 'emergencyReserveEntries'), {
         userId: user.uid,
         profile: activeProfile,
-        description: `Aporte para ${sortedTag}`,
+        description: `Foco na meta: ${sortedTag}`,
         amount: values.amount,
         date: Timestamp.fromDate(values.date),
         bank: defaultBank,
