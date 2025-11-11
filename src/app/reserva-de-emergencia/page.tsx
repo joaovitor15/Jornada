@@ -26,12 +26,15 @@ import { useToast } from '@/hooks/use-toast';
 import ReserveAnalysisTabs from '@/components/reserva-de-emergencia/reserve-analysis-tabs';
 import { useEmergencyReserve } from '@/hooks/use-emergency-reserve';
 import { useTags } from '@/hooks/use-tags';
+import QuickReserveForm from '@/components/reserva-de-emergencia/quick-reserve-form';
+
 
 export default function ReservaDeEmergenciaPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
-  const [preselectedTag, setPreselectedTag] = useState<string | null>(null);
+  const [isQuickFormOpen, setIsQuickFormOpen] = useState(false);
+  const [sortedTag, setSortedTag] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { hierarchicalTags } = useTags();
@@ -70,17 +73,11 @@ export default function ReservaDeEmergenciaPage() {
     const randomIndex = Math.floor(Math.random() * allSubTags.length);
     const sorteada = allSubTags[randomIndex];
     
-    setPreselectedTag(sorteada);
-    setIsReserveFormOpen(true);
-
-    toast({
-        title: "Meta Sorteada!",
-        description: `Sua meta sorteada para o aporte foi: "${sorteada}".`,
-    });
+    setSortedTag(sorteada);
+    setIsQuickFormOpen(true);
   };
   
   const handleOpenForm = () => {
-    setPreselectedTag(null);
     setIsReserveFormOpen(true);
   };
 
@@ -233,8 +230,15 @@ export default function ReservaDeEmergenciaPage() {
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
-        preselectedTag={preselectedTag}
       />
+
+      {sortedTag && (
+        <QuickReserveForm
+            isOpen={isQuickFormOpen}
+            onOpenChange={setIsQuickFormOpen}
+            sortedTag={sortedTag}
+        />
+      )}
     </>
   );
 }
