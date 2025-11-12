@@ -19,9 +19,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Wallet } from 'lucide-react';
 import { text } from '@/lib/strings';
-import { AgafarmaLogo } from '@/components/ui/AgafarmaLogo';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -102,11 +101,15 @@ export default function AuthPage() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-12">
-      <AgafarmaLogo />
+       <div className="flex items-center space-x-2">
+            <Wallet className="h-10 w-10 text-primary" />
+            <span className="text-4xl font-bold font-headline">
+              A Jornada
+            </span>
+        </div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle>Bem-vindo</CardTitle>
-          <CardDescription>Gestão de Orçamentos Judiciais</CardDescription>
         </CardHeader>
         <CardContent>
           <Button
