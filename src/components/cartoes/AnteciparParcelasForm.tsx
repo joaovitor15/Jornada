@@ -121,32 +121,36 @@ export default function AnteciparParcelasForm({
   }, [isOpen, user, activeProfile, expense, toast, form]);
 
   const originalTotal = useMemo(() => {
-     // Include the current expense in the total calculation
-    const selectedFutureTotal = futureInstallments
+    // Only sum the selected future installments
+    return futureInstallments
       .filter((p) => selectedParcelasIds?.includes(p.id))
       .reduce((acc, p) => acc + p.amount, 0);
-    return expense.amount + selectedFutureTotal;
-  }, [selectedParcelasIds, futureInstallments, expense]);
+  }, [selectedParcelasIds, futureInstallments]);
   
   const discount = useMemo(() => {
-      const newTotal = form.getValues('novoValor') || 0;
-      if (originalTotal > 0 && newTotal > 0) {
-        return originalTotal - newTotal;
+      // The total to consider is the sum of the current expense plus the selected future ones
+      const totalToPay = expense.amount + originalTotal;
+      const newTotalFromInput = form.getValues('novoValor') || 0;
+      if (totalToPay > 0 && newTotalFromInput > 0) {
+        return totalToPay - newTotalFromInput;
       }
       return 0;
-  }, [originalTotal, form.watch('novoValor')]);
+  }, [originalTotal, expense.amount, form.watch('novoValor')]);
 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user || !activeProfile) return;
-    if (discount <= 0) {
-      toast({
-        variant: 'destructive',
-        title: text.common.error,
-        description: 'O desconto deve ser maior que zero para criar um estorno.',
-      });
-      return;
+    
+    const totalOriginalConsidered = expense.amount + originalTotal;
+    if (totalOriginalConsidered <= values.novoValor) {
+        toast({
+            variant: "destructive",
+            title: "Valor Inválido",
+            description: "O novo valor com desconto deve ser menor que o valor original das parcelas somadas.",
+        });
+        return;
     }
+
 
     const batch = writeBatch(db);
 
@@ -207,9 +211,6 @@ export default function AnteciparParcelasForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
                 <h4 className="font-medium">{text.anticipateInstallments.futureInstallments}</h4>
-                <p className="text-sm text-muted-foreground">
-                  A parcela atual ({expense.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}) já está incluída no cálculo.
-                </p>
                 <ScrollArea className="h-40 rounded-md border p-4">
                     <FormField
                         control={control}
@@ -257,11 +258,12 @@ export default function AnteciparParcelasForm({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label>{text.anticipateInstallments.originalValue}</Label>
-                    <p className="font-bold text-lg">{originalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                    <p className="font-bold text-lg">{(expense.amount + originalTotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                    <p className="text-xs text-muted-foreground">(Parcela atual + selecionadas)</p>
                 </div>
                  <div className="space-y-1">
                     <Label>{text.anticipateInstallments.discount}</Label>
-                    <p className="font-bold text-lg text-green-600">{discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                    <p className="font-bold text-lg text-green-600">{discount > 0 ? discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'}) : 'R$ 0,00'}</p>
                 </div>
             </div>
 
