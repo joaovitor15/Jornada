@@ -1,21 +1,24 @@
 'use client';
 
-import ExpensesList from '@/components/dashboard/expenses-list';
-import IncomeList from '@/components/dashboard/income-list';
-import BillPaymentsList from '@/components/faturas/bill-payments-list';
+import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
-import { text } from '@/lib/strings';
 import { Shield, PlusCircle, CreditCard } from 'lucide-react';
 import EmergencyReserveList from '@/components/lancamentos/emergency-reserve-list';
 import { useState } from 'react';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
+import BillPaymentsList from '@/components/faturas/bill-payments-list';
+import TransactionList from '@/components/lancamentos/TransactionList';
+import { useTransactions } from '@/hooks/use-transactions';
+import { useProfile } from '@/hooks/use-profile';
 
 export default function LancamentosPage() {
-  const { setIsFormOpen: setIsTransactionFormOpen } = useAddTransactionModal();
+  const { openForm: openTransactionForm } = useAddTransactionModal();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
   const { openModal } = useAddBillTransactionModal();
+  const { activeProfile } = useProfile();
+  const { expenses, incomes, loading } = useTransactions(activeProfile);
 
   return (
     <>
@@ -40,7 +43,7 @@ export default function LancamentosPage() {
               Movimentar Fatura
             </Button>
             <Button
-              onClick={() => setIsTransactionFormOpen(true)}
+              onClick={openTransactionForm}
               size="sm"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
@@ -49,8 +52,16 @@ export default function LancamentosPage() {
           </div>
         </div>
         <div className="space-y-6">
-          <ExpensesList />
-          <IncomeList />
+          <TransactionList
+            type="expense"
+            transactions={expenses}
+            loading={loading}
+          />
+          <TransactionList
+            type="income"
+            transactions={incomes}
+            loading={loading}
+          />
           <BillPaymentsList />
           <EmergencyReserveList />
         </div>
