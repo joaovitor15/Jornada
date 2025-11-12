@@ -26,7 +26,7 @@ import { Loader2, Landmark } from 'lucide-react';
 import { text } from '@/lib/strings';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
 import { useFatura } from '@/hooks/use-fatura';
-import { addMonths } from 'date-fns';
+import { addMonths, getYear, getMonth } from 'date-fns';
 
 interface FaturaInfo {
   id: string;
@@ -62,18 +62,21 @@ function FaturaCard({ card }: { card: CardType }) {
     const { activeProfile } = useProfile();
 
     useEffect(() => {
-        if (loading || !fechamento || !user) return;
-        
+        if (loading || !user || !activeProfile) return;
+
         const currentInvoiceValue = transactions
             .filter(t => t.transactionType === 'expense')
             .reduce((acc, t) => acc + t.amount, 0);
+
+        // A data de fechamento para consulta de gastos futuros deve ser a da fatura atual.
+        const { closingDate } = getFaturaPeriod(currentFaturaYear, currentFaturaMonth, card.closingDay, card.dueDay);
 
         const futureExpensesQuery = query(
             collection(db, 'expenses'),
             where('userId', '==', user.uid),
             where('profile', '==', activeProfile),
             where('paymentMethod', '==', `Cartão: ${card.name}`),
-            where('date', '>', Timestamp.fromDate(fechamento))
+            where('date', '>', Timestamp.fromDate(closingDate)) // Usar a data de fechamento calculada
         );
 
         getDocs(futureExpensesQuery).then(snap => {
@@ -82,7 +85,8 @@ function FaturaCard({ card }: { card: CardType }) {
             setAvailableLimit(card.limit - currentInvoiceValue - futureSum);
         });
 
-    }, [loading, fechamento, card, transactions, user, activeProfile]);
+    }, [loading, card, transactions, user, activeProfile, currentFaturaYear, currentFaturaMonth]);
+
 
     if (loading) return null; // ou um skeleton
 
