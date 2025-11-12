@@ -27,6 +27,7 @@ import { text } from '@/lib/strings';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
 import { useFatura } from '@/hooks/use-fatura';
 import { addMonths, getYear, getMonth } from 'date-fns';
+import { Skeleton } from '../ui/skeleton';
 
 interface FaturaInfo {
   id: string;
@@ -49,6 +50,41 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+function FaturaCardSkeleton() {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-8 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div>
+                    <div className="flex justify-between items-baseline">
+                        <Skeleton className="h-5 w-28" />
+                        <Skeleton className="h-7 w-32" />
+                    </div>
+                    <div className="flex justify-between items-baseline mt-1">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-4 w-20" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-2 w-full" />
+                     <div className="flex justify-between">
+                       <Skeleton className="h-3 w-24" />
+                       <Skeleton className="h-3 w-24" />
+                    </div>
+                </div>
+                 <div className="flex justify-between pt-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-28" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+
 function FaturaCard({ card }: { card: CardType }) {
     const { openModal } = useAddBillTransactionModal();
     const today = new Date();
@@ -62,13 +98,12 @@ function FaturaCard({ card }: { card: CardType }) {
     const { activeProfile } = useProfile();
 
     useEffect(() => {
-        if (loading || !user || !activeProfile) return;
+        if (!user || !activeProfile) return;
 
         const currentInvoiceValue = transactions
             .filter(t => t.transactionType === 'expense')
             .reduce((acc, t) => acc + t.amount, 0);
 
-        // A data de fechamento para consulta de gastos futuros deve ser a da fatura atual.
         const { closingDate } = getFaturaPeriod(currentFaturaYear, currentFaturaMonth, card.closingDay, card.dueDay);
 
         const futureExpensesQuery = query(
@@ -76,19 +111,21 @@ function FaturaCard({ card }: { card: CardType }) {
             where('userId', '==', user.uid),
             where('profile', '==', activeProfile),
             where('paymentMethod', '==', `Cartão: ${card.name}`),
-            where('date', '>', Timestamp.fromDate(closingDate)) // Usar a data de fechamento calculada
+            where('date', '>', Timestamp.fromDate(closingDate))
         );
 
-        getDocs(futureExpensesQuery).then(snap => {
+        const unsubscribe = onSnapshot(futureExpensesQuery, (snap) => {
             const futureSum = snap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
             setFutureInstallments(futureSum);
             setAvailableLimit(card.limit - currentInvoiceValue - futureSum);
         });
 
-    }, [loading, card, transactions, user, activeProfile, currentFaturaYear, currentFaturaMonth]);
+        return () => unsubscribe();
+
+    }, [card, transactions, user, activeProfile, currentFaturaYear, currentFaturaMonth]);
 
 
-    if (loading) return null; // ou um skeleton
+    if (loading) return <FaturaCardSkeleton />;
 
     const faturaPercent = (total / card.limit) * 100;
     const parcelasFuturasPercent = (futureInstallments / card.limit) * 100;
@@ -173,8 +210,13 @@ export default function FaturasAtuais() {
 
   if (loading) {
     return (
-      <div className="mt-6 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="mt-6">
+        <Skeleton className="h-7 w-48 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <FaturaCardSkeleton />
+          <FaturaCardSkeleton />
+          <FaturaCardSkeleton />
+        </div>
       </div>
     );
   }

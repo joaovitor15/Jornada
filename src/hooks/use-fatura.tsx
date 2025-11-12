@@ -80,8 +80,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
 
       const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
           setExpenseTransactions(snap.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'expense' } as FaturaTransaction)));
-          setLoading(false);
-      }, (error) => { console.error("Error fetching expenses: ", error); setLoading(false); });
+      }, (error) => console.error("Error fetching expenses: ", error));
       
       const unsubRefunds = onSnapshot(refundsQuery, (snap) => {
           setRefundTransactions(snap.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: 'refund' } as FaturaTransaction)));
@@ -90,6 +89,9 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
       const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
           setPaymentTransactions(snap.docs.map(doc => ({ ...doc.data(), id: doc.id, transactionType: doc.data().description === 'Antecipação de Fatura' ? 'anticipation' : 'payment' } as FaturaTransaction)));
       }, (error) => console.error("Error fetching payments: ", error));
+
+      // After setting up listeners, mark as loaded
+      setLoading(false);
 
       return () => {
         unsubExpenses();
@@ -103,7 +105,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
     return () => {
       unsubscribePromise.then(unsub => unsub && unsub());
     };
-  }, [user, activeProfile, card, selectedFatura, getMonthBalance]);
+  }, [user, activeProfile, card.id, card.closingDay, card.dueDay, selectedFatura.month, selectedFatura.year, getMonthBalance]);
 
 
   const processedData = useMemo(() => {
