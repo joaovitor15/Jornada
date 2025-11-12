@@ -128,25 +128,22 @@ export default function AnteciparParcelasForm({
   }, [selectedParcelasIds, futureInstallments]);
   
   const discount = useMemo(() => {
-      // The total to consider is the sum of the current expense plus the selected future ones
-      const totalToPay = expense.amount + originalTotal;
       const newTotalFromInput = form.getValues('novoValor') || 0;
-      if (totalToPay > 0 && newTotalFromInput > 0) {
-        return totalToPay - newTotalFromInput;
+      if (originalTotal > 0 && newTotalFromInput > 0) {
+        return originalTotal - newTotalFromInput;
       }
       return 0;
-  }, [originalTotal, expense.amount, form.watch('novoValor')]);
+  }, [originalTotal, form.watch('novoValor')]);
 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user || !activeProfile) return;
     
-    const totalOriginalConsidered = expense.amount + originalTotal;
-    if (totalOriginalConsidered <= values.novoValor) {
+    if (originalTotal <= values.novoValor) {
         toast({
             variant: "destructive",
             title: "Valor Inválido",
-            description: "O novo valor com desconto deve ser menor que o valor original das parcelas somadas.",
+            description: "O novo valor com desconto deve ser menor que o valor original das parcelas selecionadas.",
         });
         return;
     }
@@ -154,25 +151,26 @@ export default function AnteciparParcelasForm({
 
     const batch = writeBatch(db);
 
-    // 1. Delete the current expense and all selected future installments
-    batch.delete(doc(db, 'expenses', expense.id));
+    // 1. Delete all selected future installments
     values.parcelas.forEach((parcelaId) => {
       const docRef = doc(db, 'expenses', parcelaId);
       batch.delete(docRef);
     });
 
-    // 2. Create a new single expense for the new value paid
+    // 2. Create a new single expense for the anticipated value
     const newExpenseRef = doc(collection(db, 'expenses'));
     const newExpenseData = {
         userId: user.uid,
         profile: activeProfile,
         amount: values.novoValor,
-        description: `${text.anticipateInstallments.title}: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
-        date: expense.date,
+        description: `Antecipação: ${expense.description.replace(/\s\(\d+\/\d+\)/, '')}`,
+        date: expense.date, // The new expense is added to the current invoice date
         paymentMethod: expense.paymentMethod,
         tags: expense.tags || [],
     };
     batch.set(newExpenseRef, newExpenseData);
+    
+    // Note: The current installment (the 'expense' prop) remains untouched.
 
     try {
       await batch.commit();
@@ -258,8 +256,8 @@ export default function AnteciparParcelasForm({
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label>{text.anticipateInstallments.originalValue}</Label>
-                    <p className="font-bold text-lg">{(expense.amount + originalTotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
-                    <p className="text-xs text-muted-foreground">(Parcela atual + selecionadas)</p>
+                    <p className="font-bold text-lg">{originalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL'})}</p>
+                    <p className="text-xs text-muted-foreground">(Soma das parcelas selecionadas)</p>
                 </div>
                  <div className="space-y-1">
                     <Label>{text.anticipateInstallments.discount}</Label>
