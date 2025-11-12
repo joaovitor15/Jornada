@@ -31,6 +31,7 @@ import CategoryCardSpendingTabs from '@/components/relatorios/CategoryCardSpendi
 import IncomeAnalysisTabs from '@/components/relatorios/IncomeAnalysisTabs';
 import HomeAndPersonalCards from '@/components/relatorios/HomeAndPersonalCards';
 import { useTags } from '@/hooks/use-tags';
+import { useBusinessMetrics } from '@/hooks/use-business-metrics';
 
 
 const generateYearOptions = () => {
@@ -80,6 +81,9 @@ export default function ReportsPage() {
   const { incomes: annualIncomes, expenses: annualExpenses, loading: annualLoading } = useTransactions(activeProfile, getPeriod('anual'));
   
   const { hierarchicalTags, loading: tagsLoading } = useTags();
+  
+  const monthlyMetrics = useBusinessMetrics(monthlyIncomes, monthlyExpenses, hierarchicalTags);
+  const annualMetrics = useBusinessMetrics(annualIncomes, annualExpenses, hierarchicalTags);
 
 
   const formatCurrency = (value: number) => {
@@ -93,54 +97,6 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-  // Generic calculation function
-  const calculateMetrics = (incomes: any[], expenses: any[], tags: any[]) => {
-      if (!tags.length) return {};
-      
-      const receitasTag = tags.find(tag => tag.name === 'Receitas');
-      const receitaTagNames = new Set<string>(receitasTag ? [receitasTag.name, ...receitasTag.children.map((c:any) => c.name)] : []);
-      const fornecedoresTag = tags.find(t => t.name === 'Fornecedores');
-      const fornecedorTagNames = new Set<string>(fornecedoresTag ? [fornecedoresTag.name, ...fornecedoresTag.children.map((c:any) => c.name)] : []);
-      const rhTag = tags.find(t => t.name === 'Recursos Humanos');
-      const rhTagNames = new Set<string>(rhTag ? [rhTag.name, ...rhTag.children.map((c:any) => c.name)] : []);
-      const impostosTag = tags.find(t => t.name === 'Impostos');
-      const impostosTagNames = new Set<string>(impostosTag ? [impostosTag.name, ...impostosTag.children.map((c:any) => c.name)] : []);
-      const sistemaTag = tags.find(t => t.name === 'Sistemas e Tecnologias');
-      const sistemaTagNames = new Set<string>(sistemaTag ? [sistemaTag.name, ...sistemaTag.children.map((c:any) => c.name)] : []);
-
-      const netRevenue = incomes.filter(inc => inc.tags?.some((t:string) => receitaTagNames.has(t)) ?? false).reduce((acc, inc) => acc + inc.amount, 0);
-      const supplierCosts = expenses.filter(exp => exp.tags?.some((t:string) => fornecedorTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
-      const personnelCost = expenses.filter(exp => exp.tags?.some((t:string) => rhTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
-      const impostosCost = expenses.filter(exp => exp.tags?.some((t:string) => impostosTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
-      const sistemaCost = expenses.filter(exp => exp.tags?.some((t:string) => sistemaTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
-      const totalExpenses = expenses.reduce((acc, exp) => acc + exp.amount, 0);
-
-      const grossProfit = netRevenue - supplierCosts;
-      const netProfit = netRevenue - totalExpenses;
-      const fixedCosts = totalExpenses - supplierCosts;
-
-      return {
-          netRevenue,
-          grossProfit,
-          grossMargin: netRevenue > 0 ? (grossProfit / netRevenue) * 100 : 0,
-          netProfit,
-          netMargin: netRevenue > 0 ? (netProfit / netRevenue) * 100 : 0,
-          cmv: supplierCosts,
-          costMargin: netRevenue > 0 ? (supplierCosts / netRevenue) * 100 : 0,
-          personnelCost,
-          personnelCostMargin: netRevenue > 0 ? (personnelCost / netRevenue) * 100 : 0,
-          impostos: impostosCost,
-          impostosMargin: netRevenue > 0 ? (impostosCost / netRevenue) * 100 : 0,
-          sistema: sistemaCost,
-          sistemaMargin: netRevenue > 0 ? (sistemaCost / netRevenue) * 100 : 0,
-          fixedCosts,
-          fixedCostsMargin: netRevenue > 0 ? (fixedCosts / netRevenue) * 100 : 0,
-      };
-  };
-
-  const monthlyMetrics = useMemo(() => calculateMetrics(monthlyIncomes, monthlyExpenses, hierarchicalTags), [monthlyIncomes, monthlyExpenses, hierarchicalTags]);
-  const annualMetrics = useMemo(() => calculateMetrics(annualIncomes, annualExpenses, hierarchicalTags), [annualIncomes, annualExpenses, hierarchicalTags]);
-
   const getMetric = (viewMode: string, metricName: keyof typeof monthlyMetrics) => {
       const metrics = viewMode === 'mensal' ? monthlyMetrics : annualMetrics;
       return metrics[metricName] || 0;
