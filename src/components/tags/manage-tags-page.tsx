@@ -84,10 +84,9 @@ export default function ManageTagsPageClient() {
                 if (tag.isArchived) return null;
 
                 const isPrincipalInUse = usedTagNames.has(tag.name);
-                const isChildInUse = tag.children.some(child => !child.isArchived && usedTagNames.has(child.name));
+                const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
                 
-                if (isPrincipalInUse || isChildInUse) {
-                    const activeChildren = tag.children.filter(child => !child.isArchived && usedTagNames.has(child.name));
+                if (isPrincipalInUse || activeChildren.length > 0) {
                     return { ...tag, children: activeChildren };
                 }
                 
@@ -101,10 +100,8 @@ export default function ManageTagsPageClient() {
                 if (tag.isArchived) return null;
                 const unusedChildren = tag.children.filter(child => !child.isArchived && !usedTagNames.has(child.name));
                 const isPrincipalUsed = usedTagNames.has(tag.name);
-                 const hasUsedChildren = tag.children.some(child => usedTagNames.has(child.name));
 
-
-                if (!isPrincipalUsed && !hasUsedChildren) {
+                if (!isPrincipalUsed || unusedChildren.length > 0) {
                      return { ...tag, children: unusedChildren };
                 }
                 
