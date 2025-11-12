@@ -34,6 +34,8 @@ import {
 import { Progress } from '../ui/progress';
 import { useTags } from '@/hooks/use-tags';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useTransactions } from '@/hooks/use-transactions';
+
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -184,54 +186,25 @@ interface CategoryCardSpendingTabsProps {
 
 // --- Main Tabs Component ---
 export default function CategoryCardSpendingTabs({ showCardSpending = true, selectedMonth, selectedYear }: CategoryCardSpendingTabsProps) {
-  const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { hierarchicalTags, loading: tagsLoading } = useTags();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  
   const [viewMode, setViewMode] = useState('mensal');
   const [analysisType, setAnalysisType] = useState<'principal' | 'secundaria'>('principal');
   const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
+  
+  const period = useMemo(() => (
+    viewMode === 'mensal'
+      ? { year: selectedYear, month: selectedMonth }
+      : { year: selectedYear }
+  ), [viewMode, selectedYear, selectedMonth]);
+
+  const { expenses, loading } = useTransactions(activeProfile, period);
 
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
     return viewMode === 'mensal' ? `${months[selectedMonth]} de ${selectedYear}` : selectedYear;
   }, [selectedMonth, selectedYear, viewMode, months]);
-
-
-  useEffect(() => {
-    if (!user || !activeProfile) return;
-
-    setLoading(true);
-    setExpenses([]); 
-
-    const startDate = viewMode === 'mensal'
-      ? new Date(selectedYear, selectedMonth, 1)
-      : new Date(selectedYear, 0, 1);
-    const endDate = viewMode === 'mensal'
-      ? new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59)
-      : new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    const expensesQuery = query(
-      collection(db, 'expenses'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
-    );
-
-    const unsubExpenses = onSnapshot(expensesQuery, (snap) => {
-      const fetchedExpenses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
-      setExpenses(fetchedExpenses);
-      setLoading(false);
-    }, () => setLoading(false));
-    
-
-    return () => {
-      unsubExpenses();
-    };
-
-  }, [user, activeProfile, selectedYear, selectedMonth, showCardSpending, viewMode]);
 
   const activePrincipalTags = useMemo(() => {
     if (tagsLoading || expenses.length === 0) return [];

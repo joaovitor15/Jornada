@@ -65,7 +65,8 @@ export default function FinancialChart({
   onMonthSelect,
 }: FinancialChartProps) {
   const { activeProfile } = useProfile();
-  const { incomes, expenses, billPayments, loading } = useTransactions(activeProfile);
+  // Fetch data for the entire year for the chart
+  const { incomes, expenses, billPayments, loading } = useTransactions(activeProfile, { year });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [error, setError] = useState<string | null>(null);
 

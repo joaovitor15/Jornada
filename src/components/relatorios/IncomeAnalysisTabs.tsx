@@ -33,6 +33,8 @@ import {
 } from 'recharts';
 import { useTags } from '@/hooks/use-tags';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useTransactions } from '@/hooks/use-transactions';
+
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -183,52 +185,26 @@ interface IncomeAnalysisTabsProps {
 
 // --- Main Tabs Component ---
 export default function IncomeAnalysisTabs({ selectedMonth, selectedYear }: IncomeAnalysisTabsProps) {
-  const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { hierarchicalTags, loading: tagsLoading } = useTags();
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [viewMode, setViewMode] = useState('mensal');
   const [analysisType, setAnalysisType] = useState<'principal' | 'secundaria'>('principal');
   const [selectedPrincipalTagId, setSelectedPrincipalTagId] = useState<string | 'all'>('all');
+  
+  const period = useMemo(() => (
+    viewMode === 'mensal'
+      ? { year: selectedYear, month: selectedMonth }
+      : { year: selectedYear }
+  ), [viewMode, selectedYear, selectedMonth]);
+
+  const { incomes, loading } = useTransactions(activeProfile, period);
 
   const months = Object.values(text.dashboard.months);
   const periodLabel = useMemo(() => {
     return viewMode === 'mensal' ? `${months[selectedMonth]} de ${selectedYear}` : selectedYear;
   }, [selectedMonth, selectedYear, viewMode, months]);
 
-
-  useEffect(() => {
-    if (!user || !activeProfile) return;
-
-    setLoading(true);
-
-    const startDate = viewMode === 'mensal'
-      ? new Date(selectedYear, selectedMonth, 1)
-      : new Date(selectedYear, 0, 1);
-    const endDate = viewMode === 'mensal'
-      ? new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59)
-      : new Date(selectedYear, 11, 31, 23, 59, 59);
-
-    const incomesQuery = query(
-      collection(db, 'incomes'),
-      where('userId', '==', user.uid),
-      where('profile', '==', activeProfile),
-      where('date', '>=', Timestamp.fromDate(startDate)),
-      where('date', '<=', Timestamp.fromDate(endDate))
-    );
-
-    const unsubIncomes = onSnapshot(incomesQuery, (snap) => {
-      const fetchedIncomes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
-      setIncomes(fetchedIncomes);
-      setLoading(false);
-    }, () => setLoading(false));
-
-    return () => {
-      unsubIncomes();
-    };
-
-  }, [user, activeProfile, selectedYear, selectedMonth, viewMode]);
 
   const activePrincipalTags = useMemo(() => {
     if (tagsLoading || incomes.length === 0) return [];

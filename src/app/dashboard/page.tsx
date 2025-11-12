@@ -51,19 +51,19 @@ export default function DashboardPage() {
   const [isSumFormOpen, setIsSumFormOpen] = useState(false);
   const { hierarchicalTags } = useTags();
 
-  const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(
+    new Date().getMonth()
+  );
+
+  const { incomes, expenses, billPayments, loading: transactionsLoading } = useTransactions(activeProfile, { year: selectedYear, month: selectedMonth });
 
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalFarmaciaPopular, setTotalFarmaciaPopular] = useState(0);
   const [totalAlimentacao, setTotalAlimentacao] = useState(0);
-  
-  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number>(
-    new Date().getMonth()
-  );
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,53 +72,24 @@ export default function DashboardPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
+    // This effect now only runs when transactions for the selected period are loaded.
     if (transactionsLoading) return;
 
-    const allTransactions = [...incomes, ...expenses, ...billPayments];
-    if (allTransactions.length > 0) {
-      const yearsWithData = new Set(
-        allTransactions
-          .map((t) => (t.date ? getYear((t.date as unknown as Timestamp).toDate()) : null))
-          .filter(Boolean) as number[]
-      );
-      const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
-      if (sortedYears.length > 0) {
-        setAvailableYears(sortedYears);
-        if (!yearsWithData.has(selectedYear)) {
-          setSelectedYear(sortedYears[0]);
-        }
-      }
-    } else {
-      setAvailableYears([currentYear]);
-    }
-
-    const filterByMonthAndYear = (t: Omit<Transaction | BillPayment, 'id'>) => {
-      if (!t.date) return false;
-      const date = (t.date as unknown as Timestamp).toDate();
-      return getYear(date) === selectedYear && getMonth(date) === selectedMonth;
-    };
-    
-    // Filtra despesas que NÃO são de cartão de crédito para o resumo principal
+    // The filtering logic is simpler because the data is already pre-filtered by the hook.
     const monthlyNonCardExpenses = expenses
-      .filter(filterByMonthAndYear)
       .filter((e) => !e.paymentMethod?.startsWith('Cartão:'))
       .reduce((acc, curr) => acc + curr.amount, 0);
-      
-    // Inclui pagamentos de fatura nas despesas totais
-    const monthlyBillPayments = billPayments
-      .filter(filterByMonthAndYear)
-      .reduce((acc, curr) => acc + curr.amount, 0);
+
+    const monthlyBillPayments = billPayments.reduce((acc, curr) => acc + curr.amount, 0);
 
     const totalMonthlyExpenses = monthlyNonCardExpenses + monthlyBillPayments;
 
     const monthlyIncomes = incomes
-        .filter(filterByMonthAndYear)
         .filter(income => !(activeProfile === 'Business' && income.tags?.includes('Vendas Farmácia Popular')))
         .reduce((acc, curr) => acc + curr.amount, 0);
         
     if (activeProfile === 'Business') {
       const farmaciaPopularIncomes = incomes
-        .filter(filterByMonthAndYear)
         .filter(income => income.tags?.includes('Vendas Farmácia Popular'))
         .reduce((acc, curr) => acc + curr.amount, 0);
       setTotalFarmaciaPopular(farmaciaPopularIncomes);
@@ -130,7 +101,6 @@ export default function DashboardPage() {
         const alimentacaoTag = hierarchicalTags.find(tag => tag.name === 'Alimentação');
         const alimentacaoSubTagNames = alimentacaoTag?.children.map(child => child.name) || [];
         const alimentacaoExpenses = expenses
-            .filter(filterByMonthAndYear)
             .filter(expense => 
                 expense.tags?.some(tag => alimentacaoSubTagNames.includes(tag))
             )
@@ -140,11 +110,45 @@ export default function DashboardPage() {
         setTotalAlimentacao(0);
     }
 
-
     setTotalIncomes(monthlyIncomes);
     setTotalExpenses(totalMonthlyExpenses);
     setTotalBalance(monthlyIncomes - totalMonthlyExpenses);
-  }, [incomes, expenses, billPayments, transactionsLoading, selectedYear, selectedMonth, activeProfile, hierarchicalTags]);
+
+  }, [incomes, expenses, billPayments, transactionsLoading, activeProfile, hierarchicalTags]);
+  
+    // Effect to populate available years from all transactions (runs only once or when profile changes)
+  useEffect(() => {
+    // This query is intentionally broad to find all years with data for the dropdown.
+    // It runs less frequently.
+    if (user && activeProfile) {
+        const allTransactionsQuery = query(
+            collection(db, 'expenses'), // Checking just one collection is enough
+            where('userId', '==', user.uid),
+            where('profile', '==', activeProfile)
+        );
+        const unsubscribe = onSnapshot(allTransactionsQuery, (snapshot) => {
+             const yearsWithData = new Set(
+                snapshot.docs
+                .map((doc) => (doc.data().date ? getYear((doc.data().date as unknown as Timestamp).toDate()) : null))
+                .filter(Boolean) as number[]
+            );
+            const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
+             if (sortedYears.length > 0) {
+                if (!sortedYears.includes(currentYear)) {
+                    sortedYears.push(currentYear);
+                    sortedYears.sort((a, b) => b - a);
+                }
+                setAvailableYears(sortedYears);
+                if (!yearsWithData.has(selectedYear)) {
+                    setSelectedYear(sortedYears[0]);
+                }
+            } else {
+                setAvailableYears([currentYear]);
+            }
+        });
+        return () => unsubscribe();
+    }
+  }, [user, activeProfile]);
 
 
   if (authLoading || !user) {

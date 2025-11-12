@@ -64,7 +64,7 @@ export default function AnnualFinancialChart({
   onMonthSelect,
 }: AnnualFinancialChartProps) {
   const { activeProfile } = useProfile();
-  const { incomes, expenses, billPayments, loading } = useTransactions(activeProfile);
+  const { incomes, expenses, billPayments, loading } = useTransactions(activeProfile, { year });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [error, setError] = useState<string | null>(null);
 

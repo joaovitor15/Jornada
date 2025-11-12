@@ -51,18 +51,14 @@ const months = Object.entries(text.dashboard.months).map(
 
 export default function ReportsPage() {
   const { activeProfile } = useProfile();
-  const { incomes: allIncomes, expenses: allExpenses, billPayments: allBillPayments, loading: dataLoading } = useTransactions(activeProfile);
-  const { hierarchicalTags, loading: tagsLoading } = useTags();
-
-  const yearOptions = generateYearOptions();
+  
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
   const [selectedMonth, setSelectedMonth] = useState<number>(
     new Date().getMonth()
   );
-
-  // View modes
+  
   const [netRevenueViewMode, setNetRevenueViewMode] = useState('mensal');
   const [grossProfitViewMode, setGrossProfitViewMode] = useState('mensal');
   const [netProfitViewMode, setNetProfitViewMode] = useState('mensal');
@@ -71,6 +67,20 @@ export default function ReportsPage() {
   const [impostosViewMode, setImpostosViewMode] = useState('mensal');
   const [sistemaViewMode, setSistemaViewMode] = useState('mensal');
   const [fixedCostsViewMode, setFixedCostsViewMode] = useState('mensal');
+  
+  const yearOptions = generateYearOptions();
+  
+  // Determine period based on view mode for each card
+  const getPeriod = (viewMode: string) => viewMode === 'mensal' 
+    ? { year: selectedYear, month: selectedMonth } 
+    : { year: selectedYear };
+
+  // Fetch data for all view modes at once
+  const { incomes: monthlyIncomes, expenses: monthlyExpenses, loading: monthlyLoading } = useTransactions(activeProfile, getPeriod('mensal'));
+  const { incomes: annualIncomes, expenses: annualExpenses, loading: annualLoading } = useTransactions(activeProfile, getPeriod('anual'));
+  
+  const { hierarchicalTags, loading: tagsLoading } = useTags();
+
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -83,257 +93,60 @@ export default function ReportsPage() {
     return `${value.toFixed(2)}%`;
   };
   
-
-  // --- Business Profile Calculations ---
-  const netRevenue = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return 0;
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = netRevenueViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = netRevenueViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
-    if (!receitasTag) return 0;
-
-    const receitaTagNames = new Set<string>([receitasTag.name]);
-    receitasTag.children.forEach(child => receitaTagNames.add(child.name));
-
-    return allIncomes
-      .filter(income => {
-        if (!income.date) return false;
-        const incomeDate = income.date.toDate();
-        const isInDateRange = incomeDate >= startDate && incomeDate <= endDate;
-        if (!isInDateRange) return false;
-        
-        return income.tags?.some(tag => receitaTagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-  }, [allIncomes, selectedYear, selectedMonth, netRevenueViewMode, activeProfile, hierarchicalTags, tagsLoading]);
-
- const { grossProfit, grossMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { grossProfit: 0, grossMargin: 0 };
-    
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = grossProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = grossProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
-    if (!fornecedoresTag) return { grossProfit: netRevenue, grossMargin: netRevenue > 0 ? 100 : 0 };
-
-    const fornecedorTagNames = new Set<string>([fornecedoresTag.name]);
-    fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
-    
-    const supplierCosts = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        if (!(d >= startDate && d <= endDate)) return false;
-        
-        return e.tags?.some(tag => fornecedorTagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-
-    const calculatedGrossProfit = netRevenue - supplierCosts;
-    const calculatedGrossMargin = netRevenue > 0 ? (calculatedGrossProfit / netRevenue) * 100 : 0;
-    return { grossProfit: calculatedGrossProfit, grossMargin: calculatedGrossMargin };
-}, [allExpenses, selectedYear, selectedMonth, grossProfitViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
-
-  const { netProfit, netMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { netProfit: 0, netMargin: 0 };
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = netProfitViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = netProfitViewMode === 'mensal' ? endOfMonth : endOfYear;
-    
-    const receitasTag = hierarchicalTags.find(tag => tag.name === 'Receitas');
-    if (!receitasTag) return { netProfit: 0, netMargin: 0 };
-
-    const receitaTagNames = new Set<string>([receitasTag.name]);
-    receitasTag.children.forEach(child => receitaTagNames.add(child.name));
-
-    const totalRevenueFromTags = allIncomes
-      .filter(income => {
-        if (!income.date) return false;
-        const incomeDate = income.date.toDate();
-        const isInDateRange = incomeDate >= startDate && incomeDate <= endDate;
-        if (!isInDateRange) return false;
-        return income.tags?.some(tag => receitaTagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, income) => acc + income.amount, 0);
-
-    const totalExpenses = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        return d >= startDate && d <= endDate;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
+  // Generic calculation function
+  const calculateMetrics = (incomes: any[], expenses: any[], tags: any[]) => {
+      if (!tags.length) return {};
       
-    const calculatedNetProfit = totalRevenueFromTags - totalExpenses;
-    const calculatedNetMargin = totalRevenueFromTags > 0 ? (calculatedNetProfit / totalRevenueFromTags) * 100 : 0;
-    return { netProfit: calculatedNetProfit, netMargin: calculatedNetMargin };
-  }, [allIncomes, allExpenses, selectedYear, selectedMonth, netProfitViewMode, activeProfile, hierarchicalTags, tagsLoading]);
+      const receitasTag = tags.find(tag => tag.name === 'Receitas');
+      const receitaTagNames = new Set<string>(receitasTag ? [receitasTag.name, ...receitasTag.children.map((c:any) => c.name)] : []);
+      const fornecedoresTag = tags.find(t => t.name === 'Fornecedores');
+      const fornecedorTagNames = new Set<string>(fornecedoresTag ? [fornecedoresTag.name, ...fornecedoresTag.children.map((c:any) => c.name)] : []);
+      const rhTag = tags.find(t => t.name === 'Recursos Humanos');
+      const rhTagNames = new Set<string>(rhTag ? [rhTag.name, ...rhTag.children.map((c:any) => c.name)] : []);
+      const impostosTag = tags.find(t => t.name === 'Impostos');
+      const impostosTagNames = new Set<string>(impostosTag ? [impostosTag.name, ...impostosTag.children.map((c:any) => c.name)] : []);
+      const sistemaTag = tags.find(t => t.name === 'Sistemas e Tecnologias');
+      const sistemaTagNames = new Set<string>(sistemaTag ? [sistemaTag.name, ...sistemaTag.children.map((c:any) => c.name)] : []);
 
-  const { cmv, costMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { cmv: 0, costMargin: 0 };
+      const netRevenue = incomes.filter(inc => inc.tags?.some((t:string) => receitaTagNames.has(t)) ?? false).reduce((acc, inc) => acc + inc.amount, 0);
+      const supplierCosts = expenses.filter(exp => exp.tags?.some((t:string) => fornecedorTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
+      const personnelCost = expenses.filter(exp => exp.tags?.some((t:string) => rhTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
+      const impostosCost = expenses.filter(exp => exp.tags?.some((t:string) => impostosTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
+      const sistemaCost = expenses.filter(exp => exp.tags?.some((t:string) => sistemaTagNames.has(t)) ?? false).reduce((acc, exp) => acc + exp.amount, 0);
+      const totalExpenses = expenses.reduce((acc, exp) => acc + exp.amount, 0);
 
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = cmvViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = cmvViewMode === 'mensal' ? endOfMonth : endOfYear;
+      const grossProfit = netRevenue - supplierCosts;
+      const netProfit = netRevenue - totalExpenses;
+      const fixedCosts = totalExpenses - supplierCosts;
 
-    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
-    if (!fornecedoresTag) return { cmv: 0, costMargin: 0 };
+      return {
+          netRevenue,
+          grossProfit,
+          grossMargin: netRevenue > 0 ? (grossProfit / netRevenue) * 100 : 0,
+          netProfit,
+          netMargin: netRevenue > 0 ? (netProfit / netRevenue) * 100 : 0,
+          cmv: supplierCosts,
+          costMargin: netRevenue > 0 ? (supplierCosts / netRevenue) * 100 : 0,
+          personnelCost,
+          personnelCostMargin: netRevenue > 0 ? (personnelCost / netRevenue) * 100 : 0,
+          impostos: impostosCost,
+          impostosMargin: netRevenue > 0 ? (impostosCost / netRevenue) * 100 : 0,
+          sistema: sistemaCost,
+          sistemaMargin: netRevenue > 0 ? (sistemaCost / netRevenue) * 100 : 0,
+          fixedCosts,
+          fixedCostsMargin: netRevenue > 0 ? (fixedCosts / netRevenue) * 100 : 0,
+      };
+  };
 
-    const fornecedorTagNames = new Set<string>([fornecedoresTag.name]);
-    fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
+  const monthlyMetrics = useMemo(() => calculateMetrics(monthlyIncomes, monthlyExpenses, hierarchicalTags), [monthlyIncomes, monthlyExpenses, hierarchicalTags]);
+  const annualMetrics = useMemo(() => calculateMetrics(annualIncomes, annualExpenses, hierarchicalTags), [annualIncomes, annualExpenses, hierarchicalTags]);
 
-    const calculatedCmv = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        if (!(d >= startDate && d <= endDate)) return false;
-        
-        return e.tags?.some(tag => fornecedorTagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-      
-    const calculatedCostMargin = netRevenue > 0 ? (calculatedCmv / netRevenue) * 100 : 0;
-    return { cmv: calculatedCmv, costMargin: calculatedCostMargin };
-}, [allExpenses, selectedYear, selectedMonth, cmvViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
+  const getMetric = (viewMode: string, metricName: keyof typeof monthlyMetrics) => {
+      const metrics = viewMode === 'mensal' ? monthlyMetrics : annualMetrics;
+      return metrics[metricName] || 0;
+  };
   
-  const { personnelCost, personnelCostMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { personnelCost: 0, personnelCostMargin: 0 };
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = personnelCostViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = personnelCostViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Recursos Humanos');
-    if (!tagPrincipal) return { personnelCost: 0, personnelCostMargin: 0 };
-    
-    const tagNames = new Set<string>([tagPrincipal.name]);
-    tagPrincipal.children.forEach(child => tagNames.add(child.name));
-
-    const calculatedCost = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        if (!(d >= startDate && d <= endDate)) return false;
-        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-
-    const calculatedMargin = netRevenue > 0 ? (calculatedCost / netRevenue) * 100 : 0;
-    return { personnelCost: calculatedCost, personnelCostMargin: calculatedMargin };
-  }, [allExpenses, selectedYear, selectedMonth, personnelCostViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
-
-  const { impostos, impostosMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { impostos: 0, impostosMargin: 0 };
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = impostosViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = impostosViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Impostos');
-    if (!tagPrincipal) return { impostos: 0, impostosMargin: 0 };
-
-    const tagNames = new Set<string>([tagPrincipal.name]);
-    tagPrincipal.children.forEach(child => tagNames.add(child.name));
-      
-    const calculatedImpostos = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        if (!(d >= startDate && d <= endDate)) return false;
-        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-      
-    const calculatedImpostosMargin = netRevenue > 0 ? (calculatedImpostos / netRevenue) * 100 : 0;
-    return { impostos: calculatedImpostos, impostosMargin: calculatedImpostosMargin };
-  }, [allExpenses, selectedYear, selectedMonth, impostosViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
-
-  const { sistema, sistemaMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { sistema: 0, sistemaMargin: 0 };
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = sistemaViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = sistemaViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const tagPrincipal = hierarchicalTags.find(t => t.name === 'Sistemas e Tecnologias');
-    if (!tagPrincipal) return { sistema: 0, sistemaMargin: 0 };
-    
-    const tagNames = new Set<string>([tagPrincipal.name]);
-    tagPrincipal.children.forEach(child => tagNames.add(child.name));
-
-    const calculatedSistema = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        if (!(d >= startDate && d <= endDate)) return false;
-        return e.tags?.some(tag => tagNames.has(tag)) ?? false;
-      })
-      .reduce((acc, expense) => acc + expense.amount, 0);
-      
-    const calculatedSistemaMargin = netRevenue > 0 ? (calculatedSistema / netRevenue) * 100 : 0;
-    return { sistema: calculatedSistema, sistemaMargin: calculatedSistemaMargin };
-  }, [allExpenses, selectedYear, selectedMonth, sistemaViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
-
-  const { fixedCosts, fixedCostsMargin } = useMemo(() => {
-    if (activeProfile !== 'Business' || tagsLoading) return { fixedCosts: 0, fixedCostsMargin: 0 };
-
-    const startOfMonth = new Date(selectedYear, selectedMonth, 1);
-    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const startOfYear = new Date(selectedYear, 0, 1);
-    const endOfYear = new Date(selectedYear, 11, 31, 23, 59, 59);
-    const startDate = fixedCostsViewMode === 'mensal' ? startOfMonth : startOfYear;
-    const endDate = fixedCostsViewMode === 'mensal' ? endOfMonth : endOfYear;
-
-    const fornecedoresTag = hierarchicalTags.find(t => t.name === 'Fornecedores');
-    const fornecedorTagNames = new Set<string>();
-    if (fornecedoresTag) {
-        fornecedorTagNames.add(fornecedoresTag.name);
-        fornecedoresTag.children.forEach(child => fornecedorTagNames.add(child.name));
-    }
-      
-    const allPeriodExpenses = allExpenses
-      .filter(e => {
-        if (!e.date) return false;
-        const d = e.date.toDate();
-        return d >= startDate && d <= endDate;
-      });
-
-    const supplierCosts = allPeriodExpenses
-        .filter(e => e.tags?.some(tag => fornecedorTagNames.has(tag)) ?? false)
-        .reduce((acc, expense) => acc + expense.amount, 0);
-
-    const totalExpenses = allPeriodExpenses.reduce((acc, expense) => acc + expense.amount, 0);
-    
-    const calculatedFixedCosts = totalExpenses - supplierCosts;
-      
-    const calculatedFixedCostsMargin = netRevenue > 0 ? (calculatedFixedCosts / netRevenue) * 100 : 0;
-    return { fixedCosts: calculatedFixedCosts, fixedCostsMargin: calculatedFixedCostsMargin };
-  }, [allExpenses, selectedYear, selectedMonth, fixedCostsViewMode, activeProfile, hierarchicalTags, tagsLoading, netRevenue]);
+  const isLoading = (viewMode: string) => viewMode === 'mensal' ? monthlyLoading : annualLoading;
 
 
   const periodLabel = useMemo(() => {
@@ -387,7 +200,9 @@ export default function ReportsPage() {
     </div>
   );
 
-  const isLoading = dataLoading || tagsLoading;
+  if (tagsLoading) {
+     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   if (activeProfile === 'Personal' || activeProfile === 'Home') {
     return (
@@ -408,10 +223,7 @@ export default function ReportsPage() {
                </Card>
              </div>
              <div className="lg:col-span-1 space-y-6">
-                 <HomeAndPersonalCards 
-                     selectedMonth={selectedMonth}
-                     selectedYear={selectedYear}
-                 />
+                 <HomeAndPersonalCards />
              </div>
            </div>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -491,7 +303,7 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {isLoading ? (
+                    {isLoading(fixedCostsViewMode) ? (
                       <div className="flex justify-center items-center">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -502,7 +314,7 @@ export default function ReportsPage() {
                             <ClipboardList className="h-6 w-6 text-gray-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatCurrency(fixedCosts)}
+                            {formatCurrency(getMetric(fixedCostsViewMode, 'fixedCosts'))}
                           </span>
                         </div>
                         <div className="space-y-2">
@@ -526,7 +338,7 @@ export default function ReportsPage() {
                               <Percent className="h-6 w-6 text-gray-500" />
                             </div>
                             <span className="text-2xl font-bold">
-                              {formatPercent(fixedCostsMargin)}
+                              {formatPercent(getMetric(fixedCostsViewMode, 'fixedCostsMargin'))}
                             </span>
                           </div>
                         </div>
@@ -576,7 +388,7 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {isLoading ? (
+                    {isLoading(impostosViewMode) ? (
                       <div className="flex justify-center items-center">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -587,7 +399,7 @@ export default function ReportsPage() {
                             <Landmark className="h-6 w-6 text-orange-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatCurrency(impostos)}
+                            {formatCurrency(getMetric(impostosViewMode, 'impostos'))}
                           </span>
                         </div>
 
@@ -612,7 +424,7 @@ export default function ReportsPage() {
                               <Percent className="h-6 w-6 text-yellow-500" />
                             </div>
                             <span className="text-2xl font-bold">
-                              {formatPercent(impostosMargin)}
+                              {formatPercent(getMetric(impostosViewMode, 'impostosMargin'))}
                             </span>
                           </div>
                         </div>
@@ -662,7 +474,7 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {isLoading ? (
+                    {isLoading(personnelCostViewMode) ? (
                       <div className="flex justify-center items-center">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -673,7 +485,7 @@ export default function ReportsPage() {
                             <Users className="h-6 w-6 text-cyan-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatCurrency(personnelCost)}
+                            {formatCurrency(getMetric(personnelCostViewMode, 'personnelCost'))}
                           </span>
                         </div>
 
@@ -698,7 +510,7 @@ export default function ReportsPage() {
                               <Percent className="h-6 w-6 text-teal-500" />
                             </div>
                             <span className="text-2xl font-bold">
-                              {formatPercent(personnelCostMargin)}
+                              {formatPercent(getMetric(personnelCostViewMode, 'personnelCostMargin'))}
                             </span>
                           </div>
                         </div>
@@ -748,7 +560,7 @@ export default function ReportsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {isLoading ? (
+                    {isLoading(sistemaViewMode) ? (
                       <div className="flex justify-center items-center">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -759,7 +571,7 @@ export default function ReportsPage() {
                             <HardDrive className="h-6 w-6 text-indigo-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatCurrency(sistema)}
+                            {formatCurrency(getMetric(sistemaViewMode, 'sistema'))}
                           </span>
                         </div>
 
@@ -784,7 +596,7 @@ export default function ReportsPage() {
                               <Percent className="h-6 w-6 text-purple-500" />
                             </div>
                             <span className="text-2xl font-bold">
-                              {formatPercent(sistemaMargin)}
+                              {formatPercent(getMetric(sistemaViewMode, 'sistemaMargin'))}
                             </span>
                           </div>
                         </div>
@@ -842,7 +654,7 @@ export default function ReportsPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {isLoading ? (
+                  {isLoading(netRevenueViewMode) ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
                     <div className="flex items-center gap-4">
@@ -850,7 +662,7 @@ export default function ReportsPage() {
                         <TrendingUp className="h-6 w-6 text-blue-500" />
                       </div>
                       <span className="text-2xl font-bold">
-                        {formatCurrency(netRevenue)}
+                        {formatCurrency(getMetric(netRevenueViewMode, 'netRevenue'))}
                       </span>
                     </div>
                   )}
@@ -897,7 +709,7 @@ export default function ReportsPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {isLoading ? (
+                  {isLoading(grossProfitViewMode) ? (
                     <div className="flex justify-center items-center h-24">
                       <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
@@ -908,7 +720,7 @@ export default function ReportsPage() {
                           <CircleDollarSign className="h-6 w-6 text-green-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatCurrency(grossProfit)}
+                          {formatCurrency(getMetric(grossProfitViewMode, 'grossProfit'))}
                         </span>
                       </div>
 
@@ -933,7 +745,7 @@ export default function ReportsPage() {
                             <Percent className="h-6 w-6 text-orange-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatPercent(grossMargin)}
+                            {formatPercent(getMetric(grossProfitViewMode, 'grossMargin'))}
                           </span>
                         </div>
                       </div>
@@ -984,7 +796,7 @@ export default function ReportsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {isLoading ? (
+                  {isLoading(netProfitViewMode) ? (
                     <div className="flex justify-center items-center">
                       <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
@@ -995,7 +807,7 @@ export default function ReportsPage() {
                           <DollarSign className="h-6 w-6 text-purple-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatCurrency(netProfit)}
+                          {formatCurrency(getMetric(netProfitViewMode, 'netProfit'))}
                         </span>
                       </div>
 
@@ -1020,7 +832,7 @@ export default function ReportsPage() {
                             <Percent className="h-6 w-6 text-indigo-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatPercent(netMargin)}
+                            {formatPercent(getMetric(netProfitViewMode, 'netMargin'))}
                           </span>
                         </div>
                       </div>
@@ -1070,7 +882,7 @@ export default function ReportsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {isLoading ? (
+                  {isLoading(cmvViewMode) ? (
                     <div className="flex justify-center items-center">
                       <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
@@ -1081,7 +893,7 @@ export default function ReportsPage() {
                           <ShoppingCart className="h-6 w-6 text-red-500" />
                         </div>
                         <span className="text-2xl font-bold">
-                          {formatCurrency(cmv)}
+                          {formatCurrency(getMetric(cmvViewMode, 'cmv'))}
                         </span>
                       </div>
 
@@ -1106,7 +918,7 @@ export default function ReportsPage() {
                             <Percent className="h-6 w-6 text-pink-500" />
                           </div>
                           <span className="text-2xl font-bold">
-                            {formatPercent(costMargin)}
+                            {formatPercent(getMetric(cmvViewMode, 'costMargin'))}
                           </span>
                         </div>
                       </div>
