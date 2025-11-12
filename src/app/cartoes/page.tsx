@@ -23,12 +23,14 @@ export default function CardsPage() {
   const [isFaturaSelectorOpen, setIsFaturaSelectorOpen] = useState(false);
   const [expenseToAnticipate, setExpenseToAnticipate] = useState<Expense | null>(null);
   const [isAnticipateFormOpen, setIsAnticipateFormOpen] = useState(false);
-  const { setIsFormOpen } = useAddTransactionModal();
 
   const selectedCard = useMemo(() => {
     if (cardsLoading || filteredCards.length === 0) return null;
     
+    // Tenta encontrar o cartão explicitamente selecionado na lista filtrada atual
     const cardFromId = selectedCardId ? filteredCards.find(c => c.id === selectedCardId) : null;
+    
+    // Se encontrou, retorna ele. Se não, retorna o primeiro cartão da lista filtrada.
     return cardFromId || filteredCards[0];
   }, [selectedCardId, filteredCards, cardsLoading]);
   
