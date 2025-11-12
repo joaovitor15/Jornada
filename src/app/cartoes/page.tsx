@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CardsList from '@/components/cartoes/cards-list';
 import { text } from '@/lib/strings';
 import FaturaDetails from '@/components/cartoes/FaturaDetails';
@@ -15,11 +15,13 @@ import { useCards } from '@/hooks/use-cards';
 export default function CardsPage() {
   const { cards, loading: cardsLoading, filteredCards, filter, setFilter } = useCards();
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-
-  const [selectedFatura, setSelectedFatura] = useState<{ month: number, year: number }>({
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
+  
+  const [selectedFatura, setSelectedFatura] = useState<{ month: number, year: number }>(() => {
+    // Inicializa com um valor padrão, será atualizado quando os cartões carregarem
+    const today = new Date();
+    return { month: today.getMonth(), year: today.getFullYear() };
   });
+
   const [isFaturaSelectorOpen, setIsFaturaSelectorOpen] = useState(false);
   const [expenseToAnticipate, setExpenseToAnticipate] = useState<Expense | null>(null);
   const [isAnticipateFormOpen, setIsAnticipateFormOpen] = useState(false);
@@ -34,10 +36,21 @@ export default function CardsPage() {
     return cardFromId || filteredCards[0];
   }, [selectedCardId, filteredCards, cardsLoading]);
   
+  // Efeito para definir o estado inicial quando os cartões são carregados
+  useEffect(() => {
+    if (selectedCard) {
+      // Se um cartão já está selecionado (pelo usuário ou padrão),
+      // certifique-se de que a fatura correta para ele está definida.
+      const { month, year } = getCurrentFaturaMonthAndYear(new Date(), selectedCard.closingDay);
+      setSelectedFatura({ month, year });
+    }
+  }, [selectedCard]);
+  
   const handleCardSelection = (cardId: string) => {
     setSelectedCardId(cardId);
     const card = cards.find(c => c.id === cardId);
     if (card) {
+      // Sempre define a fatura para a fatura atual do cartão selecionado
       const { month, year } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
       setSelectedFatura({ month, year });
     }
