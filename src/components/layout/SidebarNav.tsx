@@ -2,7 +2,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 import {
   LayoutDashboard,
   BarChart,
@@ -12,6 +16,7 @@ import {
   ClipboardCheck,
   Tags,
   ArrowDownLeft,
+  LogOut,
 } from 'lucide-react';
 import { text } from '@/lib/strings';
 import {
@@ -23,6 +28,25 @@ import {
 
 export default function SidebarNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Até logo!',
+        description: 'Você saiu da sua conta com sucesso.',
+      });
+      router.push('/');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao sair',
+        description: 'Não foi possível fazer logout. Tente novamente.',
+      });
+    }
+  };
 
   const navLinks = [
     {
@@ -69,8 +93,8 @@ export default function SidebarNav() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-full flex-col items-center">
-        {/* Content */}
+      <div className="flex h-full flex-col items-center justify-between">
+        {/* Main Nav Content */}
         <nav className="flex flex-col items-center gap-2 py-4">
           {navLinks.map((link) => (
             <Tooltip key={link.href}>
@@ -93,8 +117,25 @@ export default function SidebarNav() {
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="mt-auto border-t p-4 w-full flex justify-center" />
+        {/* Footer with Logout */}
+        <div className="w-full flex justify-center py-4 border-t">
+           <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                    onClick={handleSignOut}
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="Sair"
+                  >
+                    <LogOut className="h-5 w-5 text-destructive" />
+                  </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Sair</p>
+              </TooltipContent>
+            </Tooltip>
+        </div>
       </div>
     </TooltipProvider>
   );
