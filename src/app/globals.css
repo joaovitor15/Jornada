@@ -9,27 +9,27 @@ body {
 @layer base {
   :root {
     /* === MODO CLARO === */
-    --background: 0 0% 100%; /* Branco puro */
+    --background: 240 10% 97%; /* Azul muito claro - CORRIGIDO */
     --foreground: 222.2 84% 4.9%;
 
-    --card: 240 4.8% 95.9%; /* Cinza-azulado sutil */
+    --card: 240 14% 96.5%; /* Azul claro - AJUSTADO */
     --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 0 0% 100%;
+    --popover: 240 14% 96.5%;
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Azul moderno */
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 4.8% 95.9%;
+    --secondary: 240 13% 91%; /* Azul sutil - CORRIGIDO */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 240 4.8% 95.9%;
+    --muted: 240 10% 93.5%; /* Azul sutil para sidebar - CORRIGIDO */
     --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 224.3 76.3% 48%; /* Azul vibrante - CORRIGIDO */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -46,7 +46,7 @@ body {
     --chart-5: 27 87% 67%;
 
     /* Sidebar */
-    --sidebar-background: 240 4.8% 95.9%;
+    --sidebar-background: 240 14% 96.5%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 221.2 83.2% 53.3%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -113,5 +113,36 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* === ESTILOS PARA TABS === */
+@layer components {
+  /* Container de tabs */
+  [role="tablist"] {
+    @apply bg-muted rounded-md p-1;
+  }
+  
+  /* Tab não ativo */
+  [role="tab"][aria-selected="false"] {
+    @apply bg-muted text-muted-foreground hover:bg-secondary transition-colors;
+  }
+  
+  /* Tab ativo */
+  [role="tab"][aria-selected="true"] {
+    @apply bg-card text-primary font-semibold shadow-sm;
+  }
+  
+  /* Shadcn/ui Tabs */
+  .tabs-list {
+    @apply bg-muted rounded-md p-1;
+  }
+  
+  .tabs-trigger {
+    @apply data-[state=inactive]:bg-muted data-[state=inactive]:text-muted-foreground hover:bg-secondary transition-colors;
+  }
+  
+  .tabs-trigger[data-state="active"] {
+    @apply bg-card text-primary font-semibold shadow-sm;
   }
 }
