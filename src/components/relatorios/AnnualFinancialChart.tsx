@@ -6,8 +6,6 @@ import { Transaction, BillPayment, Income } from '@/lib/types';
 import {
   format,
   getYear,
-  startOfYear,
-  endOfYear,
   eachMonthOfInterval,
   setYear,
 } from 'date-fns';
@@ -27,6 +25,7 @@ import { text } from '@/lib/strings';
 import { useProfile } from '@/hooks/use-profile';
 import { useTransactions } from '@/hooks/use-transactions';
 import { Timestamp } from 'firebase/firestore';
+import { getYearPeriod } from '@/lib/date-utils';
 
 interface ChartData {
   month: string;
@@ -74,9 +73,7 @@ export default function AnnualFinancialChart({
     if (loading) return;
 
     try {
-        const yearDate = setYear(new Date(), year);
-        const startDate = startOfYear(yearDate);
-        const endDate = endOfYear(yearDate);
+        const { startDate, endDate } = getYearPeriod(year);
         
         const interval = { start: startDate, end: endDate };
         const monthsInInterval = eachMonthOfInterval(interval);
