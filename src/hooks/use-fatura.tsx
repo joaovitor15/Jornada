@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { Card as CardType, Expense, BillPayment } from '@/lib/types';
 import { getFaturaPeriod, getFaturaStatus, getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
-import { subMonths, addMonths } from 'date-fns';
+import { subMonths, addMonths, isAfter } from 'date-fns';
 
 type FaturaTransaction = (Expense | BillPayment) & { transactionType: 'expense' | 'payment' | 'refund' | 'anticipation'; description?: string };
 
@@ -26,7 +26,7 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<FaturaTransaction[]>([]);
   const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState({ text: '', color: ''});
   const [fechamento, setFechamento] = useState<Date | null>(null);
   const [vencimento, setVencimento] = useState<Date | null>(null);
 
@@ -102,10 +102,12 @@ export function useFatura(card: CardType, selectedFatura: { month: number; year:
 
         const { month: currentFaturaMonth, year: currentFaturaYear } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
         const isCurrentFatura = selectedFatura.month === currentFaturaMonth && selectedFatura.year === currentFaturaYear;
-        const isFutureFatura = new Date(selectedFatura.year, selectedFatura.month) > new Date(currentFaturaYear, currentFaturaMonth);
+        const faturaDateObj = new Date(selectedFatura.year, selectedFatura.month);
+        const currentFaturaDateObj = new Date(currentFaturaYear, currentFaturaMonth);
+        const isFutureFatura = isAfter(faturaDateObj, currentFaturaDateObj);
         
-        const { status: faturaStatus } = getFaturaStatus(faturaBruta, totalPagoConsiderandoCredito, dueDate, closingDate, isCurrentFatura, isFutureFatura);
-        setStatus(faturaStatus);
+        const { status: faturaStatus, color: faturaColor } = getFaturaStatus(faturaBruta, totalPagoConsiderandoCredito, dueDate, closingDate, isCurrentFatura, isFutureFatura);
+        setStatus({ text: faturaStatus, color: faturaColor });
         
         setLoading(false);
       };

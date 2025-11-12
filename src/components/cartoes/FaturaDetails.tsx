@@ -84,7 +84,7 @@ export default function FaturaDetails({
       ) : (
         <>
           <div className="border rounded-lg p-4 text-center">
-            <p className={`text-sm font-semibold ${status.includes('Paga') ? 'text-green-500' : 'text-blue-500'}`}>{status}</p>
+            <p className={`text-sm font-semibold ${status.color}`}>{status.text}</p>
             <p className="text-3xl font-bold">
               {total.toLocaleString('pt-BR', {
                 style: 'currency',
