@@ -9,11 +9,11 @@ body {
 @layer base {
   :root {
     /* === MODO CLARO === */
-    /* Cores de fundo e texto principais */
-    --background: 0 0% 98%;
+    /* Background GERAL - AZUL MUITO CLARO (não branco) */
+    --background: 240 10% 97%;
     --foreground: 222.2 84% 4.9%;
 
-    /* Cards - AZUL SUTIL (não branco) */
+    /* Cards - AZUL SUTIL (um pouco mais escuro que o fundo) */
     --card: 240 14% 96.5%;
     --card-foreground: 222.2 84% 4.9%;
 
@@ -25,11 +25,11 @@ body {
     --primary: 231 48% 48%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secundária - AZUL SUTIL */
+    /* Secundária - AZUL SUTIL (para hovers) */
     --secondary: 240 13% 91%;
     --secondary-foreground: 222.2 84% 4.9%;
 
-    /* Muted - AZUL SUTIL (sidebar, perfil) */
+    /* Muted - AZUL SUTIL (fundo de tabs, sidebar, perfil) */
     --muted: 240 10% 93.5%;
     --muted-foreground: 222.2 40% 4.9%;
 
