@@ -14,7 +14,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Expense, Income, BillPayment, Profile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
-import { getYear } from 'date-fns';
 import { getMonthPeriod, getYearPeriod } from '@/lib/date-utils';
 
 
@@ -69,35 +68,7 @@ export function useTransactions(activeProfile: Profile | null, period?: Period) 
       }
       return q;
     };
-    
-    // Query to get all available years from all transactions
-    const fetchAvailableYears = async () => {
-      const collectionsToSearch = ['expenses', 'incomes', 'billPayments'];
-      const yearsWithData = new Set<number>();
 
-      for (const col of collectionsToSearch) {
-          const q = query(
-              collection(db, col),
-              where('userId', '==', user.uid),
-              where('profile', '==', activeProfile)
-          );
-          const snapshot = await getDocs(q);
-          snapshot.forEach(doc => {
-              const data = doc.data();
-              if (data.date) {
-                  yearsWithData.add(getYear((data.date as Timestamp).toDate()));
-              }
-          });
-      }
-      
-      const currentYear = new Date().getFullYear();
-      yearsWithData.add(currentYear);
-      const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
-      setAvailableYears(sortedYears);
-    };
-
-    fetchAvailableYears();
-    
     const expensesQuery = buildQuery('expenses');
     const incomesQuery = buildQuery('incomes');
     const billPaymentsQuery = buildQuery('billPayments');
@@ -107,7 +78,6 @@ export function useTransactions(activeProfile: Profile | null, period?: Period) 
       setter: React.Dispatch<React.SetStateAction<T[]>>
     ) => {
       const data: T[] = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as T));
-      // A ordenação é feita no cliente para evitar a necessidade de índices compostos complexos no Firestore
       data.sort((a, b) => b.date.toMillis() - a.date.toMillis());
       setter(data);
     };
@@ -142,5 +112,5 @@ export function useTransactions(activeProfile: Profile | null, period?: Period) 
     };
   }, [user, activeProfile, period?.year, period?.month, toast]);
 
-  return { expenses, incomes, billPayments, loading, availableYears };
+  return { expenses, incomes, billPayments, loading, availableYears, setAvailableYears };
 }

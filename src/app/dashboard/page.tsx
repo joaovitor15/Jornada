@@ -4,7 +4,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   Loader2,
   TrendingUp,
@@ -25,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import FinancialChart from '@/components/dashboard/FinancialChart';
+import AnnualFinancialChart from '@/components/relatorios/AnnualFinancialChart';
 import { useProfile } from '@/hooks/use-profile';
 import { Transaction, BillPayment } from '@/lib/types';
 import { getYear, getMonth } from 'date-fns';
@@ -56,13 +57,45 @@ export default function DashboardPage() {
     new Date().getMonth()
   );
 
-  const { incomes, expenses, billPayments, loading: transactionsLoading, availableYears } = useTransactions(activeProfile, { year: selectedYear, month: selectedMonth });
+  const { incomes, expenses, billPayments, loading: transactionsLoading, availableYears, setAvailableYears } = useTransactions(activeProfile, { year: selectedYear, month: selectedMonth });
 
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalIncomes, setTotalIncomes] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [totalFarmaciaPopular, setTotalFarmaciaPopular] = useState(0);
   const [totalAlimentacao, setTotalAlimentacao] = useState(0);
+  
+  useEffect(() => {
+    // Função para buscar os anos disponíveis de forma otimizada
+    const fetchAvailableYears = async () => {
+      if (!user || !activeProfile) return;
+
+      const collectionsToSearch = ['expenses', 'incomes', 'billPayments'];
+      const yearsWithData = new Set<number>();
+
+      for (const col of collectionsToSearch) {
+        const q = query(
+          collection(db, col),
+          where('userId', '==', user.uid),
+          where('profile', '==', activeProfile)
+        );
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.date) {
+            yearsWithData.add(getYear((data.date as Timestamp).toDate()));
+          }
+        });
+      }
+
+      const currentYear = new Date().getFullYear();
+      yearsWithData.add(currentYear);
+      const sortedYears = Array.from(yearsWithData).sort((a, b) => b - a);
+      setAvailableYears(sortedYears);
+    };
+
+    fetchAvailableYears();
+  }, [user, activeProfile, setAvailableYears]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -197,7 +230,7 @@ export default function DashboardPage() {
                 <CardTitle>{text.dashboard.annualSummaryTitle}</CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <FinancialChart
+                <AnnualFinancialChart
                   year={selectedYear}
                   onMonthSelect={setSelectedMonth}
                 />
