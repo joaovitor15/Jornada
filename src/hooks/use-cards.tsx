@@ -1,12 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
 import { useAuth } from './use-auth';
 import { useProfile } from './use-profile';
 import { type Card } from '@/lib/types';
+
+type FilterType = 'inUse' | 'registered' | 'archived';
 
 export function useCards() {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ export function useCards() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [usedCardNames, setUsedCardNames] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<FilterType>('inUse');
 
   const refreshCards = useCallback(() => {
     if (!user || !activeProfile) {
@@ -75,6 +78,20 @@ export function useCards() {
       }
     };
   }, [refreshCards]);
+  
+  const filteredCards = useMemo(() => {
+    if (filter === 'inUse') {
+        return cards.filter(card => !card.isArchived && usedCardNames.has(card.name));
+    }
+    if (filter === 'registered') {
+        return cards.filter(card => !card.isArchived && !usedCardNames.has(card.name));
+    }
+    if (filter === 'archived') {
+        return cards.filter(card => card.isArchived);
+    }
+    return cards.filter(card => !card.isArchived);
+  }, [cards, filter, usedCardNames]);
 
-  return { cards, loading, usedCardNames, refreshCards };
+
+  return { cards, loading, usedCardNames, refreshCards, filteredCards, filter, setFilter };
 }

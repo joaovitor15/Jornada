@@ -14,10 +14,7 @@ import { text } from '@/lib/strings';
 import CardForm from './add-card-form';
 import CardDetails from './CardDetails';
 import { cn } from '@/lib/utils';
-import { useCards } from '@/hooks/use-cards';
-import { HierarchicalTag, Card } from '@/lib/types';
-import { useTags } from '@/hooks/use-tags';
-import { Badge } from '../ui/badge';
+import { type Card } from '@/lib/types';
 import { ScrollArea } from '../ui/scroll-area';
 import {
   DropdownMenu,
@@ -39,54 +36,35 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useCards } from '@/hooks/use-cards';
 
 type FilterType = 'inUse' | 'registered' | 'archived';
 
 export default function CardsList({
+  cards,
+  loading,
+  filteredCards,
   selectedCardId,
   onCardSelect,
+  filter,
+  setFilter,
 }: {
-  selectedCardId: string | undefined;
-  onCardSelect: (card: Card | null) => void;
+  cards: Card[],
+  loading: boolean,
+  filteredCards: Card[],
+  selectedCardId: string | undefined,
+  onCardSelect: (cardId: string) => void,
+  filter: FilterType,
+  setFilter: (filter: FilterType) => void,
 }) {
-  const { cards, loading, usedCardNames, refreshCards } = useCards();
+  const { usedCardNames, refreshCards } = useCards();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [cardToEdit, setCardToEdit] = useState<Card | null>(null);
   const [cardToHandle, setCardToHandle] = useState<Card | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const [isUnarchiveDialogOpen, setIsUnarchiveDialogOpen] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('inUse');
   const { toast } = useToast();
-
-  const filteredCards = useMemo(() => {
-    if (filter === 'inUse') {
-        return cards.filter(card => !card.isArchived && usedCardNames.has(card.name));
-    }
-    if (filter === 'registered') {
-        return cards.filter(card => !card.isArchived && !usedCardNames.has(card.name));
-    }
-    if (filter === 'archived') {
-        return cards.filter(card => card.isArchived);
-    }
-    // Fallback to a default view (e.g., all non-archived)
-    return cards.filter(card => !card.isArchived);
-  }, [cards, filter, usedCardNames]);
-
-
-  useEffect(() => {
-    if (!loading) {
-      if (filteredCards.length > 0) {
-        const currentSelectedCardExists =
-          selectedCardId && filteredCards.some((c) => c.id === selectedCardId);
-        if (!currentSelectedCardExists) {
-          onCardSelect(filteredCards[0]);
-        }
-      } else {
-        onCardSelect(null);
-      }
-    }
-  }, [loading, filteredCards, selectedCardId, onCardSelect]);
 
   const handleAddClick = () => {
     setCardToEdit(null);
@@ -96,10 +74,6 @@ export default function CardsList({
   const handleEditClick = (card: Card) => {
     setCardToEdit(card);
     setIsFormOpen(true);
-  };
-
-  const handleSelectCard = (card: Card) => {
-    onCardSelect(card);
   };
 
   const handleAction = async (
@@ -183,7 +157,7 @@ export default function CardsList({
             filteredCards.map((card) => (
               <div
                 key={card.id}
-                onClick={() => handleSelectCard(card)}
+                onClick={() => onCardSelect(card.id)}
                 className={cn(
                   'border p-4 rounded-lg shadow-sm relative cursor-pointer transition-all',
                   selectedCardId === card.id

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import CardsList from '@/components/cartoes/cards-list';
 import { text } from '@/lib/strings';
 import FaturaDetails from '@/components/cartoes/FaturaDetails';
@@ -10,9 +10,12 @@ import FaturaSelector from '@/components/cartoes/FaturaSelector';
 import { getCurrentFaturaMonthAndYear } from '@/lib/fatura-utils';
 import AnteciparParcelasForm from '@/components/cartoes/AnteciparParcelasForm';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
+import { useCards } from '@/hooks/use-cards';
 
 export default function CardsPage() {
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const { cards, loading: cardsLoading, filteredCards, filter, setFilter } = useCards();
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
   const [selectedFatura, setSelectedFatura] = useState<{ month: number, year: number }>({
     month: new Date().getMonth(),
     year: new Date().getFullYear(),
@@ -22,28 +25,20 @@ export default function CardsPage() {
   const [isAnticipateFormOpen, setIsAnticipateFormOpen] = useState(false);
   const { setIsFormOpen } = useAddTransactionModal();
 
-
-  const handleCardSelection = (card: Card | null) => {
-    setSelectedCard(card);
+  const selectedCard = useMemo(() => {
+    if (cardsLoading || filteredCards.length === 0) return null;
+    
+    const cardFromId = selectedCardId ? filteredCards.find(c => c.id === selectedCardId) : null;
+    return cardFromId || filteredCards[0];
+  }, [selectedCardId, filteredCards, cardsLoading]);
+  
+  const handleCardSelection = (cardId: string) => {
+    setSelectedCardId(cardId);
+    const card = cards.find(c => c.id === cardId);
     if (card) {
-      // Quando um novo cartão é selecionado, define a fatura para a "atual"
       const { month, year } = getCurrentFaturaMonthAndYear(new Date(), card.closingDay);
       setSelectedFatura({ month, year });
     }
-  };
-
-  // Ajusta a fatura selecionada se o cartão mudar
-  useEffect(() => {
-    if (selectedCard) {
-      const { month, year } = getCurrentFaturaMonthAndYear(new Date(), selectedCard.closingDay);
-      setSelectedFatura({ month, year });
-    }
-  }, [selectedCard]);
-  
-  const handleEditExpense = (expense: Expense) => {
-    // TODO: Implementar a edição de despesas com o novo formulário unificado.
-    // Atualmente, estamos apenas abrindo o formulário de adição.
-    setIsFormOpen(true);
   };
 
   const handleAnticipateExpense = (expense: Expense) => {
@@ -83,8 +78,13 @@ export default function CardsPage() {
         {/* Coluna de Cartões / Gerenciador de Tags */}
         <div className="lg:col-span-1">
           <CardsList
+            cards={cards}
+            loading={cardsLoading}
+            filteredCards={filteredCards}
             selectedCardId={selectedCard?.id}
             onCardSelect={handleCardSelection}
+            filter={filter}
+            setFilter={setFilter}
           />
         </div>
       </div>
