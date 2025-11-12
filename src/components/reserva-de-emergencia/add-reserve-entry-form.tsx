@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, addDoc, Timestamp, writeBatch, doc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, writeBatch, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
@@ -49,7 +48,7 @@ import {
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import TagInput from '../ui/tag-input';
 import { useTags } from '@/hooks/use-tags';
-import { RawTag } from '@/lib/types';
+import { EmergencyReserveEntry, RawTag } from '@/lib/types';
 
 const formSchema = z.object({
   description: z.string().optional(),
@@ -114,17 +113,20 @@ const ensureBaseReserveTags = async (userId: string, profile: string, allTags: R
 type AddReserveEntryFormProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  entryToEdit?: EmergencyReserveEntry | null;
 };
 
 export default function AddReserveEntryForm({
   isOpen,
   onOpenChange,
+  entryToEdit,
 }: AddReserveEntryFormProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const { toast } = useToast();
   const { hierarchicalTags, rawTags, refreshTags } = useTags();
   const [dateInput, setDateInput] = useState('');
+  const isEditMode = !!entryToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -156,18 +158,32 @@ export default function AddReserveEntryForm({
        if (user && activeProfile) {
           ensureBaseReserveTags(user.uid, activeProfile, rawTags, refreshTags);
        }
-      const initialDate = new Date();
-      reset({
-        description: '',
-        amount: undefined,
-        date: initialDate,
-        bank: '',
-        tags: [],
-        type: 'add',
-      });
-      setDateInput(format(initialDate, 'dd/MM/yyyy'));
+      if (isEditMode && entryToEdit) {
+        const amount = Math.abs(entryToEdit.amount);
+        const type = entryToEdit.amount >= 0 ? 'add' : 'withdraw';
+        reset({
+          description: entryToEdit.description,
+          amount: amount,
+          date: entryToEdit.date.toDate(),
+          bank: entryToEdit.bank,
+          tags: entryToEdit.tags,
+          type: type,
+        });
+        setDateInput(format(entryToEdit.date.toDate(), 'dd/MM/yyyy'));
+      } else {
+        const initialDate = new Date();
+        reset({
+          description: '',
+          amount: undefined,
+          date: initialDate,
+          bank: '',
+          tags: [],
+          type: 'add',
+        });
+        setDateInput(format(initialDate, 'dd/MM/yyyy'));
+      }
     }
-  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags]);
+  }, [isOpen, reset, user, activeProfile, rawTags, refreshTags, isEditMode, entryToEdit]);
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -197,8 +213,7 @@ export default function AddReserveEntryForm({
     const finalAmount =
       values.type === 'withdraw' ? -Math.abs(values.amount) : values.amount;
 
-    try {
-      await addDoc(collection(db, 'emergencyReserveEntries'), {
+    const dataToSave = {
         userId: user.uid,
         profile: activeProfile,
         description: values.description || '',
@@ -206,19 +221,30 @@ export default function AddReserveEntryForm({
         date: Timestamp.fromDate(values.date),
         bank: values.bank,
         tags: values.tags,
-      });
+    };
 
-      toast({
-        title: text.common.success,
-        description: text.emergencyReserve.addSuccess,
-      });
+    try {
+      if (isEditMode && entryToEdit) {
+        const docRef = doc(db, 'emergencyReserveEntries', entryToEdit.id);
+        await updateDoc(docRef, dataToSave);
+        toast({
+          title: text.common.success,
+          description: "Movimentação da reserva atualizada.",
+        });
+      } else {
+        await addDoc(collection(db, 'emergencyReserveEntries'), dataToSave);
+        toast({
+          title: text.common.success,
+          description: text.emergencyReserve.addSuccess,
+        });
+      }
       handleOpenChange(false);
     } catch (error) {
       console.error('Error writing document to Firestore: ', error);
       toast({
         variant: 'destructive',
         title: text.common.error,
-        description: text.emergencyReserve.addError,
+        description: isEditMode ? "Falha ao atualizar movimentação." : text.emergencyReserve.addError,
       });
     }
   }
@@ -241,7 +267,7 @@ export default function AddReserveEntryForm({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{text.emergencyReserve.formTitle}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Editar Movimentação' : text.emergencyReserve.formTitle}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -257,8 +283,9 @@ export default function AddReserveEntryForm({
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex space-x-4"
+                      disabled={isEditMode}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
@@ -355,7 +382,7 @@ export default function AddReserveEntryForm({
                     <FormControl>
                       <CurrencyInput
                         placeholder={text.placeholders.amount}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isEditMode}
                         value={field.value}
                         onValueChange={(values) => {
                           field.onChange(values?.floatValue);
@@ -421,9 +448,7 @@ export default function AddReserveEntryForm({
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {transactionType === 'add'
-                  ? text.emergencyReserve.title
-                  : 'Registrar Retirada'}
+                {isEditMode ? 'Salvar Alterações' : (transactionType === 'add' ? text.emergencyReserve.title : 'Registrar Retirada')}
               </Button>
             </DialogFooter>
           </form>

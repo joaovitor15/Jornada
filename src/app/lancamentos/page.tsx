@@ -12,13 +12,25 @@ import BillPaymentsList from '@/components/faturas/bill-payments-list';
 import TransactionList from '@/components/lancamentos/TransactionList';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useProfile } from '@/hooks/use-profile';
+import { EmergencyReserveEntry } from '@/lib/types';
 
 export default function LancamentosPage() {
   const { openForm: openTransactionForm } = useAddTransactionModal();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
+  const [entryToEdit, setEntryToEdit] = useState<EmergencyReserveEntry | null>(null);
   const { openModal } = useAddBillTransactionModal();
   const { activeProfile } = useProfile();
   const { expenses, incomes, loading } = useTransactions(activeProfile);
+
+  const handleEditReserveEntry = (entry: EmergencyReserveEntry) => {
+    setEntryToEdit(entry);
+    setIsReserveFormOpen(true);
+  };
+
+  const handleOpenReserveForm = () => {
+    setEntryToEdit(null); // Garante que o formulário abra em modo de criação
+    setIsReserveFormOpen(true);
+  };
 
   return (
     <>
@@ -27,7 +39,7 @@ export default function LancamentosPage() {
           <h1 className="text-2xl font-bold">{text.sidebar.releases}</h1>
           <div className="flex gap-2">
             <Button
-              onClick={() => setIsReserveFormOpen(true)}
+              onClick={handleOpenReserveForm}
               size="sm"
               variant="outline"
             >
@@ -63,12 +75,13 @@ export default function LancamentosPage() {
             loading={loading}
           />
           <BillPaymentsList />
-          <EmergencyReserveList />
+          <EmergencyReserveList onEditEntry={handleEditReserveEntry} />
         </div>
       </div>
       <AddReserveEntryForm
         isOpen={isReserveFormOpen}
         onOpenChange={setIsReserveFormOpen}
+        entryToEdit={entryToEdit}
       />
     </>
   );

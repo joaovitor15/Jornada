@@ -38,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
-import { Trash2, Loader2, MoreHorizontal } from 'lucide-react';
+import { Trash2, Loader2, MoreHorizontal, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +55,11 @@ import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { useTags } from '@/hooks/use-tags';
 
-export default function EmergencyReserveList() {
+interface EmergencyReserveListProps {
+  onEditEntry: (entry: EmergencyReserveEntry) => void;
+}
+
+export default function EmergencyReserveList({ onEditEntry }: EmergencyReserveListProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [entries, setEntries] = useState<EmergencyReserveEntry[]>([]);
@@ -210,7 +214,7 @@ export default function EmergencyReserveList() {
                     </TableHeader>
                     <TableBody>
                       {currentEntries.map((entry, index) => {
-                        const description = entry.description || getParentTagName(entry.tags[0]) || 'Movimentação';
+                        const description = entry.description || (entry.tags && entry.tags.length > 0 && getParentTagName(entry.tags[0])) || 'Movimentação';
                         return (
                         <TableRow
                           key={entry.id}
@@ -255,6 +259,10 @@ export default function EmergencyReserveList() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => onEditEntry(entry)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  <span>{text.common.rename}</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onSelect={() => {
                                     setEntryToDelete(entry);
