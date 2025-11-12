@@ -98,7 +98,7 @@ function FaturaCard({ card }: { card: CardType }) {
     const { activeProfile } = useProfile();
 
     useEffect(() => {
-        if (!user || !activeProfile) return;
+        if (!user || !activeProfile || loading) return;
 
         const currentInvoiceValue = transactions
             .filter(t => t.transactionType === 'expense')
@@ -117,12 +117,12 @@ function FaturaCard({ card }: { card: CardType }) {
         const unsubscribe = onSnapshot(futureExpensesQuery, (snap) => {
             const futureSum = snap.docs.reduce((acc, doc) => acc + doc.data().amount, 0);
             setFutureInstallments(futureSum);
-            setAvailableLimit(card.limit - currentInvoiceValue - futureSum);
+            setAvailableLimit(card.limit - total - futureSum);
         });
 
         return () => unsubscribe();
 
-    }, [card, transactions, user, activeProfile, currentFaturaYear, currentFaturaMonth]);
+    }, [card, transactions, user, activeProfile, currentFaturaYear, currentFaturaMonth, loading, total]);
 
 
     if (loading) return <FaturaCardSkeleton />;
@@ -154,11 +154,11 @@ function FaturaCard({ card }: { card: CardType }) {
                 <div className="space-y-2">
                     <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
                         <div className="absolute h-full bg-yellow-400 transition-all" style={{ width: `${faturaPercent + parcelasFuturasPercent}%` }} />
-                        <div className={`absolute h-full ${status.color.replace('text-', 'bg-')}`} style={{ width: `${faturaPercent}%` }} />
+                        <div className="absolute h-full bg-green-500" style={{ width: `${faturaPercent}%` }} />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <div className='flex items-center gap-2'>
-                            <div className={`h-2 w-2 rounded-full ${status.color.replace('text-', 'bg-')}`}></div>
+                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
                             <span>Fatura: {formatCurrency(total)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
