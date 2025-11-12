@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -14,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ThemeToggle } from './theme-toggle';
 
 
 function ProfileIcon({ profile, className }: { profile: string; className?: string }) {
@@ -58,32 +60,34 @@ export default function Header({ menuTrigger }: HeaderProps) {
               {text.header.appName}
             </span>
           </Link>
-          
-           {user && (
-            <div className="flex items-center gap-1 rounded-lg p-1">
-              <TooltipProvider delayDuration={0}>
-              {profiles.map((profile) => (
-                 <Tooltip key={profile.id}>
-                    <TooltipTrigger asChild>
-                       <Button
-                        variant={activeProfile === profile.id ? "secondary" : "ghost"}
-                        size="icon"
-                        onClick={() => setActiveProfile(profile.id)}
-                        className="h-8 w-8 rounded-full"
-                      >
-                        <ProfileIcon profile={profile.id} />
-                        <span className="sr-only">{profile.label}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p>{profile.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-              ))}
-              </TooltipProvider>
-            </div>
-          )}
         </div>
+         <div className="flex items-center gap-2">
+            {user && (
+              <div className="flex items-center gap-1 rounded-lg p-1">
+                <TooltipProvider delayDuration={0}>
+                {profiles.map((profile) => (
+                  <Tooltip key={profile.id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={activeProfile === profile.id ? "secondary" : "ghost"}
+                          size="icon"
+                          onClick={() => setActiveProfile(profile.id)}
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <ProfileIcon profile={profile.id} />
+                          <span className="sr-only">{profile.label}</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{profile.label}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                ))}
+                </TooltipProvider>
+              </div>
+            )}
+            <ThemeToggle />
+          </div>
       </div>
     </header>
   );
