@@ -4,25 +4,29 @@ import { text } from '@/lib/strings';
 import { Button } from '@/components/ui/button';
 import { useAddTransactionModal } from '@/contexts/AddTransactionModalContext';
 import { Shield, PlusCircle, CreditCard } from 'lucide-react';
-import EmergencyReserveList from '@/components/lancamentos/emergency-reserve-list';
 import { useState } from 'react';
 import AddReserveEntryForm from '@/components/reserva-de-emergencia/add-reserve-entry-form';
 import { useAddBillTransactionModal } from '@/contexts/AddBillTransactionModalContext';
-import BillPaymentsList from '@/components/faturas/bill-payments-list';
 import TransactionList from '@/components/lancamentos/TransactionList';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useProfile } from '@/hooks/use-profile';
+import { useEmergencyReserve } from '@/hooks/use-emergency-reserve';
 import { EmergencyReserveEntry } from '@/lib/types';
 
 export default function LancamentosPage() {
   const { openForm: openTransactionForm } = useAddTransactionModal();
   const [isReserveFormOpen, setIsReserveFormOpen] = useState(false);
-  const [entryToEdit, setEntryToEdit] = useState<EmergencyReserveEntry | null>(null);
+  const [entryToEdit, setEntryToEdit] = useState<EmergencyReserveEntry | null>(
+    null
+  );
   const { openModal } = useAddBillTransactionModal();
   const { activeProfile } = useProfile();
-  const { expenses, incomes, loading } = useTransactions(activeProfile);
+  const { expenses, incomes, billPayments, loading: transactionsLoading } =
+    useTransactions(activeProfile);
+  const { entries: reserveEntries, loading: reserveLoading } =
+    useEmergencyReserve();
 
-  const handleEditReserveEntry = (entry: EmergencyReserveEntry) => {
+  const handleEditReserveEntry = (entry: any) => {
     setEntryToEdit(entry);
     setIsReserveFormOpen(true);
   };
@@ -54,10 +58,7 @@ export default function LancamentosPage() {
               <CreditCard className="mr-2 h-4 w-4" />
               Movimentar Fatura
             </Button>
-            <Button
-              onClick={openTransactionForm}
-              size="sm"
-            >
+            <Button onClick={openTransactionForm} size="sm">
               <PlusCircle className="mr-2 h-4 w-4" />
               Novo Lançamento
             </Button>
@@ -67,15 +68,24 @@ export default function LancamentosPage() {
           <TransactionList
             type="expense"
             transactions={expenses}
-            loading={loading}
+            loading={transactionsLoading}
           />
           <TransactionList
             type="income"
             transactions={incomes}
-            loading={loading}
+            loading={transactionsLoading}
           />
-          <BillPaymentsList />
-          <EmergencyReserveList onEditEntry={handleEditReserveEntry} />
+          <TransactionList
+            type="billPayment"
+            transactions={billPayments}
+            loading={transactionsLoading}
+          />
+          <TransactionList
+            type="reserveEntry"
+            transactions={reserveEntries}
+            loading={reserveLoading}
+            onEditItem={handleEditReserveEntry}
+          />
         </div>
       </div>
       <AddReserveEntryForm
