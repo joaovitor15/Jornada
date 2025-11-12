@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -54,6 +53,7 @@ import { useToast } from '@/hooks/use-toast';
 import { text } from '@/lib/strings';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
+import { useTags } from '@/hooks/use-tags';
 
 export default function EmergencyReserveList() {
   const { user } = useAuth();
@@ -65,6 +65,7 @@ export default function EmergencyReserveList() {
   const [entryToDelete, setEntryToDelete] =
     useState<EmergencyReserveEntry | null>(null);
   const { toast } = useToast();
+  const { hierarchicalTags } = useTags();
 
   const ITEMS_PER_PAGE = 10;
 
@@ -128,6 +129,15 @@ export default function EmergencyReserveList() {
       });
     }
     setEntryToDelete(null);
+  };
+
+  const getParentTagName = (childTagName: string) => {
+    for (const parentTag of hierarchicalTags) {
+      if (parentTag.children.some(child => child.name === childTagName)) {
+        return parentTag.name;
+      }
+    }
+    return null;
   };
 
   const totalPages = Math.ceil(entries.length / ITEMS_PER_PAGE);
@@ -199,7 +209,9 @@ export default function EmergencyReserveList() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentEntries.map((entry, index) => (
+                      {currentEntries.map((entry, index) => {
+                        const description = entry.description || getParentTagName(entry.tags[0]) || 'Movimentação';
+                        return (
                         <TableRow
                           key={entry.id}
                           className={cn(
@@ -208,7 +220,7 @@ export default function EmergencyReserveList() {
                           )}
                         >
                           <TableCell className="font-medium py-2 px-4 align-middle">
-                            {entry.description || 'Movimentação'}
+                            {description}
                           </TableCell>
                            <TableCell className="py-2 px-4 align-middle">
                             <div className="flex flex-wrap gap-1">
@@ -257,7 +269,7 @@ export default function EmergencyReserveList() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 )}

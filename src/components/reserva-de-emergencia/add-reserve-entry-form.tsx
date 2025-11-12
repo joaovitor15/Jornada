@@ -201,9 +201,7 @@ export default function AddReserveEntryForm({
       await addDoc(collection(db, 'emergencyReserveEntries'), {
         userId: user.uid,
         profile: activeProfile,
-        description:
-          values.description ||
-          (values.type === 'add' ? 'Contribuição' : 'Retirada'),
+        description: values.description || '',
         amount: finalAmount,
         date: Timestamp.fromDate(values.date),
         bank: values.bank,
