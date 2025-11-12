@@ -31,6 +31,11 @@ export default function SidebarNav() {
       icon: LayoutDashboard,
     },
     {
+      href: '/lancamentos',
+      label: text.sidebar.releases,
+      icon: ArrowDownLeft,
+    },
+    {
       href: '/relatorios',
       label: text.sidebar.reports,
       icon: BarChart,
@@ -59,11 +64,6 @@ export default function SidebarNav() {
       href: '/tags',
       label: text.sidebar.manageTags,
       icon: Tags,
-    },
-    {
-      href: '/lancamentos',
-      label: text.sidebar.releases,
-      icon: ArrowDownLeft,
     },
   ];
 
